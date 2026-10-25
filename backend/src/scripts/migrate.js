@@ -16,6 +16,7 @@ async function runMigrations() {
     '20261018_rbac.sql',
     '20261019_annotations.sql',
     '20261024_topic_tags.sql',
+    '20261025_fr08_ai_summaries.sql',
   ];
 
   console.log('--- Starting Database Migrations ---');

@@ -45,6 +45,22 @@ export const env = {
     scopes: process.env.OIDC_SCOPES || "openid email profile",
   },
 
+  // FR-08: Gemini AI summaries. The key is optional at startup so the rest of
+  // the application keeps working without it; the Gemini service throws a
+  // clear error only when a summary is actually requested.
+  gemini: {
+    apiKey: process.env.GEMINI_API_KEY || "",
+    model: process.env.GEMINI_MODEL || "gemini-3.8-flash",
+    timeoutMs: Number(process.env.GEMINI_TIMEOUT_MS) || 25000,
+    maxInputChars: Number(process.env.GEMINI_MAX_INPUT_CHARS) || 400000,
+  },
+
+  redis: {
+    url: process.env.REDIS_URL || "redis://127.0.0.1:6379",
+    workerConcurrency: Math.max(1, Number(process.env.SUMMARY_WORKER_CONCURRENCY) || 2),
+    retryDelayMs: Math.max(250, Number(process.env.SUMMARY_RETRY_DELAY_MS) || 1500),
+  },
+
   // FR-04: Session expiration & idle inactivity tracking
   session: {
     inactivityTimeoutMs:

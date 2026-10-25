@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import PaperSummary from './PaperSummary.jsx';
 
 export default function PaperList({ refreshTrigger }) {
   const [papers, setPapers] = useState([]);
@@ -130,6 +131,7 @@ export default function PaperList({ refreshTrigger }) {
                   day: 'numeric',
                 })}
               </p>
+              <PaperSummary paperId={paper.id} />
             </div>
           ))}
         </div>

@@ -5,6 +5,7 @@ import annotationRoutes from "./routes/annotation.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import paperRoutes from "./routes/paper.routes.js";
 import tagRoutes from "./routes/tag.routes.js";
+import summaryRoutes from "./routes/summary.routes.js";
 import errorHandler from "./middleware/errorHandler.js";
 
 const app = express();
@@ -32,6 +33,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/papers", paperRoutes);
 app.use("/api/annotations", annotationRoutes);
 app.use("/api/tags", tagRoutes);
+app.use("/api/summaries", summaryRoutes);
 
 // Handle unknown routes
 app.use((req, res) => {

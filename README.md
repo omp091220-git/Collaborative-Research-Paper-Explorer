@@ -330,3 +330,8 @@ The goal of the **Collaborative Research Paper Explorer** is to make academic re
 ---
 
 **Repository:** [Collaborative Research Paper Explorer](https://github.com/omp091220-git/Collaborative-Research-Paper-Explorer)
+
+
+## FR-08: AI-generated paper summaries
+
+Implementation and local setup instructions are in [FR-08_SETUP.md](./FR-08_SETUP.md). The feature uses Google Gemini, PDF text/coordinate extraction, Redis + BullMQ background processing, and PostgreSQL persistence/cache.

@@ -6,26 +6,36 @@
   "type": "module",
   "scripts": {
     "test": "node --import ./src/test/setup.js --test",
+    "test:fr08": "node --import ./src/test/setup.js --test src/test/pdfExtraction.test.js src/test/sourceMapping.test.js src/test/geminiService.test.js src/test/summaryChunking.test.js src/test/summaryPersistence.test.js src/test/summaryRoutes.test.js src/test/summarySchema.test.js src/test/summaryAccess.test.js src/test/summaryJob.test.js",
     "migrate": "node src/scripts/migrate.js",
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "worker": "node src/workers/summary.worker.js",
+    "test:fr08:core": "node --test src/test/sourceMapping.test.js src/test/summaryChunking.test.js src/test/summarySchema.test.js src/test/summaryAccess.test.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google/genai": "^2.31.0",
     "bcryptjs": "^3.0.3",
+    "bullmq": "^5.58.5",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^18.0.7",
     "express": "^5.3.0",
+    "ioredis": "^5.11.1",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.5.0",
     "nodemailer": "^10.1.1",
+    "pdfjs-dist": "^5.7.284",
     "pg": "^8.23.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.14",
     "supertest": "^7.3.1"
+  },
+  "engines": {
+    "node": ">=22.13.0"
   }
 }
