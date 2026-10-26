@@ -4,12 +4,13 @@ import { env } from "./env.js";
 
 const { Pool } = pg;
 
+const isSslNeeded =
+  env.nodeEnv === "production" ||
+  (env.databaseUrl && (env.databaseUrl.includes("sslmode=require") || env.databaseUrl.includes("neon.tech")));
+
 const pool = new Pool({
   connectionString: env.databaseUrl,
-
-  ...(env.nodeEnv === "production"
-    ? { ssl: { rejectUnauthorized: true } }
-    : {}),
+  ...(isSslNeeded ? { ssl: { rejectUnauthorized: false } } : {}),
 });
 
 pool.on("error", (error) => {

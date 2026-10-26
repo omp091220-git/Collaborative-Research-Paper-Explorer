@@ -9,6 +9,7 @@ const __dirname = path.dirname(__filename);
 async function runMigrations() {
   const migrationsDir = path.resolve(__dirname, '../../../database');
   const migrationFiles = [
+    'schema.sql',
     '20261017_email_verification.sql',
     '20261017_sso_identities.sql',
     '20261018_sessions.sql',
@@ -16,6 +17,7 @@ async function runMigrations() {
     '20261018_rbac.sql',
     '20261019_annotations.sql',
     '20261024_topic_tags.sql',
+    '20261027_paper_sections_and_recommendations.sql',
   ];
 
   console.log('--- Starting Database Migrations ---');
