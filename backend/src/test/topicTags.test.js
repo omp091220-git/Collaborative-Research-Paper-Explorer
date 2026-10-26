@@ -14,6 +14,8 @@ import {
 import * as tagRepo from '../repositories/tag.repository.js';
 import * as tagService from '../services/tag.service.js';
 
+import { assertSafeTestDatabase } from './safetyCheck.js';
+
 describe('FR-10: Hierarchical Topic Tags Test Suite (A–Z)', () => {
   let server;
   let baseUrl;
@@ -77,12 +79,28 @@ describe('FR-10: Hierarchical Topic Tags Test Suite (A–Z)', () => {
       UPDATE users SET role = 'SYSTEM_ADMIN' WHERE id = '${adminUser.id}';
     `);
 
-    // Clean any prior FR-10 test tags safely bottom-up (leaves first) to respect RESTRICT FK
+    // Assert test database safety before performing any DML operations
+    assertSafeTestDatabase();
+
+    // Clean ONLY FR-10 test-owned tags safely bottom-up (leaves first) to respect RESTRICT FK
     let rowsDeleted = 1;
     while (rowsDeleted > 0) {
       const del = await client.query(`
         DELETE FROM topic_tags 
         WHERE id NOT IN (SELECT DISTINCT parent_id FROM topic_tags WHERE parent_id IS NOT NULL)
+          AND (
+            created_by IN ('${adminUser.id}', '${researcherUser.id}', '${studentUser.id}')
+            OR slug IN (
+              'energy', 'computer_science', 'artificial_intelligence', 'quantum_computing',
+              'green_energy', 'solar_panels', 'perovskite_cells', 'wind_energy', 'fossil_fuels',
+              'coal', 'history', 'temp_category', 'renamed_category', 'alpha_tech', 'beta_systems',
+              'gamma_core', 'brand_new_category', 'robotics', 'advanced_robotics',
+              'parent_for_deletion', 'child_for_deletion', 'rbac_test_subject',
+              'admin_delete_subject', 'self_parent_test'
+            )
+            OR slug LIKE 'safe_param_test_%'
+            OR slug LIKE 'concurrent_%'
+          )
       `);
       rowsDeleted = del.rowCount;
     }
@@ -96,6 +114,19 @@ describe('FR-10: Hierarchical Topic Tags Test Suite (A–Z)', () => {
           const del = await client.query(`
             DELETE FROM topic_tags 
             WHERE id NOT IN (SELECT DISTINCT parent_id FROM topic_tags WHERE parent_id IS NOT NULL)
+              AND (
+                created_by IN ('${adminUser.id}', '${researcherUser.id}', '${studentUser.id}')
+                OR slug IN (
+                  'energy', 'computer_science', 'artificial_intelligence', 'quantum_computing',
+                  'green_energy', 'solar_panels', 'perovskite_cells', 'wind_energy', 'fossil_fuels',
+                  'coal', 'history', 'temp_category', 'renamed_category', 'alpha_tech', 'beta_systems',
+                  'gamma_core', 'brand_new_category', 'robotics', 'advanced_robotics',
+                  'parent_for_deletion', 'child_for_deletion', 'rbac_test_subject',
+                  'admin_delete_subject', 'self_parent_test'
+                )
+                OR slug LIKE 'safe_param_test_%'
+                OR slug LIKE 'concurrent_%'
+              )
           `);
           rowsDeleted = del.rowCount;
         }
