@@ -1,11 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import CollaboratorsModal from './CollaboratorsModal';
+import DiscussionPanel from './DiscussionPanel';
 
 export default function PaperList({ refreshTrigger }) {
   const [papers, setPapers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
+
+  // Modals state
+  const [selectedCollabPaper, setSelectedCollabPaper] = useState(null);
+  const [selectedDiscussionPaper, setSelectedDiscussionPaper] = useState(null);
 
   const fetchPapers = useCallback(async () => {
     setLoading(true);
@@ -122,18 +128,54 @@ export default function PaperList({ refreshTrigger }) {
                   </span>
                 </div>
               </div>
-              <p className="text-xs text-slate-400 mt-2">
-                Added{' '}
-                {new Date(paper.uploaded_at).toLocaleDateString(undefined, {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                })}
-              </p>
+
+              {/* Bottom Card Controls: Date + Discussion & Collaborator Buttons */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-3 pt-2.5 border-t border-slate-200/70">
+                <p className="text-xs text-slate-400">
+                  Added{' '}
+                  {new Date(paper.uploaded_at).toLocaleDateString(undefined, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </p>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setSelectedDiscussionPaper(paper)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs"
+                  >
+                    <span>💬</span>
+                    <span>Discussions</span>
+                  </button>
+
+                  <button
+                    onClick={() => setSelectedCollabPaper(paper)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-purple-50 text-purple-600 border border-purple-200 rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs"
+                  >
+                    <span>👥</span>
+                    <span>Collaborators</span>
+                  </button>
+                </div>
+              </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* Collaborators Modal */}
+      <CollaboratorsModal
+        paper={selectedCollabPaper}
+        isOpen={Boolean(selectedCollabPaper)}
+        onClose={() => setSelectedCollabPaper(null)}
+      />
+
+      {/* Discussion Panel Drawer */}
+      <DiscussionPanel
+        paper={selectedDiscussionPaper}
+        isOpen={Boolean(selectedDiscussionPaper)}
+        onClose={() => setSelectedDiscussionPaper(null)}
+      />
     </div>
   );
 }
