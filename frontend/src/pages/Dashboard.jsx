@@ -73,6 +73,14 @@ export default function Dashboard() {
               <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
                 ⏱ 30m Inactivity Window
               </span>
+              {isAdmin && (
+                <button
+                  onClick={() => navigate('/admin/monitoring')}
+                  className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold shadow-xs transition duration-200 cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>📊</span> Monitoring Dashboard
+                </button>
+              )}
               <button
                 onClick={handleLogout}
                 className="px-4 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-semibold shadow-xs transition duration-200 cursor-pointer"
@@ -267,7 +275,7 @@ export default function Dashboard() {
               <p className="text-xs text-slate-600 mb-3">
                 Manage user access, review audit logs, and assign privileged roles.
               </p>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <span
                   className={`text-xs font-semibold ${
                     isAdmin ? 'text-purple-700' : 'text-slate-500'
@@ -277,14 +285,25 @@ export default function Dashboard() {
                     ? '✓ Permitted (SYSTEM_ADMIN)'
                     : '✗ Forbidden for ' + user?.role}
                 </span>
-                <button
-                  type="button"
-                  disabled={testLoading}
-                  onClick={() => testBackendEndpoint('/api/auth/admin-only', 'get')}
-                  className="px-2.5 py-1 text-xs bg-white border border-slate-300 hover:bg-slate-50 rounded font-medium text-slate-700 shadow-2xs transition cursor-pointer"
-                >
-                  Verify Backend Admin Route
-                </button>
+                <div className="flex items-center gap-2">
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => navigate('/admin/monitoring')}
+                      className="px-2.5 py-1 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded font-medium shadow-2xs transition cursor-pointer flex items-center gap-1"
+                    >
+                      <span>📊</span> Monitoring Dashboard
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    disabled={testLoading}
+                    onClick={() => testBackendEndpoint('/api/auth/admin-only', 'get')}
+                    className="px-2.5 py-1 text-xs bg-white border border-slate-300 hover:bg-slate-50 rounded font-medium text-slate-700 shadow-2xs transition cursor-pointer"
+                  >
+                    Verify Backend Admin Route
+                  </button>
+                </div>
               </div>
             </div>
           </div>

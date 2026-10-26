@@ -1,11 +1,10 @@
-
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import annotationRoutes from "./routes/annotation.routes.js";
-
 import authRoutes from "./routes/auth.routes.js";
 import paperRoutes from "./routes/paper.routes.js";
+import adminMonitoringRoutes from "./routes/adminMonitoring.routes.js";
 import errorHandler from "./middleware/errorHandler.js";
 
 const app = express();
@@ -28,11 +27,11 @@ app.get("/health", (req, res) => {
   });
 });
 
-
- // API routes
+// API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/papers", paperRoutes);
 app.use("/api/annotations", annotationRoutes);
+app.use("/api/admin/monitoring", adminMonitoringRoutes);
 
 // Handle unknown routes
 app.use((req, res) => {
