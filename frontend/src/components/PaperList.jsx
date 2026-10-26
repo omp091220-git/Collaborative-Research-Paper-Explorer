@@ -21,8 +21,29 @@ export default function PaperList({ refreshTrigger }) {
   }, []);
 
   useEffect(() => {
-    fetchPapers();
-  }, [fetchPapers, refreshTrigger]);
+    let ignore = false;
+    const load = async () => {
+      try {
+        const res = await axios.get('/api/papers', { withCredentials: true });
+        if (!ignore) {
+          setPapers(res.data.papers || []);
+          setError(null);
+        }
+      } catch (err) {
+        if (!ignore) {
+          setError(err.response?.data?.error || 'Failed to load papers.');
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    };
+    load();
+    return () => {
+      ignore = true;
+    };
+  }, [refreshTrigger]);
 
   const filtered = papers.filter((p) => {
     const q = search.toLowerCase();
@@ -30,7 +51,9 @@ export default function PaperList({ refreshTrigger }) {
       p.title?.toLowerCase().includes(q) ||
       p.abstract?.toLowerCase().includes(q) ||
       p.authors?.some((a) => a.toLowerCase().includes(q)) ||
-      p.arxiv_id?.toLowerCase().includes(q)
+      p.arxiv_id?.toLowerCase().includes(q) ||
+      p.doi?.toLowerCase().includes(q) ||
+      String(p.publication_year || '').includes(q)
     );
   });
 
@@ -105,16 +128,34 @@ export default function PaperList({ refreshTrigger }) {
                   )}
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
-                  {paper.arxiv_id && (
-                    <a
-                      href={`https://arxiv.org/abs/${paper.arxiv_id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 border border-orange-200 rounded font-medium hover:bg-orange-200 transition"
-                    >
-                      arXiv:{paper.arxiv_id}
-                    </a>
-                  )}
+                  <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                    {paper.publication_year && (
+                      <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-700 border border-slate-200 rounded font-medium">
+                        {paper.publication_year}
+                      </span>
+                    )}
+                    {paper.doi && (
+                      <a
+                        href={`https://doi.org/${paper.doi}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded font-medium hover:bg-blue-100 transition"
+                        title={`DOI: ${paper.doi}`}
+                      >
+                        DOI:{paper.doi}
+                      </a>
+                    )}
+                    {paper.arxiv_id && (
+                      <a
+                        href={`https://arxiv.org/abs/${paper.arxiv_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 border border-orange-200 rounded font-medium hover:bg-orange-200 transition"
+                      >
+                        arXiv:{paper.arxiv_id}
+                      </a>
+                    )}
+                  </div>
                   <span className="text-xs text-slate-400">
                     {paper.file_size_bytes
                       ? `${(paper.file_size_bytes / 1_048_576).toFixed(1)} MB`
