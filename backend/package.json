@@ -5,7 +5,7 @@
   "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "test": "node --import ./src/test/setup.js --test",
+    "test": "node --import ./src/test/setup.js --test --test-concurrency=1",
     "migrate": "node src/scripts/migrate.js",
     "start": "node src/server.js",
     "dev": "nodemon src/server.js"
