@@ -5,6 +5,7 @@ import annotationRoutes from "./routes/annotation.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import paperRoutes from "./routes/paper.routes.js";
 import tagRoutes from "./routes/tag.routes.js";
+import paperTagAssignmentRoutes from "./routes/paperTagAssignment.routes.js";
 import collaboratorRoutes from "./routes/collaborator.routes.js";
 import discussionRoutes from "./routes/discussion.routes.js";
 import invitationRoutes from "./routes/invitation.routes.js";
@@ -38,6 +39,7 @@ app.use("/api/papers/:paperId/discussions", discussionRoutes);
 app.use("/api/papers", paperRoutes);
 app.use("/api/annotations", annotationRoutes);
 app.use("/api/tags", tagRoutes);
+app.use("/api/paper-tags", paperTagAssignmentRoutes);
 app.use("/api/invitations", invitationRoutes);
 app.use("/api/notifications", notificationRoutes);
 
