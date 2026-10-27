@@ -228,3 +228,43 @@ export const deleteAssignment = async (req, res, next) => {
     return handleError(error, res, next);
   }
 };
+
+// ---------------------------------------------------------------------------
+// PUT /api/paper-tags/paper/:paperId
+// ---------------------------------------------------------------------------
+/**
+ * Bulk updates/syncs tags for a given paper.
+ * Body: { tag_ids: UUID[] }
+ *
+ * Authorization: RESEARCHER or SYSTEM_ADMIN.
+ */
+export const syncPaperTags = async (req, res, next) => {
+  try {
+    const paramError = validateUUIDParam(req.params.paperId, 'paperId');
+    if (paramError) {
+      return res.status(400).json({ error: paramError });
+    }
+
+    const { tag_ids } = req.body;
+    if (!Array.isArray(tag_ids)) {
+      return res.status(400).json({ error: 'tag_ids must be an array of UUIDs.' });
+    }
+
+    for (const tagId of tag_ids) {
+      if (!isValidUUID(tagId)) {
+        return res.status(400).json({ error: `Invalid tag ID: ${tagId}` });
+      }
+    }
+
+    const result = await service.syncPaperTags({
+      paperId: req.params.paperId,
+      tagIds: tag_ids,
+      userId: req.user.id,
+    });
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return handleError(error, res, next);
+  }
+};
+

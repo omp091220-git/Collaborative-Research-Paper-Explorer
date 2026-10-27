@@ -4,6 +4,7 @@ import pool from "../config/database.js";
 import { authenticateToken } from "../middleware/authenticate.js";
 import { authorizeRoles } from "../middleware/authorize.js";
 import { ROLES } from "../utils/roles.js";
+import { notifyMentions } from "../services/notification.service.js";
 
 const router = express.Router();
 
@@ -169,9 +170,25 @@ router.post(
         ]
       );
 
+      const createdAnnotation = result.rows[0];
+
+      try {
+        await notifyMentions({
+          text: content.trim(),
+          oldText: null,
+          actorUser: req.user,
+          paperId: paper_id,
+          sourceType: "annotation",
+          sourceId: createdAnnotation.id,
+          pageNumber: page_number,
+        });
+      } catch (notifyErr) {
+        console.error("Mention notification error:", notifyErr.message);
+      }
+
       return res.status(201).json({
         message: "Annotation created successfully.",
-        annotation: result.rows[0],
+        annotation: createdAnnotation,
       });
     } catch (error) {
       if (error.code === "23503") {
@@ -270,9 +287,27 @@ router.patch(
         values
       );
 
+      const updatedAnnotation = result.rows[0];
+
+      if (req.body.content !== undefined && updatedAnnotation) {
+        try {
+          await notifyMentions({
+            text: req.body.content.trim(),
+            oldText: null,
+            actorUser: req.user,
+            paperId: updatedAnnotation.paper_id,
+            sourceType: "annotation",
+            sourceId: updatedAnnotation.id,
+            pageNumber: updatedAnnotation.page_number,
+          });
+        } catch (notifyErr) {
+          console.error("Mention notification error on update:", notifyErr.message);
+        }
+      }
+
       return res.status(200).json({
         message: "Annotation updated successfully.",
-        annotation: result.rows[0],
+        annotation: updatedAnnotation,
       });
     } catch (error) {
       return next(error);

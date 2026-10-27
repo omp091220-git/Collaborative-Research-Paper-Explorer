@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import PaperUpload from '../components/PaperUpload';
 import PaperList from '../components/PaperList';
+import NotificationBell from '../components/NotificationBell';
 
 export default function Dashboard() {
   const { user, logout, isAdmin, isResearcher, hasPermission } = useAuth();
@@ -12,6 +13,7 @@ export default function Dashboard() {
   const [testActionStatus, setTestActionStatus] = useState(null);
   const [testLoading, setTestLoading] = useState(false);
   const [paperRefresh, setPaperRefresh] = useState(0);
+  const [selectedPaperId, setSelectedPaperId] = useState(null);
 
   const handlePaperAdded = () => setPaperRefresh((n) => n + 1);
 
@@ -70,9 +72,13 @@ export default function Dashboard() {
               <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
                 ✓ Authenticated
               </span>
-              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                ⏱ 30m Inactivity Window
-              </span>
+              <NotificationBell
+                onNavigateToPaper={(paperId) => {
+                  setSelectedPaperId(paperId);
+                  const el = document.getElementById(`paper-${paperId}`);
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+              />
               <button
                 onClick={handleLogout}
                 className="px-4 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-semibold shadow-xs transition duration-200 cursor-pointer"
@@ -318,7 +324,10 @@ export default function Dashboard() {
         )}
 
         {/* Research Paper Listing */}
-        <PaperList refreshTrigger={paperRefresh} />
+        <PaperList
+          refreshTrigger={paperRefresh}
+          selectedPaperId={selectedPaperId}
+        />
       </div>
     </div>
   );

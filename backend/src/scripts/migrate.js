@@ -17,6 +17,7 @@ async function runMigrations() {
     '20261019_annotations.sql',
     '20261024_topic_tags.sql',
     '20261026_paper_tag_assignments.sql',
+    '20261027_notifications_and_stars.sql',
   ];
 
   console.log('--- Starting Database Migrations ---');

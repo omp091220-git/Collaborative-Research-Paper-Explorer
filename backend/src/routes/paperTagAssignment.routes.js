@@ -79,4 +79,11 @@ router.delete(
   controller.deleteAssignment
 );
 
+// Bulk synchronize tags for a paper
+router.put(
+  '/paper/:paperId',
+  authorizeRoles(...EDIT_ROLES),
+  controller.syncPaperTags
+);
+
 export default router;

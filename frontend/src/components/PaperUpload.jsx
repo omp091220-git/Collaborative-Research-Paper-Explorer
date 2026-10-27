@@ -3,6 +3,23 @@ import axios from 'axios';
 
 const MAX_SIZE_BYTES = 31_457_280; // 30 MiB
 
+const StatusBanner = ({ status }) => {
+  if (!status) return null;
+  const isSuccess = status.type === 'success';
+  return (
+    <div
+      className={`mt-3 p-3 rounded-lg text-sm font-medium flex items-start gap-2 border ${
+        isSuccess
+          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+          : 'bg-red-50 text-red-800 border-red-200'
+      }`}
+    >
+      <span className="mt-0.5">{isSuccess ? '✓' : '✕'}</span>
+      <span>{status.message}</span>
+    </div>
+  );
+};
+
 export default function PaperUpload({ onPaperAdded }) {
   // PDF Upload state
   const [selectedFile, setSelectedFile] = useState(null);
@@ -117,23 +134,6 @@ export default function PaperUpload({ onPaperAdded }) {
     } finally {
       setImportLoading(false);
     }
-  };
-
-  const StatusBanner = ({ status }) => {
-    if (!status) return null;
-    const isSuccess = status.type === 'success';
-    return (
-      <div
-        className={`mt-3 p-3 rounded-lg text-sm font-medium flex items-start gap-2 border ${
-          isSuccess
-            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-            : 'bg-red-50 text-red-800 border-red-200'
-        }`}
-      >
-        <span className="mt-0.5">{isSuccess ? '✓' : '✕'}</span>
-        <span>{status.message}</span>
-      </div>
-    );
   };
 
   return (
