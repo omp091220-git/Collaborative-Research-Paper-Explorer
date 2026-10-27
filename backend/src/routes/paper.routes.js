@@ -10,6 +10,7 @@ import { authenticateToken } from "../middleware/authenticate.js";
 import { authorizeRoles, requirePermission } from "../middleware/authorize.js";
 import { ROLES, PERMISSIONS } from "../utils/roles.js";
 import { isValidPdf } from "../utils/pdfValidator.js";
+import { getCitationGraph } from "../controllers/citation.controller.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -290,6 +291,15 @@ router.get(
       return next(error);
     }
   }
+);
+
+// ─── GET /api/papers/:id/citation-graph ─────────────────────────────────────
+// FR-16: Retrieve interactive citation graph (backward references, forward citations, co-citation clusters)
+router.get(
+  "/:id/citation-graph",
+  authenticateToken,
+  authorizeRoles(...ALL_ROLES),
+  getCitationGraph
 );
 
 // ─── POST /api/papers/upload ─────────────────────────────────────────────────

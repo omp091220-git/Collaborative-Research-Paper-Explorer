@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import CollaboratorsModal from './CollaboratorsModal';
 import DiscussionPanel from './DiscussionPanel';
+import CitationGraph from './CitationGraph';
 
 export default function PaperList({ refreshTrigger }) {
   const [papers, setPapers] = useState([]);
@@ -12,6 +13,7 @@ export default function PaperList({ refreshTrigger }) {
   // Modals state
   const [selectedCollabPaper, setSelectedCollabPaper] = useState(null);
   const [selectedDiscussionPaper, setSelectedDiscussionPaper] = useState(null);
+  const [selectedCitationPaper, setSelectedCitationPaper] = useState(null);
 
   const fetchPapers = useCallback(async () => {
     setLoading(true);
@@ -142,6 +144,15 @@ export default function PaperList({ refreshTrigger }) {
 
                 <div className="flex items-center gap-2">
                   <button
+                    onClick={() => setSelectedCitationPaper(paper)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-teal-50 text-teal-700 border border-teal-200 rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs"
+                    title="Explore backward references, forward citations, and clusters"
+                  >
+                    <span>🕸️</span>
+                    <span>Citation Graph</span>
+                  </button>
+
+                  <button
                     onClick={() => setSelectedDiscussionPaper(paper)}
                     className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs"
                   >
@@ -176,6 +187,15 @@ export default function PaperList({ refreshTrigger }) {
         isOpen={Boolean(selectedDiscussionPaper)}
         onClose={() => setSelectedDiscussionPaper(null)}
       />
+
+      {/* FR-16: Citation Graph Explorer Modal */}
+      {selectedCitationPaper && (
+        <CitationGraph
+          paperId={selectedCitationPaper.id}
+          initialPaper={selectedCitationPaper}
+          onClose={() => setSelectedCitationPaper(null)}
+        />
+      )}
     </div>
   );
 }
