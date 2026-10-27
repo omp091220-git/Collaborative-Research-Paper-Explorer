@@ -6,6 +6,7 @@ import authRoutes from "./routes/auth.routes.js";
 import paperRoutes from "./routes/paper.routes.js";
 import tagRoutes from "./routes/tag.routes.js";
 import paperTagAssignmentRoutes from "./routes/paperTagAssignment.routes.js";
+import recommendationRoutes from "./routes/recommendation.routes.js";
 import errorHandler from "./middleware/errorHandler.js";
 
 const app = express();
@@ -34,6 +35,7 @@ app.use("/api/papers", paperRoutes);
 app.use("/api/annotations", annotationRoutes);
 app.use("/api/tags", tagRoutes);
 app.use("/api/paper-tags", paperTagAssignmentRoutes);
+app.use("/api/recommendations", recommendationRoutes);
 
 // Handle unknown routes
 app.use((req, res) => {

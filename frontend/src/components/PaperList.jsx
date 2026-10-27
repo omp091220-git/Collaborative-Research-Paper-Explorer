@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import RecommendedPapersModal from './RecommendedPapersModal';
 
 export default function PaperList({ refreshTrigger }) {
   const [papers, setPapers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
+  const [selectedPaperForRecs, setSelectedPaperForRecs] = useState(null);
+  const [seeding, setSeeding] = useState(false);
 
   const fetchPapers = useCallback(async () => {
     setLoading(true);
@@ -45,6 +48,18 @@ export default function PaperList({ refreshTrigger }) {
     };
   }, [refreshTrigger]);
 
+  const handleSeedSamplePapers = async () => {
+    setSeeding(true);
+    try {
+      await axios.post('/api/recommendations/seed-sample', {}, { withCredentials: true });
+      await fetchPapers();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to seed sample papers.');
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   const filtered = papers.filter((p) => {
     const q = search.toLowerCase();
     return (
@@ -66,13 +81,13 @@ export default function PaperList({ refreshTrigger }) {
             <span className="text-sm font-normal text-slate-400">({filtered.length})</span>
           )}
         </h2>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search papers…"
-            className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white text-slate-800 placeholder-slate-400 w-52"
+            className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white text-slate-800 placeholder-slate-400 w-48"
           />
           <button
             onClick={fetchPapers}
@@ -80,6 +95,14 @@ export default function PaperList({ refreshTrigger }) {
             title="Refresh"
           >
             ↺
+          </button>
+          <button
+            onClick={handleSeedSamplePapers}
+            disabled={seeding}
+            className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-xs transition cursor-pointer"
+            title="Seed sample papers with section tags and embeddings"
+          >
+            {seeding ? 'Seeding…' : '✨ Seed Sample Papers (FR-14 Demo)'}
           </button>
         </div>
       </div>
@@ -97,12 +120,27 @@ export default function PaperList({ refreshTrigger }) {
         </div>
       )}
 
+      {/* Empty State when database has 0 papers */}
       {!loading && !error && filtered.length === 0 && (
-        <div className="text-center py-10 text-slate-400 text-sm">
-          {search ? 'No papers match your search.' : 'No papers yet. Upload or import one above!'}
+        <div className="text-center py-12 px-4 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 space-y-3">
+          <span className="text-3xl">📚</span>
+          <p className="text-slate-700 font-semibold text-sm">
+            No papers in database yet!
+          </p>
+          <p className="text-slate-500 text-xs max-w-md mx-auto">
+            Click below to populate realistic academic papers with sections, hierarchical tags, and embeddings to test FR-14 literature recommendations.
+          </p>
+          <button
+            onClick={handleSeedSamplePapers}
+            disabled={seeding}
+            className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition cursor-pointer"
+          >
+            {seeding ? 'Seeding Papers…' : '✨ Populate Sample Research Papers'}
+          </button>
         </div>
       )}
 
+      {/* List of Papers */}
       {!loading && !error && filtered.length > 0 && (
         <div className="space-y-3">
           {filtered.map((paper) => (
@@ -163,18 +201,39 @@ export default function PaperList({ refreshTrigger }) {
                   </span>
                 </div>
               </div>
-              <p className="text-xs text-slate-400 mt-2">
-                Added{' '}
-                {new Date(paper.uploaded_at).toLocaleDateString(undefined, {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                })}
-              </p>
+
+              {/* Bottom Card Actions */}
+              <div className="flex items-center justify-between pt-3 mt-2 border-t border-slate-200/60">
+                <p className="text-xs text-slate-400">
+                  Added{' '}
+                  {new Date(paper.uploaded_at).toLocaleDateString(undefined, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </p>
+
+                {/* FR-14: Suggest Related Literature Trigger */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedPaperForRecs(paper)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold shadow-2xs transition cursor-pointer"
+                  title="View AI literature recommendations"
+                >
+                  <span>✨</span> Related Papers (FR-14)
+                </button>
+              </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* FR-14 Recommendation Modal */}
+      <RecommendedPapersModal
+        paper={selectedPaperForRecs}
+        onClose={() => setSelectedPaperForRecs(null)}
+        onRefreshPapers={fetchPapers}
+      />
     </div>
   );
 }
