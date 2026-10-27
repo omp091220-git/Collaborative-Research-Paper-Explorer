@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import express from 'express';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
+import http from 'node:http';
 
 import pool from '../config/database.js';
 import notificationRoutes from '../routes/notification.routes.js';
@@ -14,6 +15,7 @@ import {
   computeMentionDiff,
   resolveMentionedUsers,
 } from '../utils/mentionHelper.js';
+import { eventBus, EVENT_TYPES, createEvent } from '../utils/eventBus.js';
 
 const TEST_SECRET =
   process.env.JWT_SECRET || 'super_secure_test_jwt_secret_with_32_characters_12345';
@@ -102,7 +104,35 @@ describe('Notification System Test Suite', () => {
 
       // 4. Topic tag query
       if (text.includes('FROM topic_tags WHERE id = $1')) {
-        return { rows: [{ id: params?.[0], name: 'Quantum Physics' }] };
+        return { rows: [{ id: params?.[0], name: 'Quantum Physics', slug: 'quantum_physics' }] };
+      }
+
+      // 4b. Annotation query
+      if (text.includes('FROM annotations WHERE id = $1')) {
+        return {
+          rows: [
+            {
+              id: params?.[0],
+              paper_id: PAPER_1.id,
+              page_number: 3,
+              content: 'Annotated section notes on page 3',
+              position_x: 0.12,
+              position_y: 0.34,
+              region_width: 0.5,
+              region_height: 0.2,
+            },
+          ],
+        };
+      }
+
+      // 4c. Idempotency check: notifications with event_id
+      if (text.includes('FROM notifications') && text.includes("data->>'event_id'")) {
+        const recipientId = params[0];
+        const eventId = params[1];
+        const existing = mockNotifications.find(
+          (n) => n.recipient_id === recipientId && String(n.data?.event_id) === String(eventId)
+        );
+        return { rows: existing ? [existing] : [] };
       }
 
       // 5. Notifications insert
@@ -610,6 +640,270 @@ describe('Notification System Test Suite', () => {
         .set('Authorization', `Bearer ${tokenFor(USER_BOB.id)}`);
 
       assert.equal(res.status, 200);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Part 4: Section Tags, Notes & FR-11/FR-17 Integration
+  // -------------------------------------------------------------------------
+  describe('D. Section Tags & Paper Notes Notifications (FR-11, FR-17 -> FR-19)', () => {
+    it('24. Tag assigned to a specific annotation section notifies starrers with section & coordinate context', async () => {
+      await paperStarRepo.starPaper(USER_BOB.id, PAPER_1.id);
+
+      const annotationMock = {
+        id: 'ann-coord-1',
+        page_number: 4,
+        position_x: 0.15,
+        position_y: 0.25,
+        region_width: 0.35,
+        region_height: 0.1,
+      };
+
+      const created = await notificationService.notifyStarrersPaperTagChange({
+        paperId: PAPER_1.id,
+        actorUser: USER_ALICE,
+        action: 'ADDED',
+        tagName: 'Quantum Chemistry',
+        tagId: 'tag-qc-1',
+        canonicalPath: 'physics::quantum_chemistry',
+        annotationId: annotationMock.id,
+        annotation: annotationMock,
+      });
+
+      assert.equal(created.length, 1);
+      assert.equal(created[0].recipient_id, USER_BOB.id);
+      assert.equal(created[0].type, 'PAPER_TAG_CHANGE');
+      assert.ok(created[0].title.includes('section in'));
+      assert.ok(created[0].message.includes('page 4'));
+      assert.equal(created[0].data.annotation_id, annotationMock.id);
+      assert.equal(created[0].data.page_number, 4);
+      assert.ok(created[0].data.coordinates);
+      assert.equal(created[0].data.coordinates.position_x, 0.15);
+    });
+
+    it('25. Adding a note to a paper notifies eligible starrers', async () => {
+      await paperStarRepo.starPaper(USER_BOB.id, PAPER_1.id);
+
+      const annotationMock = {
+        id: 'ann-note-1',
+        paper_id: PAPER_1.id,
+        page_number: 2,
+        content: 'Crucial observation regarding the ground state energy.',
+        position_x: 0.1,
+        position_y: 0.2,
+        region_width: 0.4,
+        region_height: 0.1,
+      };
+
+      const created = await notificationService.notifyStarrersPaperNoteAdded({
+        paperId: PAPER_1.id,
+        actorUser: USER_ALICE,
+        annotation: annotationMock,
+      });
+
+      assert.equal(created.length, 1);
+      assert.equal(created[0].recipient_id, USER_BOB.id);
+      assert.equal(created[0].type, 'PAPER_NOTE_ADDED');
+      assert.ok(created[0].message.includes('added a note on page 2'));
+    });
+
+    it('26. Adding a note with an @mention notifies mentioned user via MENTION and other starrers via NOTE_ADDED', async () => {
+      // Bob and Charlie both star the paper
+      await paperStarRepo.starPaper(USER_BOB.id, PAPER_1.id);
+      await paperStarRepo.starPaper(USER_CHARLIE.id, PAPER_1.id);
+
+      const annotationMock = {
+        id: 'ann-note-mention-1',
+        paper_id: PAPER_1.id,
+        page_number: 1,
+        content: 'Hey @bob check out the methodology!',
+      };
+
+      // 1. Mention notification
+      const mentionCreated = await notificationService.notifyMentions({
+        text: annotationMock.content,
+        actorUser: USER_ALICE,
+        paperId: PAPER_1.id,
+        sourceType: 'annotation',
+        sourceId: annotationMock.id,
+        pageNumber: annotationMock.page_number,
+      });
+
+      // 2. Note notification to starrers (should exclude Bob because Bob was mentioned)
+      const noteCreated = await notificationService.notifyStarrersPaperNoteAdded({
+        paperId: PAPER_1.id,
+        actorUser: USER_ALICE,
+        annotation: annotationMock,
+      });
+
+      assert.equal(mentionCreated.length, 1);
+      assert.equal(mentionCreated[0].recipient_id, USER_BOB.id);
+      assert.equal(mentionCreated[0].type, 'MENTION');
+
+      assert.equal(noteCreated.length, 1);
+      assert.equal(noteCreated[0].recipient_id, USER_CHARLIE.id);
+      assert.equal(noteCreated[0].type, 'PAPER_NOTE_ADDED');
+    });
+
+    it('27. Note author does not receive self-notification when adding a note to a paper they follow', async () => {
+      // Alice stars paper 1 and Alice adds a note
+      await paperStarRepo.starPaper(USER_ALICE.id, PAPER_1.id);
+
+      const created = await notificationService.notifyStarrersPaperNoteAdded({
+        paperId: PAPER_1.id,
+        actorUser: USER_ALICE,
+        annotation: {
+          id: 'ann-self-1',
+          page_number: 1,
+          content: 'Personal notes on experimental setup.',
+        },
+      });
+
+      assert.equal(created.length, 0);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Part 5: Standard Event Contract & Event Bus (FR-19)
+  // -------------------------------------------------------------------------
+  describe('E. Standard Event Contract & Event Bus', () => {
+    it('28. Event bus publishes and notification service processes MENTION_CREATED event', async () => {
+      const mentionEvent = createEvent({
+        eventType: EVENT_TYPES.MENTION_CREATED,
+        actor: USER_ALICE,
+        paper: PAPER_1,
+        payload: {
+          text: 'Discussion reply for @bob regarding convergence.',
+          sourceType: 'comment',
+          sourceId: 'comm-101',
+          pageNumber: 3,
+        },
+      });
+
+      assert.ok(mentionEvent.eventId);
+      assert.equal(mentionEvent.eventType, 'mention.created');
+      assert.ok(mentionEvent.timestamp);
+
+      const created = await notificationService.processEvent(mentionEvent);
+      assert.equal(created.length, 1);
+      assert.equal(created[0].recipient_id, USER_BOB.id);
+      assert.equal(created[0].type, 'MENTION');
+    });
+
+    it('29. Event bus publishes and notification service processes TAG_ASSIGNED event', async () => {
+      await paperStarRepo.starPaper(USER_BOB.id, PAPER_1.id);
+
+      const tagEvent = createEvent({
+        eventType: EVENT_TYPES.TAG_ASSIGNED,
+        actor: USER_ALICE,
+        paper: PAPER_1,
+        payload: {
+          action: 'ADDED',
+          tagName: 'Superconductivity',
+          tagId: 'tag-sc-1',
+          canonicalPath: 'physics::superconductivity',
+        },
+      });
+
+      const created = await notificationService.processEvent(tagEvent);
+      assert.equal(created.length, 1);
+      assert.equal(created[0].recipient_id, USER_BOB.id);
+      assert.equal(created[0].type, 'PAPER_TAG_CHANGE');
+    });
+
+    it('30. Repeated event processing with the same eventId is idempotent and does not create duplicates', async () => {
+      await paperStarRepo.starPaper(USER_BOB.id, PAPER_1.id);
+
+      const sharedEventId = 'evt-unique-id-9999';
+      const event = createEvent({
+        eventType: EVENT_TYPES.TAG_ASSIGNED,
+        actor: USER_ALICE,
+        paper: PAPER_1,
+        payload: {
+          action: 'ADDED',
+          tagName: 'Machine Learning',
+        },
+        idempotencyKey: sharedEventId,
+      });
+      event.eventId = sharedEventId;
+
+      // First delivery
+      const firstRun = await notificationService.processEvent(event);
+      assert.equal(firstRun.length, 1);
+
+      // Repeated delivery of exact same event
+      const secondRun = await notificationService.processEvent(event);
+      assert.equal(secondRun.length, 0, 'Repeated event delivery safely ignored');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Part 6: Real-Time SSE Stream Delivery
+  // -------------------------------------------------------------------------
+  describe('F. Real-Time SSE Stream Delivery (FR-19)', () => {
+    const app = createNotificationApp();
+
+    it('31. Unauthenticated SSE stream connection returns 401', async () => {
+      const res = await request(app).get('/api/notifications/stream');
+      assert.equal(res.status, 401);
+    });
+
+    it('32. Authenticated user can connect to SSE stream with text/event-stream headers', async () => {
+      const server = app.listen(0);
+      const port = server.address().port;
+
+      await new Promise((resolve, reject) => {
+        const req = http.get(
+          `http://127.0.0.1:${port}/api/notifications/stream`,
+          {
+            headers: {
+              Authorization: `Bearer ${tokenFor(USER_BOB.id)}`,
+            },
+          },
+          (res) => {
+            assert.equal(res.statusCode, 200);
+            assert.ok(res.headers['content-type'].includes('text/event-stream'));
+            assert.equal(res.headers['connection'], 'keep-alive');
+            res.destroy();
+            req.destroy();
+            server.closeAllConnections?.();
+            server.close(() => resolve());
+          }
+        );
+        req.on('error', (err) => {
+          server.closeAllConnections?.();
+          server.close(() => reject(err));
+        });
+      });
+    });
+
+    it('33. Live notifications are broadcast to connected user stream', () => {
+      const sentChunks = [];
+      const mockClientRes = {
+        write: (chunk) => {
+          sentChunks.push(chunk);
+        },
+      };
+
+      // Mock subscription for Charlie
+      notificationService.subscribeUserStream(
+        USER_CHARLIE.id,
+        { on: () => {} },
+        mockClientRes
+      );
+
+      const mockNotif = {
+        id: 'notif-live-1',
+        recipient_id: USER_CHARLIE.id,
+        type: 'MENTION',
+        title: 'Live notification',
+        message: 'Hello @charlie in real time!',
+      };
+
+      const deliveredCount = notificationService.broadcastToUser(USER_CHARLIE.id, mockNotif);
+      assert.equal(deliveredCount, 1);
+      assert.ok(sentChunks.some((chunk) => chunk.includes('event: notification')));
+      assert.ok(sentChunks.some((chunk) => chunk.includes('Hello @charlie in real time!')));
     });
   });
 });

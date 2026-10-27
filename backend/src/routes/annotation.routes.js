@@ -172,6 +172,7 @@ router.post(
 
       const createdAnnotation = result.rows[0];
 
+      // 1. Notify mentioned users in annotation
       try {
         await notifyMentions({
           text: content.trim(),
@@ -184,6 +185,20 @@ router.post(
         });
       } catch (notifyErr) {
         console.error("Mention notification error:", notifyErr.message);
+      }
+
+      // 2. Notify paper followers/starrers of new note (excluding author & mentioned)
+      try {
+        const { notifyStarrersPaperNoteAdded } = await import(
+          "../services/notification.service.js"
+        );
+        await notifyStarrersPaperNoteAdded({
+          paperId: paper_id,
+          actorUser: req.user,
+          annotation: createdAnnotation,
+        });
+      } catch (noteNotifyErr) {
+        console.error("Follower note notification error:", noteNotifyErr.message);
       }
 
       return res.status(201).json({
@@ -257,6 +272,20 @@ router.patch(
 
       const annotation = existing.rows[0];
 
+      // Fetch previous content for mention diffing if content is being updated
+      let previousContent = null;
+      if (req.body.content !== undefined) {
+        try {
+          const contentLookup = await pool.query(
+            "SELECT content FROM annotations WHERE id = $1",
+            [id]
+          );
+          previousContent = contentLookup.rows[0]?.content || null;
+        } catch {
+          // Graceful fallback
+        }
+      }
+
       if (
         req.user.role !== ROLES.SYSTEM_ADMIN &&
         annotation.created_by !== req.user.id
@@ -293,7 +322,7 @@ router.patch(
         try {
           await notifyMentions({
             text: req.body.content.trim(),
-            oldText: null,
+            oldText: previousContent || null,
             actorUser: req.user,
             paperId: updatedAnnotation.paper_id,
             sourceType: "annotation",

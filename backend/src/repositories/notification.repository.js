@@ -37,6 +37,25 @@ export const createNotification = async (
   },
   client = pool
 ) => {
+  // Idempotency guard: prevent duplicate notifications from repeated event deliveries
+  if (data?.event_id) {
+    try {
+      const existing = await client.query(
+        `SELECT id, recipient_id, actor_id, type, title, message,
+                paper_id, source_type, source_id, data, link,
+                is_read, read_at, created_at
+         FROM notifications
+         WHERE recipient_id = $1 AND (data->>'event_id' = $2)`,
+        [recipientId, String(data.event_id)]
+      );
+      if (existing?.rows?.length > 0) {
+        return existing.rows[0];
+      }
+    } catch {
+      // In case data->>'event_id' is mocked or not implemented in mock handler
+    }
+  }
+
   const query = `
     INSERT INTO notifications (
       recipient_id, actor_id, type, title, message,

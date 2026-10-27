@@ -850,7 +850,7 @@ router.put(
 );
 
 // ─── GET /api/papers/:id/comments ───────────────────────────────────────────
-// Retrieve threaded discussion comments for a paper.
+// Retrieve threaded discussion comments for a paper (supports contextual anchoring).
 router.get(
   "/:id/comments",
   authenticateToken,
@@ -863,9 +863,10 @@ router.get(
       }
 
       const result = await pool.query(
-        `SELECT c.id, c.paper_id, c.user_id, c.content, c.parent_id,
+        `SELECT c.id, c.paper_id, c.user_id, c.content, c.parent_id, c.annotation_id,
                 c.created_at, c.updated_at,
-                u.full_name AS user_name, u.email AS user_email
+                u.full_name AS user_name, u.email AS user_email,
+                COALESCE(u.username, LOWER(SPLIT_PART(u.email, '@', 1))) AS username
          FROM paper_comments c
          JOIN users u ON u.id = c.user_id
          WHERE c.paper_id = $1
@@ -881,7 +882,7 @@ router.get(
 );
 
 // ─── POST /api/papers/:id/comments ──────────────────────────────────────────
-// Post a new comment or reply on a paper with @username mention support.
+// Post a new comment or reply on a paper with @username mention & contextual anchor support.
 router.post(
   "/:id/comments",
   authenticateToken,
@@ -893,11 +894,19 @@ router.post(
         return res.status(400).json({ error: "Paper ID must be a valid UUID." });
       }
 
-      const { content, parent_id = null } = req.body;
+      const { content, parent_id = null, annotation_id = null } = req.body;
       if (!content || typeof content !== "string" || !content.trim()) {
         return res
           .status(400)
           .json({ error: "Comment content cannot be blank." });
+      }
+
+      if (parent_id && !isValidUUID(parent_id)) {
+        return res.status(400).json({ error: "Parent comment ID must be a valid UUID." });
+      }
+
+      if (annotation_id && !isValidUUID(annotation_id)) {
+        return res.status(400).json({ error: "Annotation ID must be a valid UUID." });
       }
 
       const paperCheck = await pool.query(
@@ -908,11 +917,28 @@ router.post(
         return res.status(404).json({ error: "Paper not found." });
       }
 
+      let anchoredAnnotation = null;
+      if (annotation_id) {
+        const annotRes = await pool.query(
+          "SELECT id, paper_id, page_number, position_x, position_y, region_width, region_height FROM annotations WHERE id = $1",
+          [annotation_id]
+        );
+        if (annotRes.rows.length === 0) {
+          return res.status(404).json({ error: "Anchored annotation not found." });
+        }
+        if (annotRes.rows[0].paper_id !== id) {
+          return res.status(400).json({
+            error: "Annotation does not belong to the specified paper.",
+          });
+        }
+        anchoredAnnotation = annotRes.rows[0];
+      }
+
       const result = await pool.query(
-        `INSERT INTO paper_comments (paper_id, user_id, content, parent_id)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO paper_comments (paper_id, user_id, content, parent_id, annotation_id)
+         VALUES ($1, $2, $3, $4, $5)
          RETURNING *`,
-        [id, req.user.id, content.trim(), parent_id]
+        [id, req.user.id, content.trim(), parent_id, annotation_id]
       );
 
       const createdComment = result.rows[0];
@@ -926,6 +952,19 @@ router.post(
           paperId: id,
           sourceType: "comment",
           sourceId: createdComment.id,
+          pageNumber: anchoredAnnotation?.page_number || null,
+          anchor: anchoredAnnotation
+            ? {
+                annotation_id: anchoredAnnotation.id,
+                page_number: anchoredAnnotation.page_number,
+                coordinates: {
+                  position_x: anchoredAnnotation.position_x,
+                  position_y: anchoredAnnotation.position_y,
+                  region_width: anchoredAnnotation.region_width,
+                  region_height: anchoredAnnotation.region_height,
+                },
+              }
+            : null,
         });
       } catch (notifyErr) {
         console.error(
@@ -938,6 +977,119 @@ router.post(
         message: "Comment posted successfully.",
         comment: createdComment,
       });
+    } catch (error) {
+      return next(error);
+    }
+  }
+);
+
+// ─── PATCH /api/papers/:id/comments/:commentId ──────────────────────────────
+// Edit comment content, re-evaluating @mentions without notifying unchanged recipients.
+router.patch(
+  "/:id/comments/:commentId",
+  authenticateToken,
+  authorizeRoles(...ALL_ROLES),
+  async (req, res, next) => {
+    try {
+      const { id, commentId } = req.params;
+      if (!isValidUUID(id) || !isValidUUID(commentId)) {
+        return res.status(400).json({ error: "Invalid paper ID or comment ID." });
+      }
+
+      const { content } = req.body;
+      if (!content || typeof content !== "string" || !content.trim()) {
+        return res.status(400).json({ error: "Comment content cannot be blank." });
+      }
+
+      const existingRes = await pool.query(
+        `SELECT c.id, c.paper_id, c.user_id, c.content, c.annotation_id,
+                a.page_number
+         FROM paper_comments c
+         LEFT JOIN annotations a ON a.id = c.annotation_id
+         WHERE c.id = $1 AND c.paper_id = $2`,
+        [commentId, id]
+      );
+
+      if (existingRes.rows.length === 0) {
+        return res.status(404).json({ error: "Comment not found." });
+      }
+
+      const existingComment = existingRes.rows[0];
+
+      if (
+        req.user.role !== ROLES.SYSTEM_ADMIN &&
+        existingComment.user_id !== req.user.id
+      ) {
+        return res.status(403).json({ error: "You can only edit your own comments." });
+      }
+
+      const updateRes = await pool.query(
+        `UPDATE paper_comments
+         SET content = $1, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $2
+         RETURNING *`,
+        [content.trim(), commentId]
+      );
+
+      const updatedComment = updateRes.rows[0];
+
+      // Dispatch mention notification only for newly added mentions
+      try {
+        await notifyMentions({
+          text: content.trim(),
+          oldText: existingComment.content,
+          actorUser: req.user,
+          paperId: id,
+          sourceType: "comment",
+          sourceId: commentId,
+          pageNumber: existingComment.page_number || null,
+        });
+      } catch (notifyErr) {
+        console.error("Mention diff notification error on comment edit:", notifyErr.message);
+      }
+
+      return res.status(200).json({
+        message: "Comment updated successfully.",
+        comment: updatedComment,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+);
+
+// ─── DELETE /api/papers/:id/comments/:commentId ─────────────────────────────
+// Remove a comment. Admin or comment author only.
+router.delete(
+  "/:id/comments/:commentId",
+  authenticateToken,
+  authorizeRoles(...ALL_ROLES),
+  async (req, res, next) => {
+    try {
+      const { id, commentId } = req.params;
+      if (!isValidUUID(id) || !isValidUUID(commentId)) {
+        return res.status(400).json({ error: "Invalid paper ID or comment ID." });
+      }
+
+      const existingRes = await pool.query(
+        "SELECT id, user_id FROM paper_comments WHERE id = $1 AND paper_id = $2",
+        [commentId, id]
+      );
+
+      if (existingRes.rows.length === 0) {
+        return res.status(404).json({ error: "Comment not found." });
+      }
+
+      if (
+        req.user.role !== ROLES.SYSTEM_ADMIN &&
+        existingRes.rows[0].user_id !== req.user.id
+      ) {
+        return res.status(403).json({ error: "You can only delete your own comments." });
+      }
+
+      await pool.query("DELETE FROM paper_comments WHERE id = $1", [commentId]);
+
+      return res.status(200).json({ message: "Comment deleted successfully." });
     } catch (error) {
       return next(error);
     }

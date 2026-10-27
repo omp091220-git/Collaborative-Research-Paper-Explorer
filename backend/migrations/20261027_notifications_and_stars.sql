@@ -36,12 +36,16 @@ CREATE TABLE IF NOT EXISTS paper_comments (
     user_id    UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     content    TEXT        NOT NULL CHECK (TRIM(content) <> ''),
     parent_id  UUID        REFERENCES paper_comments(id) ON DELETE CASCADE,
+    annotation_id UUID     REFERENCES annotations(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+ALTER TABLE paper_comments ADD COLUMN IF NOT EXISTS annotation_id UUID REFERENCES annotations(id) ON DELETE CASCADE;
+
 CREATE INDEX IF NOT EXISTS idx_paper_comments_paper_id ON paper_comments (paper_id);
 CREATE INDEX IF NOT EXISTS idx_paper_comments_user_id ON paper_comments (user_id);
+CREATE INDEX IF NOT EXISTS idx_paper_comments_annotation_id ON paper_comments (annotation_id);
 
 -- 4. Notifications Table
 -- Stores in-app user notifications for mentions, paper tag changes, and paper updates.

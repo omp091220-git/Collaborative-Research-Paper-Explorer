@@ -36,22 +36,61 @@ export default function NotificationBell({ onNavigateToPaper }) {
     }
   }, [filterUnread]);
 
-  // Periodic polling for unread count
+  // Real-time notification subscription via Server-Sent Events (SSE) (FR-19)
   useEffect(() => {
-    let active = true;
+    let eventSource = null;
+    let reconnectTimeout = null;
+
+    const connectSSE = () => {
+      try {
+        eventSource = new EventSource('/api/notifications/stream', {
+          withCredentials: true,
+        });
+
+        eventSource.addEventListener('notification', (e) => {
+          try {
+            const newNotif = JSON.parse(e.data);
+            setNotifications((prev) => [
+              newNotif,
+              ...prev.filter((n) => n.id !== newNotif.id),
+            ]);
+            setUnreadCount((count) => count + 1);
+          } catch (parseErr) {
+            console.error('Failed to parse incoming SSE notification:', parseErr);
+          }
+        });
+
+        eventSource.onerror = () => {
+          if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+          }
+          // Reconnect after delay
+          reconnectTimeout = setTimeout(connectSSE, 5000);
+        };
+      } catch (err) {
+        console.error('SSE initialization error:', err);
+      }
+    };
+
+    connectSSE();
+
+    // Secondary fallback periodic check
     const checkCount = () => {
       axios
         .get('/api/notifications/unread-count', { withCredentials: true })
         .then((res) => {
-          if (active) setUnreadCount(res.data.unread_count || 0);
+          setUnreadCount(res.data.unread_count || 0);
         })
         .catch(() => {});
     };
 
     checkCount();
     const interval = setInterval(checkCount, 30_000);
+
     return () => {
-      active = false;
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (eventSource) eventSource.close();
       clearInterval(interval);
     };
   }, []);
@@ -119,6 +158,8 @@ export default function NotificationBell({ onNavigateToPaper }) {
         return '💬';
       case 'PAPER_TAG_CHANGE':
         return '🏷️';
+      case 'PAPER_NOTE_ADDED':
+        return '📌';
       case 'PAPER_METADATA_UPDATE':
         return '📝';
       default:

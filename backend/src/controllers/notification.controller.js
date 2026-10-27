@@ -20,6 +20,18 @@ const handleError = (error, res, next) => {
 };
 
 /**
+ * GET /api/notifications/stream
+ * Server-Sent Events (SSE) stream for real-time user notification updates.
+ */
+export const notificationStream = (req, res, next) => {
+  try {
+    service.subscribeUserStream(req.user.id, req, res);
+  } catch (error) {
+    return handleError(error, res, next);
+  }
+};
+
+/**
  * GET /api/notifications
  * Retrieves notifications for the currently authenticated user.
  */

@@ -91,15 +91,25 @@ export const createAssignment = async ({
   // Notify paper starrers of added tag
   try {
     let tagName = null;
-    const tagRes = await pool.query('SELECT name FROM topic_tags WHERE id = $1', [tagId]);
+    let canonicalPath = null;
+    const tagRes = await pool.query('SELECT name, slug FROM topic_tags WHERE id = $1', [tagId]);
     if (tagRes.rows[0]?.name) {
       tagName = tagRes.rows[0].name;
+      canonicalPath = tagRes.rows[0].slug;
+    }
+    let annotation = null;
+    if (annotationId) {
+      annotation = await repo.findAnnotationById(annotationId);
     }
     await notifyStarrersPaperTagChange({
       paperId,
       actorUser: { id: assignedBy },
       action: 'ADDED',
       tagName,
+      tagId,
+      canonicalPath,
+      annotationId,
+      annotation,
     });
   } catch (notifyErr) {
     console.error('Failed to dispatch tag added notification:', notifyErr.message);
@@ -218,6 +228,8 @@ export const deleteAssignment = async (id, { userId, role }) => {
       actorUser: { id: userId },
       action: 'REMOVED',
       tagName: assignment.tag_name,
+      tagId: assignment.tag_id,
+      annotationId: assignment.annotation_id,
     });
   } catch (notifyErr) {
     console.error('Failed to dispatch tag removed notification:', notifyErr.message);

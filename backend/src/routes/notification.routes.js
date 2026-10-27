@@ -7,6 +7,9 @@ const router = express.Router();
 // All notification routes require an authenticated user
 router.use(authenticateToken);
 
+// Server-Sent Events (SSE) real-time stream endpoint
+router.get('/stream', controller.notificationStream);
+
 // List notifications for current user with optional pagination and unread filter
 router.get('/', controller.getNotifications);
 
