@@ -10,6 +10,7 @@ import collaboratorRoutes from "./routes/collaborator.routes.js";
 import discussionRoutes from "./routes/discussion.routes.js";
 import invitationRoutes from "./routes/invitation.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
+import recommendationRoutes from "./routes/recommendation.routes.js";
 import errorHandler from "./middleware/errorHandler.js";
 
 const app = express();
@@ -42,6 +43,7 @@ app.use("/api/tags", tagRoutes);
 app.use("/api/paper-tags", paperTagAssignmentRoutes);
 app.use("/api/invitations", invitationRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/recommendations", recommendationRoutes);
 
 // Handle unknown routes
 app.use((req, res) => {
