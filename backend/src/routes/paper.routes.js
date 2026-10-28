@@ -26,6 +26,8 @@ import multer from "multer";
 import { authenticateToken } from "../middleware/authenticate.js";
 import { authorizeRoles, requirePermission } from "../middleware/authorize.js";
 import { ROLES, PERMISSIONS } from "../utils/roles.js";
+import { isValidPdf } from "../utils/pdfValidator.js";
+import { getCitationGraph } from "../controllers/citation.controller.js";
 
 import {
   listPapers,
@@ -137,6 +139,17 @@ router.get(
   getPaperById
 );
 
+// ─── GET /api/papers/:id/citation-graph ─────────────────────────────────────
+// FR-16: Retrieve interactive citation graph (backward references, forward citations, co-citation clusters)
+router.get(
+  "/:id/citation-graph",
+  authenticateToken,
+  authorizeRoles(...ALL_ROLES),
+  getCitationGraph
+);
+
+// ─── POST /api/papers/upload ─────────────────────────────────────────────────
+// RESEARCHER and SYSTEM_ADMIN can upload PDF papers.
 // ─── POST /api/papers/upload ──────────────────────────────────────────────────
 router.post(
   "/upload",

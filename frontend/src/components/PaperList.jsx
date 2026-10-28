@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import CollaboratorsModal from './CollaboratorsModal';
+import DiscussionPanel from './DiscussionPanel';
+import CitationGraph from './CitationGraph';
 import RecommendedPapersModal from './RecommendedPapersModal';
 
 export default function PaperList({ refreshTrigger }) {
@@ -9,6 +12,11 @@ export default function PaperList({ refreshTrigger }) {
   const [search, setSearch] = useState('');
   const [selectedPaperForRecs, setSelectedPaperForRecs] = useState(null);
   const [seeding, setSeeding] = useState(false);
+
+  // Modals state
+  const [selectedCollabPaper, setSelectedCollabPaper] = useState(null);
+  const [selectedDiscussionPaper, setSelectedDiscussionPaper] = useState(null);
+  const [selectedCitationPaper, setSelectedCitationPaper] = useState(null);
 
   const fetchPapers = useCallback(async () => {
     setLoading(true);
@@ -202,6 +210,8 @@ export default function PaperList({ refreshTrigger }) {
                 </div>
               </div>
 
+              {/* Bottom Card Controls: Date + Discussion & Collaborator Buttons */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-3 pt-2.5 border-t border-slate-200/70">
               {/* Bottom Card Actions */}
               <div className="flex items-center justify-between pt-3 mt-2 border-t border-slate-200/60">
                 <p className="text-xs text-slate-400">
@@ -213,6 +223,32 @@ export default function PaperList({ refreshTrigger }) {
                   })}
                 </p>
 
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setSelectedCitationPaper(paper)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-teal-50 text-teal-700 border border-teal-200 rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs"
+                    title="Explore backward references, forward citations, and clusters"
+                  >
+                    <span>🕸️</span>
+                    <span>Citation Graph</span>
+                  </button>
+
+                  <button
+                    onClick={() => setSelectedDiscussionPaper(paper)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs"
+                  >
+                    <span>💬</span>
+                    <span>Discussions</span>
+                  </button>
+
+                  <button
+                    onClick={() => setSelectedCollabPaper(paper)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-purple-50 text-purple-600 border border-purple-200 rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs"
+                  >
+                    <span>👥</span>
+                    <span>Collaborators</span>
+                  </button>
+                </div>
                 {/* FR-14: Suggest Related Literature Trigger */}
                 <button
                   type="button"
@@ -228,6 +264,28 @@ export default function PaperList({ refreshTrigger }) {
         </div>
       )}
 
+      {/* Collaborators Modal */}
+      <CollaboratorsModal
+        paper={selectedCollabPaper}
+        isOpen={Boolean(selectedCollabPaper)}
+        onClose={() => setSelectedCollabPaper(null)}
+      />
+
+      {/* Discussion Panel Drawer */}
+      <DiscussionPanel
+        paper={selectedDiscussionPaper}
+        isOpen={Boolean(selectedDiscussionPaper)}
+        onClose={() => setSelectedDiscussionPaper(null)}
+      />
+
+      {/* FR-16: Citation Graph Explorer Modal */}
+      {selectedCitationPaper && (
+        <CitationGraph
+          paperId={selectedCitationPaper.id}
+          initialPaper={selectedCitationPaper}
+          onClose={() => setSelectedCitationPaper(null)}
+        />
+      )}
       {/* FR-14 Recommendation Modal */}
       <RecommendedPapersModal
         paper={selectedPaperForRecs}

@@ -19,6 +19,8 @@ async function runMigrations() {
     '20261024_topic_tags.sql',
     '20261024_paper_metadata.sql',
     '20261026_paper_tag_assignments.sql',
+    '20261025_discussions_and_collaborators.sql',
+    '20261027_citations.sql',
     '20261027_paper_sections_and_recommendations.sql',
   ];
 
