@@ -7,6 +7,7 @@
   "scripts": {
     "test": "node --import ./src/test/setup.js --test",
     "test:fr08": "node --import ./src/test/setup.js --test src/test/pdfExtraction.test.js src/test/sourceMapping.test.js src/test/geminiService.test.js src/test/summaryChunking.test.js src/test/summaryPersistence.test.js src/test/summaryRoutes.test.js src/test/summarySchema.test.js src/test/summaryAccess.test.js src/test/summaryJob.test.js",
+    "test": "node --import ./src/test/setup.js --test --test-concurrency=1",
     "migrate": "node src/scripts/migrate.js",
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
