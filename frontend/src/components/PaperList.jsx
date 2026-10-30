@@ -10,6 +10,13 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
+  const [selectedPaperForRecs, setSelectedPaperForRecs] = useState(null);
+  const [seeding, setSeeding] = useState(false);
+
+  // Modal states
+  const [selectedCollabPaper, setSelectedCollabPaper] = useState(null);
+  const [selectedDiscussionPaper, setSelectedDiscussionPaper] = useState(null);
+  const [selectedCitationPaper, setSelectedCitationPaper] = useState(null);
 
   // Expandable sections
   const [activeCommentsPaperId, setActiveCommentsPaperId] = useState(selectedPaperId || null);
@@ -29,11 +36,17 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
   const fetchPapers = useCallback(async () => {
     setLoading(true);
     setError(null);
+
     try {
-      const res = await axios.get('/api/papers', { withCredentials: true });
+      const res = await axios.get('/api/papers', {
+        withCredentials: true,
+      });
+
       setPapers(res.data.papers || []);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to load papers.');
+      setError(
+        err.response?.data?.error || 'Failed to load papers.'
+      );
     } finally {
       setLoading(false);
     }
@@ -193,14 +206,71 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
       setEditLoading(false);
     }
   };
+    let ignore = false;
+
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const res = await axios.get('/api/papers', {
+          withCredentials: true,
+        });
+
+        if (!ignore) {
+          setPapers(res.data.papers || []);
+        }
+      } catch (err) {
+        if (!ignore) {
+          setError(
+            err.response?.data?.error || 'Failed to load papers.'
+          );
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    };
+
+    load();
+
+    return () => {
+      ignore = true;
+    };
+  }, [refreshTrigger]);
+
+  const handleSeedSamplePapers = async () => {
+    setSeeding(true);
+
+    try {
+      await axios.post(
+        '/api/recommendations/seed-sample',
+        {},
+        { withCredentials: true }
+      );
+
+      await fetchPapers();
+    } catch (err) {
+      alert(
+        err.response?.data?.error ||
+          'Failed to seed sample papers.'
+      );
+    } finally {
+      setSeeding(false);
+    }
+  };
+
+  const q = search.trim().toLowerCase();
 
   const filtered = papers.filter((p) => {
-    const q = search.toLowerCase();
     return (
       p.title?.toLowerCase().includes(q) ||
       p.abstract?.toLowerCase().includes(q) ||
       p.authors?.some((a) => a.toLowerCase().includes(q)) ||
-      p.arxiv_id?.toLowerCase().includes(q)
+      p.arxiv_id?.toLowerCase().includes(q) ||
+      p.doi?.toLowerCase().includes(q) ||
+      String(p.publication_year || '').includes(q)
     );
   });
 
@@ -208,49 +278,104 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
     <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 font-sans">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
         <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-          <span>📖</span> Research Papers
+          <span>📖</span>
+          Research Papers
+
           {!loading && (
-            <span className="text-sm font-normal text-slate-400">({filtered.length})</span>
+            <span className="text-sm font-normal text-slate-400">
+              ({filtered.length})
+            </span>
           )}
         </h2>
-        <div className="flex gap-2">
+
+        <div className="flex items-center gap-2 flex-wrap">
           <input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search papers…"
-            className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white text-slate-800 placeholder-slate-400 w-52"
+            placeholder="Search papers..."
+            className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white text-slate-800 placeholder-slate-400 w-48"
           />
+
           <button
             type="button"
             onClick={fetchPapers}
-            className="px-3 py-1.5 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg font-medium transition cursor-pointer"
+            disabled={loading}
+            className="px-3 py-1.5 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg font-medium transition cursor-pointer disabled:opacity-50"
             title="Refresh"
           >
             ↺
           </button>
+
+          <button
+            type="button"
+            onClick={handleSeedSamplePapers}
+            disabled={seeding}
+            className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition cursor-pointer disabled:opacity-50"
+            title="Seed sample papers with section tags and embeddings"
+          >
+            {seeding
+              ? 'Seeding...'
+              : '✨ Seed Sample Papers (FR-14 Demo)'}
+          </button>
         </div>
       </div>
 
+      {/* Loading State */}
       {loading && (
         <div className="flex items-center justify-center py-10 text-slate-400 text-sm gap-2">
           <span className="inline-block w-5 h-5 border-2 border-slate-300 border-t-indigo-500 rounded-full animate-spin" />
-          Loading papers…
+          Loading papers...
         </div>
       )}
 
+      {/* Error State */}
       {!loading && error && (
         <div className="p-3 bg-red-50 text-red-800 border border-red-200 rounded-lg text-sm">
           {error}
+          <button
+            type="button"
+            onClick={fetchPapers}
+            className="ml-2 underline font-semibold"
+          >
+            Retry
+          </button>
         </div>
       )}
 
+      {/* Empty State */}
       {!loading && !error && filtered.length === 0 && (
-        <div className="text-center py-10 text-slate-400 text-sm">
-          {search ? 'No papers match your search.' : 'No papers yet. Upload or import one above!'}
+        <div className="text-center py-12 px-4 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 space-y-3">
+          <span className="text-3xl">📚</span>
+
+          <p className="text-slate-700 font-semibold text-sm">
+            {papers.length === 0
+              ? 'No papers in database yet!'
+              : 'No papers match your search.'}
+          </p>
+
+          <p className="text-slate-500 text-xs max-w-md mx-auto">
+            {papers.length === 0
+              ? 'Populate sample academic papers with sections, hierarchical tags, and embeddings to test FR-14 literature recommendations.'
+              : 'Try searching with a different title, author, DOI, arXiv ID, or publication year.'}
+          </p>
+
+          {papers.length === 0 && (
+            <button
+              type="button"
+              onClick={handleSeedSamplePapers}
+              disabled={seeding}
+              className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition cursor-pointer disabled:opacity-50"
+            >
+              {seeding
+                ? 'Seeding Papers...'
+                : '✨ Populate Sample Research Papers'}
+            </button>
+          )}
         </div>
       )}
 
+      {/* Papers List */}
       {!loading && !error && filtered.length > 0 && (
         <div className="space-y-4">
           {filtered.map((paper) => {
@@ -519,6 +644,36 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
           </div>
         </div>
       )}
+
+      {/* Collaborators Modal */}
+      <CollaboratorsModal
+        paper={selectedCollabPaper}
+        isOpen={Boolean(selectedCollabPaper)}
+        onClose={() => setSelectedCollabPaper(null)}
+      />
+
+      {/* Discussion Panel */}
+      <DiscussionPanel
+        paper={selectedDiscussionPaper}
+        isOpen={Boolean(selectedDiscussionPaper)}
+        onClose={() => setSelectedDiscussionPaper(null)}
+      />
+
+      {/* Citation Graph */}
+      {selectedCitationPaper && (
+        <CitationGraph
+          paperId={selectedCitationPaper.id}
+          initialPaper={selectedCitationPaper}
+          onClose={() => setSelectedCitationPaper(null)}
+        />
+      )}
+
+      {/* FR-14 Recommendation Modal */}
+      <RecommendedPapersModal
+        paper={selectedPaperForRecs}
+        onClose={() => setSelectedPaperForRecs(null)}
+        onRefreshPapers={fetchPapers}
+      />
     </div>
   );
 }

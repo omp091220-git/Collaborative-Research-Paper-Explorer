@@ -67,3 +67,13 @@ CREATE INDEX IF NOT EXISTS idx_pta_tag_id
 -- Audit: assignments created by a given user
 CREATE INDEX IF NOT EXISTS idx_pta_assigned_by
     ON paper_tag_assignments (assigned_by);
+
+-- ==============================================================================
+-- NOTE: Down-migration (rollback)
+--
+-- To reverse this migration manually run:
+--   DROP TABLE IF EXISTS paper_tag_assignments;
+--
+-- The above DROP must be performed BEFORE any attempt to remove topic_tags
+-- or annotations tables, due to foreign-key dependencies.
+-- ==============================================================================
