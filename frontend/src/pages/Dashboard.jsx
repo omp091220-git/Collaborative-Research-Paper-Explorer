@@ -185,7 +185,7 @@ export default function Dashboard() {
                 </span>
               </div>
               <p className="text-xs text-slate-600 mb-3">
-                Request multi-format AI summaries (comprehensive, brief, technical, layperson).
+                Generate Background, Methodology, Results, and Limitations summaries with supporting PDF page and coordinate references.
               </p>
               <span className="text-xs font-semibold text-emerald-700">
                 ✓ Permitted for {user?.role}

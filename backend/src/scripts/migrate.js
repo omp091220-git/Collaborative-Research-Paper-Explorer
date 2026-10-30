@@ -17,6 +17,7 @@ async function runMigrations() {
     '20261018_rbac.sql',
     '20261019_annotations.sql',
     '20261024_topic_tags.sql',
+    '20261025_fr08_ai_summaries.sql',
     '20261024_paper_metadata.sql',
     '20261026_paper_tag_assignments.sql',
     '20261025_discussions_and_collaborators.sql',

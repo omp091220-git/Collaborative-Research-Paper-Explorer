@@ -4,6 +4,7 @@ import "dotenv/config";
 import app from "./app.js";
 import { env } from "./config/env.js";
 import { connectDatabase } from "./config/database.js";
+import { closeSummaryQueue } from "./queues/summaryQueue.js";
 
 const startServer = async () => {
   try {
@@ -18,6 +19,7 @@ const startServer = async () => {
 
       server.close(async () => {
         try {
+          await closeSummaryQueue();
           const { default: pool } = await import("./config/database.js");
           await pool.end();
           process.exit(0);

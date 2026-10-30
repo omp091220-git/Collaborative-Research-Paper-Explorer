@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import PaperSummary from './PaperSummary.jsx';
 import CollaboratorsModal from './CollaboratorsModal';
 import DiscussionPanel from './DiscussionPanel';
 import CitationGraph from './CitationGraph';
@@ -278,6 +279,15 @@ export default function PaperList({ refreshTrigger }) {
                   </span>
                 </div>
               </div>
+              <p className="text-xs text-slate-400 mt-2">
+                Added{' '}
+                {new Date(paper.uploaded_at).toLocaleDateString(undefined, {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </p>
+              <PaperSummary paperId={paper.id} />
 
               {/* Bottom Actions */}
               <div className="flex flex-col gap-3 mt-3 pt-3 border-t border-slate-200/70">
