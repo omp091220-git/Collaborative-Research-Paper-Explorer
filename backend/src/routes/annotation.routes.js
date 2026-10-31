@@ -4,6 +4,7 @@ import pool from "../config/database.js";
 import { authenticateToken } from "../middleware/authenticate.js";
 import { authorizeRoles } from "../middleware/authorize.js";
 import { ROLES } from "../utils/roles.js";
+import { notifyMentions } from "../services/notification.service.js";
 
 const router = express.Router();
 
@@ -169,9 +170,40 @@ router.post(
         ]
       );
 
+      const createdAnnotation = result.rows[0];
+
+      // 1. Notify mentioned users in annotation
+      try {
+        await notifyMentions({
+          text: content.trim(),
+          oldText: null,
+          actorUser: req.user,
+          paperId: paper_id,
+          sourceType: "annotation",
+          sourceId: createdAnnotation.id,
+          pageNumber: page_number,
+        });
+      } catch (notifyErr) {
+        console.error("Mention notification error:", notifyErr.message);
+      }
+
+      // 2. Notify paper followers/starrers of new note (excluding author & mentioned)
+      try {
+        const { notifyStarrersPaperNoteAdded } = await import(
+          "../services/notification.service.js"
+        );
+        await notifyStarrersPaperNoteAdded({
+          paperId: paper_id,
+          actorUser: req.user,
+          annotation: createdAnnotation,
+        });
+      } catch (noteNotifyErr) {
+        console.error("Follower note notification error:", noteNotifyErr.message);
+      }
+
       return res.status(201).json({
         message: "Annotation created successfully.",
-        annotation: result.rows[0],
+        annotation: createdAnnotation,
       });
     } catch (error) {
       if (error.code === "23503") {
@@ -240,6 +272,20 @@ router.patch(
 
       const annotation = existing.rows[0];
 
+      // Fetch previous content for mention diffing if content is being updated
+      let previousContent = null;
+      if (req.body.content !== undefined) {
+        try {
+          const contentLookup = await pool.query(
+            "SELECT content FROM annotations WHERE id = $1",
+            [id]
+          );
+          previousContent = contentLookup.rows[0]?.content || null;
+        } catch {
+          // Graceful fallback
+        }
+      }
+
       if (
         req.user.role !== ROLES.SYSTEM_ADMIN &&
         annotation.created_by !== req.user.id
@@ -270,9 +316,27 @@ router.patch(
         values
       );
 
+      const updatedAnnotation = result.rows[0];
+
+      if (req.body.content !== undefined && updatedAnnotation) {
+        try {
+          await notifyMentions({
+            text: req.body.content.trim(),
+            oldText: previousContent || null,
+            actorUser: req.user,
+            paperId: updatedAnnotation.paper_id,
+            sourceType: "annotation",
+            sourceId: updatedAnnotation.id,
+            pageNumber: updatedAnnotation.page_number,
+          });
+        } catch (notifyErr) {
+          console.error("Mention notification error on update:", notifyErr.message);
+        }
+      }
+
       return res.status(200).json({
         message: "Annotation updated successfully.",
-        annotation: result.rows[0],
+        annotation: updatedAnnotation,
       });
     } catch (error) {
       return next(error);
