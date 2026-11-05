@@ -210,10 +210,8 @@ export default function PaperList({ refreshTrigger }) {
                 </div>
               </div>
 
-              {/* Bottom Card Controls: Date + Discussion & Collaborator Buttons */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-3 pt-2.5 border-t border-slate-200/70">
               {/* Bottom Card Actions */}
-              <div className="flex items-center justify-between pt-3 mt-2 border-t border-slate-200/60">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-3 pt-2.5 border-t border-slate-200/70">
                 <p className="text-xs text-slate-400">
                   Added{' '}
                   {new Date(paper.uploaded_at).toLocaleDateString(undefined, {
