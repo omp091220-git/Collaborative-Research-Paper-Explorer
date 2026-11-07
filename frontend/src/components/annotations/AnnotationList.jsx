@@ -5,7 +5,6 @@ import Button from '../common/Button';
 import EmptyState from '../common/EmptyState';
 import ErrorState from '../common/ErrorState';
 import { MessageSquarePlus, MessageSquare, RefreshCw } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { annotationsService } from '../../services/annotations.service';
 import paperTagsService from '../../services/paperTags.service';
@@ -14,10 +13,8 @@ export default function AnnotationList({
   paperId,
   annotations: initialAnnotations,
   loading: initialLoading,
-  canDeleteAll = false,
   onAddAnnotation,
 }) {
-  const { hasPermission, isAdmin } = useAuth();
   const { addToast } = useToast();
 
   const [annotations, setAnnotations] = useState(initialAnnotations || []);

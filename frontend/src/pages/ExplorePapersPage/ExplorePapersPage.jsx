@@ -21,23 +21,29 @@ export default function ExplorePapersPage() {
   const { isAdmin, hasPermission } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // Read query params from URL
+  const urlQ = searchParams.get('q') || '';
+  const urlTopic = searchParams.get('topic') || '';
+  const urlSource = searchParams.get('source') || 'all';
+  const urlSort = searchParams.get('sort') || 'created_at';
+  const urlPage = parseInt(searchParams.get('page') || '1', 10);
+
   // Search, filter & pagination state
-  const [searchQuery, setSearchQuery] = useState(
-    searchParams.get('q') || ''
-  );
-  const [selectedTopic, setSelectedTopic] = useState(
-    searchParams.get('topic') || ''
-  );
-  const [selectedSource, setSelectedSource] = useState(
-    searchParams.get('source') || 'all'
-  );
-  const [sortBy, setSortBy] = useState(
-    searchParams.get('sort') || 'created_at'
-  );
+  const [searchQuery, setSearchQuery] = useState(urlQ);
+  const [selectedTopic, setSelectedTopic] = useState(urlTopic);
+  const [selectedSource, setSelectedSource] = useState(urlSource);
+  const [sortBy, setSortBy] = useState(urlSort);
   const [viewMode, setViewMode] = useState('grid');
-  const [currentPage, setCurrentPage] = useState(
-    parseInt(searchParams.get('page') || '1', 10)
-  );
+  const [currentPage, setCurrentPage] = useState(urlPage);
+
+  // Synchronize state when URL query parameters change (e.g., browser back/forward or navigation from navbar/sidebar)
+  useEffect(() => {
+    setSearchQuery(urlQ);
+    setSelectedTopic(urlTopic);
+    setSelectedSource(urlSource);
+    setSortBy(urlSort);
+    setCurrentPage(urlPage);
+  }, [urlQ, urlTopic, urlSource, urlSort, urlPage]);
 
   // Data state
   const [papers, setPapers] = useState([]);
@@ -85,16 +91,20 @@ export default function ExplorePapersPage() {
     fetchPapers();
   }, [fetchPapers]);
 
-  // Sync state changes with URL query parameters
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (searchQuery.trim()) params.set('q', searchQuery.trim());
-    if (selectedTopic) params.set('topic', selectedTopic);
-    if (selectedSource !== 'all') params.set('source', selectedSource);
-    if (sortBy !== 'created_at') params.set('sort', sortBy);
-    if (currentPage > 1) params.set('page', currentPage.toString());
+  // Push state updates to URL query parameters
+  const updateUrlParam = (key, value) => {
+    const params = new URLSearchParams(searchParams);
+    if (!value || value === 'all' || (key === 'sort' && value === 'created_at') || (key === 'page' && Number(value) <= 1)) {
+      params.delete(key);
+    } else {
+      params.set(key, String(value).trim());
+    }
+    // If updating a search/filter, reset page back to 1
+    if (key !== 'page') {
+      params.delete('page');
+    }
     setSearchParams(params, { replace: true });
-  }, [searchQuery, selectedTopic, selectedSource, sortBy, currentPage, setSearchParams]);
+  };
 
   const handleResetFilters = () => {
     setSearchQuery('');
@@ -102,6 +112,7 @@ export default function ExplorePapersPage() {
     setSelectedSource('all');
     setSortBy('created_at');
     setCurrentPage(1);
+    setSearchParams({}, { replace: true });
   };
 
   const handleUploadSuccess = () => {
@@ -122,22 +133,22 @@ export default function ExplorePapersPage() {
         searchQuery={searchQuery}
         onSearchChange={(q) => {
           setSearchQuery(q);
-          setCurrentPage(1);
+          updateUrlParam('q', q);
         }}
         selectedTopic={selectedTopic}
         onTopicChange={(t) => {
           setSelectedTopic(t);
-          setCurrentPage(1);
+          updateUrlParam('topic', t);
         }}
         selectedSource={selectedSource}
         onSourceChange={(s) => {
           setSelectedSource(s);
-          setCurrentPage(1);
+          updateUrlParam('source', s);
         }}
         sortBy={sortBy}
         onSortChange={(s) => {
           setSortBy(s);
-          setCurrentPage(1);
+          updateUrlParam('sort', s);
         }}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
@@ -213,6 +224,7 @@ export default function ExplorePapersPage() {
               itemsPerPage={itemsPerPage}
               onPageChange={(p) => {
                 setCurrentPage(p);
+                updateUrlParam('page', p);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
             />

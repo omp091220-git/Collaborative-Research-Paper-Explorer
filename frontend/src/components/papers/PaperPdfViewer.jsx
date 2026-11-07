@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   FileText,
   Download,
@@ -30,12 +30,23 @@ export default function PaperPdfViewer({
   const [zoom, setZoom] = useState(100);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef(null);
+  const blobUrlRef = useRef(null);
 
-  // Compute the endpoint to fetch the PDF from
-  const targetUrl = pdfUrl || (paperId ? `/papers/${paperId}/pdf` : null);
+  // Compute normalized endpoint (ensuring /api is never duplicated by axios baseURL)
+  const resolveTargetEndpoint = () => {
+    const raw = pdfUrl || (paperId ? `/papers/${paperId}/pdf` : null);
+    if (!raw) return null;
+    if (raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('blob:')) {
+      return raw;
+    }
+    return raw.replace(/^\/api\//, '/');
+  };
 
-  const loadPdf = async () => {
-    if (!targetUrl && !paper?.arxiv_id) {
+  const targetUrl = resolveTargetEndpoint();
+  const arxivId = paper?.arxiv_id;
+
+  const loadPdf = useCallback(async () => {
+    if (!targetUrl && !arxivId) {
       setLoading(false);
       setError('No PDF document is attached to this research paper.');
       setErrorCode('NO_PDF');
@@ -47,8 +58,9 @@ export default function PaperPdfViewer({
     setErrorCode(null);
 
     // Revoke previous blob if any
-    if (blobUrl) {
-      URL.revokeObjectURL(blobUrl);
+    if (blobUrlRef.current && blobUrlRef.current.startsWith('blob:')) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = null;
       setBlobUrl(null);
     }
 
@@ -58,10 +70,10 @@ export default function PaperPdfViewer({
           responseType: 'blob',
         });
 
-        const contentType = response.headers['content-type'] || '';
         // Verify response is a valid blob
         if (response.data && response.data.size > 0) {
           const url = URL.createObjectURL(response.data);
+          blobUrlRef.current = url;
           setBlobUrl(url);
           setLoading(false);
           return;
@@ -69,51 +81,48 @@ export default function PaperPdfViewer({
       }
 
       // If backend targetUrl wasn't available but arxiv_id is present
-      if (paper?.arxiv_id) {
-        setBlobUrl(`https://arxiv.org/pdf/${paper.arxiv_id}.pdf`);
+      if (arxivId) {
+        setBlobUrl(`https://arxiv.org/pdf/${arxivId}.pdf`);
         setLoading(false);
         return;
       }
 
       throw new Error('PDF file could not be retrieved from the server.');
     } catch (err) {
-      console.warn('PDF fetch warning:', err);
       const status = err.response?.status;
       setErrorCode(status);
+
+      // If backend returned 404 but we have an arxivId, fallback to official arXiv PDF
+      if (status === 404 && arxivId) {
+        setBlobUrl(`https://arxiv.org/pdf/${arxivId}.pdf`);
+        setLoading(false);
+        return;
+      }
+
+      console.warn('PDF fetch warning:', err);
 
       if (status === 401) {
         setError('Authentication required to view this research PDF. Please sign in again.');
       } else if (status === 403) {
         setError('You do not have permission to view or download this private research paper.');
       } else if (status === 404) {
-        // Fallback to arXiv direct link if arxiv_id exists
-        if (paper?.arxiv_id) {
-          setBlobUrl(`https://arxiv.org/pdf/${paper.arxiv_id}.pdf`);
-          setLoading(false);
-          return;
-        }
-        setError('The requested PDF file is unavailable on the storage volume.');
+        setError('No PDF document is currently available on the server for this research paper.');
       } else {
-        if (paper?.arxiv_id) {
-          // Fallback to direct arXiv link
-          setBlobUrl(`https://arxiv.org/pdf/${paper.arxiv_id}.pdf`);
-          setLoading(false);
-          return;
-        }
         setError(getApiErrorMessage(err, 'Failed to stream and render the research PDF.'));
       }
       setLoading(false);
     }
-  };
+  }, [targetUrl, arxivId]);
 
   useEffect(() => {
     loadPdf();
     return () => {
-      if (blobUrl && blobUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(blobUrl);
+      if (blobUrlRef.current && blobUrlRef.current.startsWith('blob:')) {
+        URL.revokeObjectURL(blobUrlRef.current);
+        blobUrlRef.current = null;
       }
     };
-  }, [paperId, targetUrl]);
+  }, [loadPdf]);
 
   // Fullscreen change listener
   useEffect(() => {
