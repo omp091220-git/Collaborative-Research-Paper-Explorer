@@ -8,14 +8,14 @@ export default function ErrorState({
   className = '',
 }) {
   return (
-    <div className={`p-6 rounded-xl border border-rose-200 bg-rose-50/60 text-slate-800 ${className}`}>
+    <div className={`p-6 rounded-2xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-slate-900 dark:text-slate-100 ${className}`}>
       <div className="flex items-start gap-3">
-        <div className="p-2 rounded-lg bg-rose-100 text-rose-600 shrink-0">
+        <div className="p-2 rounded-xl bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300 shrink-0">
           <AlertCircle className="w-5 h-5" />
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-semibold text-rose-900">{title}</h4>
-          <p className="text-xs text-rose-700 mt-1 leading-relaxed">{message}</p>
+          <h4 className="text-sm font-bold text-rose-900 dark:text-rose-200">{title}</h4>
+          <p className="text-xs text-rose-800 dark:text-rose-300 font-medium mt-1 leading-relaxed">{message}</p>
           {onRetry && (
             <div className="mt-3">
               <Button
@@ -23,7 +23,7 @@ export default function ErrorState({
                 size="xs"
                 onClick={onRetry}
                 iconLeft={RefreshCw}
-                className="bg-white hover:bg-rose-50 border-rose-300 text-rose-700"
+                className="bg-white dark:bg-slate-900 hover:bg-rose-50 dark:hover:bg-rose-950/40 border-rose-300 dark:border-rose-700 text-rose-800 dark:text-rose-200 font-semibold"
               >
                 Try Again
               </Button>

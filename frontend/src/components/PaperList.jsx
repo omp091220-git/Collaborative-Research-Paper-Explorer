@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import CollaboratorsModal from './CollaboratorsModal';
@@ -334,12 +335,25 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3
-                        className="font-bold text-slate-900 text-base leading-snug"
-                        title={paper.title}
+                    <Link
+                      to={`/papers/${paper.id}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition shadow-2xs"
+                      title="Open paper details and PDF document viewer"
+                    >
+                      <span>📄</span>
+                      <span>Open Paper & PDF</span>
+                    </Link>
+                      <Link
+                        to={`/papers/${paper.id}`}
+                        className="group inline-block"
                       >
-                        {paper.title}
-                      </h3>
+                        <h3
+                          className="font-bold text-slate-900 text-base leading-snug group-hover:text-indigo-600 transition"
+                          title={paper.title}
+                        >
+                          {paper.title}
+                        </h3>
+                      </Link>
                       {paper.publication_year && (
                         <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-700 border border-slate-200 rounded font-medium">
                           {paper.publication_year}
@@ -443,6 +457,14 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap">
+                    <Link
+                      to={`/papers/${paper.id}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition shadow-2xs"
+                      title="Open paper details and PDF document viewer"
+                    >
+                      <span>📄</span>
+                      <span>Open Paper & PDF</span>
+                    </Link>
                     <button
                       type="button"
                       onClick={() => setSelectedCitationPaper(paper)}

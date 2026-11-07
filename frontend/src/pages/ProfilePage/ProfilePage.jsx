@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Mail, Building2, Save } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -20,6 +20,14 @@ export default function ProfilePage() {
   );
   const [customTag, setCustomTag] = useState('');
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setFullName(user.full_name || '');
+      setAffiliation(user.affiliation || '');
+      setResearchInterests(Array.isArray(user.research_interests) ? user.research_interests : []);
+    }
+  }, [user]);
 
   const handleAddTag = (tag) => {
     const trimmed = (tag || customTag).trim();
