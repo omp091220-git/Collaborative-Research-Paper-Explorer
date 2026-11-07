@@ -178,7 +178,10 @@ router.get(
       }
 
       return res.status(200).json({
-        papers,
+        papers: papers.map((p) => ({
+          ...p,
+          pdf_url: `/api/papers/${p.id}/pdf`,
+        })),
       });
     } catch (error) {
       return next(error);
@@ -239,7 +242,62 @@ router.get(
         paper = result.rows[0];
       }
 
-      return res.status(200).json({ paper });
+      return res.status(200).json({ paper: { ...paper, pdf_url: `/api/papers/${paper.id}/pdf` } });
+    } catch (error) {
+      return next(error);
+    }
+  }
+);
+
+
+// ─── GET /api/papers/:id/pdf ──────────────────────────────────────────────────
+// Streams the PDF binary file or redirects to arXiv PDF
+router.get(
+  "/:id/pdf",
+  authenticateToken,
+  authorizeRoles(...ALL_ROLES),
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      if (!isValidUUID(id)) {
+        return res.status(400).json({ error: "Paper ID must be a valid UUID." });
+      }
+
+      const result = await pool.query(
+        "SELECT id, title, arxiv_id, file_path, mime_type FROM papers WHERE id = $1",
+        [id]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Paper not found." });
+      }
+
+      const paper = result.rows[0];
+
+      if (paper.file_path) {
+        const projectRoot = path.resolve(__dirname, "../../..");
+        const absolutePath = path.resolve(projectRoot, paper.file_path);
+
+        if (fs.existsSync(absolutePath)) {
+          const safeTitle = (paper.title || "paper")
+            .replace(/[/\\?%*:|"<>]/g, "_")
+            .trim();
+          res.setHeader("Content-Type", paper.mime_type || "application/pdf");
+          res.setHeader(
+            "Content-Disposition",
+            `inline; filename="${encodeURIComponent(safeTitle)}.pdf"`
+          );
+          return res.sendFile(absolutePath);
+        }
+      }
+
+      if (paper.arxiv_id) {
+        return res.redirect(`https://arxiv.org/pdf/${paper.arxiv_id}.pdf`);
+      }
+
+      return res.status(404).json({
+        error: "PDF file is not available for this research paper.",
+      });
     } catch (error) {
       return next(error);
     }

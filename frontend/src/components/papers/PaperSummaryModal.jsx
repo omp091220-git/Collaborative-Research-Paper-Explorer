@@ -57,7 +57,7 @@ export default function PaperSummaryModal({ isOpen, onClose, paper }) {
       <div className="space-y-5">
         {/* Summary Type Selector */}
         <div>
-          <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
+          <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">
             Select Summary Perspective
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -68,7 +68,7 @@ export default function PaperSummaryModal({ isOpen, onClose, paper }) {
                 className={`p-3 rounded-xl border transition cursor-pointer ${
                   selectedType === type.id
                     ? 'border-indigo-600 bg-indigo-50/50 shadow-xs'
-                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                    : 'border-slate-300 hover:border-slate-400 bg-white'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -77,7 +77,7 @@ export default function PaperSummaryModal({ isOpen, onClose, paper }) {
                     <span className="w-2 h-2 rounded-full bg-indigo-600" />
                   )}
                 </div>
-                <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-snug font-medium">
                   {type.description}
                 </p>
               </div>
@@ -120,7 +120,7 @@ export default function PaperSummaryModal({ isOpen, onClose, paper }) {
               </Button>
             </div>
 
-            <p className="text-xs text-slate-700 whitespace-pre-line leading-relaxed font-sans bg-white p-4 rounded-lg border border-slate-200/80 shadow-2xs">
+            <p className="text-xs text-slate-700 whitespace-pre-line leading-relaxed font-sans bg-white p-4 rounded-lg border border-slate-300 shadow-2xs">
               {summary.text}
             </p>
           </div>

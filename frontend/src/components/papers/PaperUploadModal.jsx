@@ -7,8 +7,9 @@ import { MAX_PDF_SIZE_BYTES } from '../../utils/constants';
 import { formatBytes } from '../../utils/formatters';
 import { UploadCloud, FileText, Link2, Check, AlertCircle } from 'lucide-react';
 
-export default function PaperUploadModal({ isOpen, onClose, onPaperUploaded }) {
+export default function PaperUploadModal({ isOpen, onClose, onPaperUploaded, onSuccess }) {
   const { success, error: showError } = useToast();
+  const handleUploadCallback = onPaperUploaded || onSuccess;
   const [activeTab, setActiveTab] = useState('upload'); // 'upload' or 'arxiv'
 
   // PDF Upload Form
@@ -101,7 +102,7 @@ export default function PaperUploadModal({ isOpen, onClose, onPaperUploaded }) {
         setUploadProgress(progress);
       });
       success('Paper Uploaded', `"${title.trim()}" was uploaded successfully.`);
-      if (onPaperUploaded) onPaperUploaded(res.paper);
+      if (handleUploadCallback) handleUploadCallback(res.paper);
       handleClose();
     } catch (err) {
       const msg = err.response?.data?.error || err.message || 'Failed to upload paper.';
@@ -122,7 +123,7 @@ export default function PaperUploadModal({ isOpen, onClose, onPaperUploaded }) {
     try {
       const res = await papersService.importArxiv(arxivId.trim());
       success('arXiv Imported', res.message || 'Paper successfully imported from arXiv.');
-      if (onPaperUploaded) onPaperUploaded(res.paper);
+      if (handleUploadCallback) handleUploadCallback(res.paper);
       handleClose();
     } catch (err) {
       const msg = err.response?.data?.error || err.message || 'Failed to import from arXiv.';
@@ -141,14 +142,14 @@ export default function PaperUploadModal({ isOpen, onClose, onPaperUploaded }) {
       maxWidth="max-w-xl"
     >
       {/* Tabs */}
-      <div className="flex border-b border-slate-200 mb-6">
+      <div className="flex border-b border-slate-300 mb-6">
         <button
           type="button"
           onClick={() => setActiveTab('upload')}
           className={`flex items-center gap-2 pb-3 px-4 text-xs font-semibold border-b-2 transition cursor-pointer ${
             activeTab === 'upload'
               ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'
           }`}
         >
           <FileText className="w-4 h-4" />
@@ -160,7 +161,7 @@ export default function PaperUploadModal({ isOpen, onClose, onPaperUploaded }) {
           className={`flex items-center gap-2 pb-3 px-4 text-xs font-semibold border-b-2 transition cursor-pointer ${
             activeTab === 'arxiv'
               ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              : 'border-transparent text-slate-600 hover:text-slate-900 font-semibold'
           }`}
         >
           <Link2 className="w-4 h-4" />
@@ -204,7 +205,7 @@ export default function PaperUploadModal({ isOpen, onClose, onPaperUploaded }) {
                   <p className="text-xs font-semibold text-slate-700">
                     Click to browse or drop PDF here
                   </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
+                  <p className="text-[11px] text-slate-600 mt-0.5 font-medium">
                     PDF files only, up to 30 MB
                   </p>
                 </>
@@ -213,7 +214,7 @@ export default function PaperUploadModal({ isOpen, onClose, onPaperUploaded }) {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">
+            <label className="block text-xs font-bold text-slate-800 mb-1">
               Paper Title <span className="text-rose-500">*</span>
             </label>
             <input
@@ -221,42 +222,42 @@ export default function PaperUploadModal({ isOpen, onClose, onPaperUploaded }) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Deep Residual Learning for Image Recognition"
-              className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               required
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">
+            <label className="block text-xs font-bold text-slate-800 mb-1">
               Authors <span className="text-rose-500">*</span>{' '}
-              <span className="text-slate-400 font-normal">(comma-separated)</span>
+              <span className="text-slate-500 font-normal">(comma-separated)</span>
             </label>
             <input
               type="text"
               value={authors}
               onChange={(e) => setAuthors(e.target.value)}
               placeholder="e.g. Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun"
-              className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               required
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">
-              Abstract <span className="text-slate-400 font-normal">(optional)</span>
+            <label className="block text-xs font-bold text-slate-800 mb-1">
+              Abstract <span className="text-slate-500 font-normal">(optional)</span>
             </label>
             <textarea
               rows={3}
               value={abstract}
               onChange={(e) => setAbstract(e.target.value)}
               placeholder="Enter paper abstract summary..."
-              className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-y"
+              className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-y"
             />
           </div>
 
           {uploadLoading && uploadProgress > 0 && (
             <div>
-              <div className="flex justify-between text-xs text-slate-500 mb-1">
+              <div className="flex justify-between text-xs text-slate-700 mb-1 font-semibold">
                 <span>Uploading...</span>
                 <span>{uploadProgress}%</span>
               </div>
@@ -269,7 +270,7 @@ export default function PaperUploadModal({ isOpen, onClose, onPaperUploaded }) {
             </div>
           )}
 
-          <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
+          <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-200">
             <Button variant="outline" size="sm" onClick={handleClose} disabled={uploadLoading}>
               Cancel
             </Button>
@@ -287,7 +288,7 @@ export default function PaperUploadModal({ isOpen, onClose, onPaperUploaded }) {
       ) : (
         <form onSubmit={handleArxivSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">
+            <label className="block text-xs font-bold text-slate-800 mb-1">
               arXiv ID or URL <span className="text-rose-500">*</span>
             </label>
             <input
@@ -295,10 +296,10 @@ export default function PaperUploadModal({ isOpen, onClose, onPaperUploaded }) {
               value={arxivId}
               onChange={(e) => setArxivId(e.target.value)}
               placeholder="e.g. 1706.03762 or 2301.00001v2"
-              className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               required
             />
-            <p className="text-[11px] text-slate-500 mt-1.5">
+            <p className="text-xs text-slate-600 mt-1.5 font-medium">
               The backend will automatically query the official arXiv Atom API, download the PDF, validate magic bytes, and register the metadata.
             </p>
           </div>
@@ -313,7 +314,7 @@ export default function PaperUploadModal({ isOpen, onClose, onPaperUploaded }) {
             </p>
           </div>
 
-          <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
+          <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-200">
             <Button variant="outline" size="sm" onClick={handleClose} disabled={importLoading}>
               Cancel
             </Button>

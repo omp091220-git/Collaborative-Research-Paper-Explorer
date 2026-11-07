@@ -27,11 +27,13 @@ export default function CollectionsPage() {
 
   const handleConfirmDelete = () => {
     if (!collectionToDelete) return;
-    deleteCollection(collectionToDelete.id);
+    const id = typeof collectionToDelete === 'string' ? collectionToDelete : collectionToDelete.id;
+    const name = typeof collectionToDelete === 'string' ? 'Collection' : collectionToDelete.name;
+    deleteCollection(id);
     addToast({
       type: 'info',
       title: 'Collection Deleted',
-      message: `"${collectionToDelete.name}" was removed.`,
+      message: `"${name}" was removed.`,
     });
     setCollectionToDelete(null);
   };

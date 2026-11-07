@@ -74,14 +74,14 @@ export default function PaperMetadata({ paper }) {
       <div className="space-y-3.5 text-xs">
         {/* Authors */}
         <div>
-          <span className="text-slate-400 font-medium block mb-1">Authors</span>
+          <span className="text-slate-700 dark:text-slate-300 font-bold block mb-1">Authors</span>
           <div className="flex flex-wrap gap-1.5">
             {paper.authors?.map((author, idx) => (
               <span
                 key={idx}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold"
               >
-                <User className="w-3 h-3 text-slate-400" />
+                <User className="w-3 h-3 text-slate-500" />
                 {author}
               </span>
             ))}
@@ -91,12 +91,12 @@ export default function PaperMetadata({ paper }) {
         {/* arXiv ID */}
         {paper.arxiv_id && (
           <div>
-            <span className="text-slate-400 font-medium block mb-1">arXiv Identifier</span>
+            <span className="text-slate-700 dark:text-slate-300 font-bold block mb-1">arXiv Identifier</span>
             <a
               href={`https://arxiv.org/abs/${paper.arxiv_id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700 font-mono font-medium hover:underline"
+              className="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 font-mono font-bold hover:underline"
             >
               <span>{paper.arxiv_id}</span>
               <ExternalLink className="w-3 h-3" />
@@ -106,25 +106,25 @@ export default function PaperMetadata({ paper }) {
 
         {/* Ingest Date */}
         <div>
-          <span className="text-slate-400 font-medium block mb-0.5">Uploaded On</span>
-          <span className="text-slate-700 font-medium flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+          <span className="text-slate-700 dark:text-slate-300 font-bold block mb-0.5">Uploaded On</span>
+          <span className="text-slate-900 dark:text-slate-100 font-medium flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5 text-slate-500" />
             {formatDate(paper.uploaded_at)}
           </span>
         </div>
 
         {/* File Specs */}
         <div>
-          <span className="text-slate-400 font-medium block mb-0.5">File Details</span>
-          <span className="text-slate-700 font-medium flex items-center gap-1.5">
-            <HardDrive className="w-3.5 h-3.5 text-slate-400" />
+          <span className="text-slate-700 dark:text-slate-300 font-bold block mb-0.5">File Details</span>
+          <span className="text-slate-900 dark:text-slate-100 font-medium flex items-center gap-1.5">
+            <HardDrive className="w-3.5 h-3.5 text-slate-500" />
             {formatBytes(paper.file_size_bytes)} ({paper.mime_type || 'application/pdf'})
           </span>
         </div>
 
         {/* Verification Status */}
         <div>
-          <span className="text-slate-400 font-medium block mb-1">PDF Verification</span>
+          <span className="text-slate-700 dark:text-slate-300 font-bold block mb-1">PDF Verification</span>
           <Badge variant="success" size="xs" dot>
             Magic bytes verified (%PDF-)
           </Badge>

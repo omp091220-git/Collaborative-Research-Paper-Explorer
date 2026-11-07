@@ -264,7 +264,7 @@ export default function AdminMonitoringDashboard() {
           <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-600 font-bold flex items-center gap-1.5">
                   <span>💾</span> Storage Usage
                 </span>
                 <span
@@ -312,7 +312,7 @@ export default function AdminMonitoringDashboard() {
                   </div>
                 </div>
               ) : (
-                <div className="text-xs text-slate-400 italic">
+                <div className="text-xs text-slate-600 font-medium italic">
                   {overviewData?.storage?.paperCount || 0} stored research papers
                 </div>
               )}
@@ -323,7 +323,7 @@ export default function AdminMonitoringDashboard() {
           <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-600 font-bold flex items-center gap-1.5">
                   <span>⚡</span> Redis Queues
                 </span>
                 <span
@@ -370,7 +370,7 @@ export default function AdminMonitoringDashboard() {
           <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-600 font-bold flex items-center gap-1.5">
                   <span>🧠</span> GenAI Tokens
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800">
@@ -387,13 +387,13 @@ export default function AdminMonitoringDashboard() {
 
             <div className="mt-4 pt-3 border-t border-slate-100 grid grid-cols-2 text-xs">
               <div>
-                <span className="text-slate-400">Input: </span>
+                <span className="text-slate-600 font-semibold">Input: </span>
                 <strong className="text-slate-700 font-semibold">
                   {(overviewData?.genai?.promptTokens || 0).toLocaleString()}
                 </strong>
               </div>
               <div>
-                <span className="text-slate-400">Output: </span>
+                <span className="text-slate-600 font-semibold">Output: </span>
                 <strong className="text-slate-700 font-semibold">
                   {(overviewData?.genai?.completionTokens || 0).toLocaleString()}
                 </strong>
@@ -405,7 +405,7 @@ export default function AdminMonitoringDashboard() {
           <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-600 font-bold flex items-center gap-1.5">
                   <span>💵</span> Estimated API Cost
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
@@ -456,7 +456,7 @@ export default function AdminMonitoringDashboard() {
           {/* GenAI Time Period Filter */}
           {(activeTab === 'all' || activeTab === 'genai') && (
             <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200 text-xs self-start sm:self-auto">
-              <span className="px-2 font-medium text-slate-400">Period:</span>
+              <span className="px-2 font-bold text-slate-700">Period:</span>
               {[
                 { id: 'today', label: 'Today' },
                 { id: '7d', label: '7 Days' },
@@ -563,7 +563,7 @@ export default function AdminMonitoringDashboard() {
             {/* Storage Comparison Grid: DB Metadata vs Physical Disk */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-1">
-                <span className="text-xs text-slate-400 font-semibold uppercase">Total Stored Papers</span>
+                <span className="text-xs text-slate-700 font-bold uppercase">Total Stored Papers</span>
                 <div className="text-xl font-bold text-slate-800">
                   {storageData?.usage?.paperCount || 0}
                 </div>
@@ -573,7 +573,7 @@ export default function AdminMonitoringDashboard() {
               </div>
 
               <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-1">
-                <span className="text-xs text-slate-400 font-semibold uppercase">Physical Disk (uploads/)</span>
+                <span className="text-xs text-slate-700 font-bold uppercase">Physical Disk (uploads/)</span>
                 <div className="text-xl font-bold text-slate-800">
                   {storageData?.diskInspection?.formattedBytes || '0 B'}
                 </div>
@@ -583,7 +583,7 @@ export default function AdminMonitoringDashboard() {
               </div>
 
               <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-1">
-                <span className="text-xs text-slate-400 font-semibold uppercase">Single Max File Size</span>
+                <span className="text-xs text-slate-700 font-bold uppercase">Single Max File Size</span>
                 <div className="text-xl font-bold text-slate-800">
                   {storageData?.usage?.maxFileSizeFormatted || '0 B'}
                 </div>
@@ -655,7 +655,7 @@ export default function AdminMonitoringDashboard() {
                                 {p.arxivId}
                               </span>
                             ) : (
-                              <span className="text-slate-400">Direct upload</span>
+                              <span className="text-slate-600 font-medium">Direct upload</span>
                             )}
                           </td>
                           <td className="p-3 text-slate-600">{p.uploaderName}</td>
@@ -864,7 +864,7 @@ export default function AdminMonitoringDashboard() {
             {/* Token Metrics Quick Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                <span className="text-xs text-slate-400 font-semibold uppercase">Total Consumed</span>
+                <span className="text-xs text-slate-700 font-bold uppercase">Total Consumed</span>
                 <div className="text-xl font-bold text-slate-900">
                   {(genaiData?.summary?.totalTokens || 0).toLocaleString()}
                 </div>
@@ -872,7 +872,7 @@ export default function AdminMonitoringDashboard() {
               </div>
 
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                <span className="text-xs text-slate-400 font-semibold uppercase">Prompt (Input) Tokens</span>
+                <span className="text-xs text-slate-700 font-bold uppercase">Prompt (Input) Tokens</span>
                 <div className="text-xl font-bold text-indigo-700">
                   {(genaiData?.summary?.promptTokens || 0).toLocaleString()}
                 </div>
@@ -880,7 +880,7 @@ export default function AdminMonitoringDashboard() {
               </div>
 
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                <span className="text-xs text-slate-400 font-semibold uppercase">Completion (Output)</span>
+                <span className="text-xs text-slate-700 font-bold uppercase">Completion (Output)</span>
                 <div className="text-xl font-bold text-emerald-700">
                   {(genaiData?.summary?.completionTokens || 0).toLocaleString()}
                 </div>
@@ -888,7 +888,7 @@ export default function AdminMonitoringDashboard() {
               </div>
 
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                <span className="text-xs text-slate-400 font-semibold uppercase">Estimated Cost (USD)</span>
+                <span className="text-xs text-slate-700 font-bold uppercase">Estimated Cost (USD)</span>
                 <div className="text-xl font-bold text-emerald-700">
                   ${Number(genaiData?.summary?.totalCostUsd || 0).toFixed(4)}
                 </div>
@@ -1068,7 +1068,7 @@ export default function AdminMonitoringDashboard() {
               </h3>
               <button
                 onClick={() => setShowRecordModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-lg cursor-pointer"
+                className="text-slate-500 hover:text-slate-800 text-lg cursor-pointer"
               >
                 ✕
               </button>
