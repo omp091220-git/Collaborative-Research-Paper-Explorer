@@ -29,6 +29,9 @@ import DiscussionPanel from '../../components/DiscussionPanel';
 import CollaboratorsModal from '../../components/CollaboratorsModal';
 import CitationGraph from '../../components/CitationGraph';
 import RecommendedPapersModal from '../../components/RecommendedPapersModal';
+import PaperTagSection from '../../components/tagging/PaperTagSection';
+import paperTagsService from '../../services/paperTags.service';
+import tagsService from '../../services/tags.service';
 import ErrorState from '../../components/common/ErrorState';
 import LoadingSkeleton from '../../components/common/LoadingSkeleton';
 import { formatDate } from '../../utils/formatters';
@@ -37,13 +40,43 @@ export default function PaperDetailsPage() {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isResearcher } = useAuth();
   const { isBookmarked, toggleBookmark } = useLibrary();
   const { addToast } = useToast();
 
   const [paper, setPaper] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // FR-11 Paper Tag Assignments & Shared Taxonomy
+  const [paperAssignments, setPaperAssignments] = useState([]);
+  const [loadingAssignments, setLoadingAssignments] = useState(false);
+  const [tagTree, setTagTree] = useState([]);
+
+  const fetchPaperAssignments = useCallback(async () => {
+    if (!id) return;
+    setLoadingAssignments(true);
+    try {
+      const [assignRes, treeRes] = await Promise.allSettled([
+        paperTagsService.getAssignmentsForPaper(id),
+        tagsService.getTagTree(),
+      ]);
+      if (assignRes.status === 'fulfilled') {
+        setPaperAssignments(assignRes.value.assignments || []);
+      }
+      if (treeRes.status === 'fulfilled') {
+        setTagTree(treeRes.value || []);
+      }
+    } catch (err) {
+      console.error('Failed to load paper tags:', err);
+    } finally {
+      setLoadingAssignments(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchPaperAssignments();
+  }, [fetchPaperAssignments]);
 
   // Tabs: pdf | overview | annotations | discussions | citations
   const urlTab = searchParams.get('tab');
@@ -319,7 +352,7 @@ export default function PaperDetailsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
               {/* Abstract */}
-              <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+              <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-xs">
                 <h3 className="text-base font-bold text-slate-900 dark:text-white mb-3">
                   Abstract
                 </h3>
@@ -327,6 +360,16 @@ export default function PaperDetailsPage() {
                   {paper.abstract || 'No abstract is available for this research paper.'}
                 </p>
               </div>
+
+              {/* FR-10 & FR-11 Paper-Level Topic Tags */}
+              <PaperTagSection
+                paper={paper}
+                assignments={paperAssignments}
+                tagTree={tagTree}
+                onRefresh={fetchPaperAssignments}
+                canAssign={isAdmin || isResearcher}
+                loading={loadingAssignments}
+              />
 
               {/* Sections / Extracted Text if available */}
               {paper.sections && paper.sections.length > 0 && (
