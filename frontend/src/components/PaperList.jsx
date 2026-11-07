@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import CollaboratorsModal from './CollaboratorsModal';
+import DiscussionPanel from './DiscussionPanel';
+import CitationGraph from './CitationGraph';
+import RecommendedPapersModal from './RecommendedPapersModal';
 
 export default function PaperList({ refreshTrigger, selectedPaperId }) {
   const { isResearcher, isAdmin } = useAuth();
@@ -18,8 +22,10 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
   const [selectedDiscussionPaper, setSelectedDiscussionPaper] = useState(null);
   const [selectedCitationPaper, setSelectedCitationPaper] = useState(null);
 
-  // Expandable sections
-  const [activeCommentsPaperId, setActiveCommentsPaperId] = useState(selectedPaperId || null);
+  // Expandable comments & mentions
+  const [activeCommentsPaperId, setActiveCommentsPaperId] = useState(
+    selectedPaperId || null
+  );
   const [comments, setComments] = useState({});
   const [commentInput, setCommentInput] = useState('');
   const [commentSubmitting, setCommentSubmitting] = useState(false);
@@ -36,17 +42,13 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
   const fetchPapers = useCallback(async () => {
     setLoading(true);
     setError(null);
-
     try {
       const res = await axios.get('/api/papers', {
         withCredentials: true,
       });
-
       setPapers(res.data.papers || []);
     } catch (err) {
-      setError(
-        err.response?.data?.error || 'Failed to load papers.'
-      );
+      setError(err.response?.data?.error || 'Failed to load papers.');
     } finally {
       setLoading(false);
     }
@@ -64,41 +66,14 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
   }, []);
 
   useEffect(() => {
-    let active = true;
-    axios
-      .get('/api/papers', { withCredentials: true })
-      .then((res) => {
-        if (active) setPapers(res.data.papers || []);
-      })
-      .catch((err) => {
-        if (active) setError(err.response?.data?.error || 'Failed to load papers.');
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [refreshTrigger]);
+    fetchPapers();
+  }, [fetchPapers, refreshTrigger]);
 
   useEffect(() => {
     if (!selectedPaperId) return;
-    let active = true;
-    axios
-      .get(`/api/papers/${selectedPaperId}/comments`, { withCredentials: true })
-      .then((res) => {
-        if (active) {
-          setComments((prev) => ({
-            ...prev,
-            [selectedPaperId]: res.data.comments || [],
-          }));
-        }
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, [selectedPaperId]);
+    setActiveCommentsPaperId(selectedPaperId);
+    loadComments(selectedPaperId);
+  }, [selectedPaperId, loadComments]);
 
   // Star / Unstar paper
   const handleToggleStar = async (paper) => {
@@ -112,7 +87,9 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
           ? {
               ...p,
               is_starred: !isStarred,
-              star_count: isStarred ? Math.max(0, currentCount - 1) : currentCount + 1,
+              star_count: isStarred
+                ? Math.max(0, currentCount - 1)
+                : currentCount + 1,
             }
           : p
       )
@@ -120,9 +97,15 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
 
     try {
       if (isStarred) {
-        await axios.delete(`/api/papers/${paper.id}/star`, { withCredentials: true });
+        await axios.delete(`/api/papers/${paper.id}/star`, {
+          withCredentials: true,
+        });
       } else {
-        await axios.post(`/api/papers/${paper.id}/star`, {}, { withCredentials: true });
+        await axios.post(
+          `/api/papers/${paper.id}/star`,
+          {},
+          { withCredentials: true }
+        );
       }
     } catch (err) {
       console.error('Failed to update star state:', err);
@@ -165,7 +148,9 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
     setEditingPaper(paper);
     setEditTitle(paper.title || '');
     setEditAbstract(paper.abstract || '');
-    setEditAuthors(Array.isArray(paper.authors) ? paper.authors.join(', ') : '');
+    setEditAuthors(
+      Array.isArray(paper.authors) ? paper.authors.join(', ') : ''
+    );
     setEditError(null);
     setEditSuccess(null);
   };
@@ -195,7 +180,9 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
 
       setEditSuccess(res.data.message || 'Paper updated successfully.');
       setPapers((prev) =>
-        prev.map((p) => (p.id === editingPaper.id ? { ...p, ...res.data.paper } : p))
+        prev.map((p) =>
+          p.id === editingPaper.id ? { ...p, ...res.data.paper } : p
+        )
       );
       setTimeout(() => {
         setEditingPaper(null);
@@ -206,56 +193,18 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
       setEditLoading(false);
     }
   };
-    let ignore = false;
-
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const res = await axios.get('/api/papers', {
-          withCredentials: true,
-        });
-
-        if (!ignore) {
-          setPapers(res.data.papers || []);
-        }
-      } catch (err) {
-        if (!ignore) {
-          setError(
-            err.response?.data?.error || 'Failed to load papers.'
-          );
-        }
-      } finally {
-        if (!ignore) {
-          setLoading(false);
-        }
-      }
-    };
-
-    load();
-
-    return () => {
-      ignore = true;
-    };
-  }, [refreshTrigger]);
 
   const handleSeedSamplePapers = async () => {
     setSeeding(true);
-
     try {
       await axios.post(
         '/api/recommendations/seed-sample',
         {},
         { withCredentials: true }
       );
-
       await fetchPapers();
     } catch (err) {
-      alert(
-        err.response?.data?.error ||
-          'Failed to seed sample papers.'
-      );
+      alert(err.response?.data?.error || 'Failed to seed sample papers.');
     } finally {
       setSeeding(false);
     }
@@ -278,9 +227,7 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
     <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 font-sans">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
         <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-          <span>📖</span>
-          Research Papers
-
+          <span>📖</span> Research Papers
           {!loading && (
             <span className="text-sm font-normal text-slate-400">
               ({filtered.length})
@@ -314,9 +261,7 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
             className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition cursor-pointer disabled:opacity-50"
             title="Seed sample papers with section tags and embeddings"
           >
-            {seeding
-              ? 'Seeding...'
-              : '✨ Seed Sample Papers (FR-14 Demo)'}
+            {seeding ? 'Seeding...' : '✨ Seed Sample Papers (FR-14 Demo)'}
           </button>
         </div>
       </div>
@@ -331,12 +276,12 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
 
       {/* Error State */}
       {!loading && error && (
-        <div className="p-3 bg-red-50 text-red-800 border border-red-200 rounded-lg text-sm">
-          {error}
+        <div className="p-3 bg-red-50 text-red-800 border border-red-200 rounded-lg text-sm flex items-center justify-between">
+          <span>{error}</span>
           <button
             type="button"
             onClick={fetchPapers}
-            className="ml-2 underline font-semibold"
+            className="ml-2 underline font-semibold cursor-pointer"
           >
             Retry
           </button>
@@ -347,19 +292,16 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
       {!loading && !error && filtered.length === 0 && (
         <div className="text-center py-12 px-4 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 space-y-3">
           <span className="text-3xl">📚</span>
-
           <p className="text-slate-700 font-semibold text-sm">
             {papers.length === 0
               ? 'No papers in database yet!'
               : 'No papers match your search.'}
           </p>
-
           <p className="text-slate-500 text-xs max-w-md mx-auto">
             {papers.length === 0
               ? 'Populate sample academic papers with sections, hierarchical tags, and embeddings to test FR-14 literature recommendations.'
               : 'Try searching with a different title, author, DOI, arXiv ID, or publication year.'}
           </p>
-
           {papers.length === 0 && (
             <button
               type="button"
@@ -398,6 +340,22 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
                       >
                         {paper.title}
                       </h3>
+                      {paper.publication_year && (
+                        <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-700 border border-slate-200 rounded font-medium">
+                          {paper.publication_year}
+                        </span>
+                      )}
+                      {paper.doi && (
+                        <a
+                          href={`https://doi.org/${paper.doi}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded font-medium hover:bg-blue-100 transition"
+                          title={`DOI: ${paper.doi}`}
+                        >
+                          DOI:{paper.doi}
+                        </a>
+                      )}
                       {paper.arxiv_id && (
                         <a
                           href={`https://arxiv.org/abs/${paper.arxiv_id}`}
@@ -419,7 +377,7 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
                     )}
                   </div>
 
-                  {/* Actions column */}
+                  {/* Actions column: Star & Edit */}
                   <div className="flex flex-col items-end gap-2 shrink-0">
                     {/* Star Button */}
                     <button
@@ -430,9 +388,17 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
                           ? 'bg-amber-50 text-amber-800 border-amber-300 shadow-xs'
                           : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-100'
                       }`}
-                      title={paper.is_starred ? 'Click to unstar' : 'Click to star (receive updates)'}
+                      title={
+                        paper.is_starred
+                          ? 'Click to unstar'
+                          : 'Click to star (receive updates)'
+                      }
                     >
-                      <span className={paper.is_starred ? 'text-amber-500' : 'text-slate-400'}>
+                      <span
+                        className={
+                          paper.is_starred ? 'text-amber-500' : 'text-slate-400'
+                        }
+                      >
                         {paper.is_starred ? '★' : '☆'}
                       </span>
                       <span>{paper.is_starred ? 'Starred' : 'Star'}</span>
@@ -455,32 +421,84 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
                   </div>
                 </div>
 
-                {/* Footer bar */}
-                <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 text-xs text-slate-400">
-                  <div className="flex items-center gap-4">
+                {/* Footer bar: Dates + Buttons */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-3 pt-2.5 border-t border-slate-200/70 text-xs text-slate-400">
+                  <div className="flex items-center gap-3">
                     <span>
                       Added{' '}
-                      {new Date(paper.uploaded_at).toLocaleDateString(undefined, {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
+                      {new Date(paper.uploaded_at).toLocaleDateString(
+                        undefined,
+                        {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        }
+                      )}
                     </span>
                     {paper.file_size_bytes && (
-                      <span>{(paper.file_size_bytes / 1_048_576).toFixed(1)} MB</span>
+                      <span>
+                        {(paper.file_size_bytes / 1_048_576).toFixed(1)} MB
+                      </span>
                     )}
                   </div>
 
-                  {/* Comments / Discussion Toggle */}
-                  <button
-                    type="button"
-                    onClick={() => handleToggleComments(paper.id)}
-                    className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>💬</span>
-                    <span>Discussions & Mentions</span>
-                    <span>{isCommentsOpen ? '▲' : '▼'}</span>
-                  </button>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCitationPaper(paper)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-teal-50 text-teal-700 border border-teal-200 rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs"
+                      title="Explore backward references, forward citations, and clusters"
+                    >
+                      <span>🕸️</span>
+                      <span>Citation Graph</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDiscussionPaper(paper)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs"
+                    >
+                      <span>💬</span>
+                      <span>Discussions</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCollabPaper(paper)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-purple-50 text-purple-600 border border-purple-200 rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs"
+                    >
+                      <span>👥</span>
+                      <span>Collaborators</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPaperForRecs(paper)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold shadow-2xs transition cursor-pointer"
+                      title="View AI literature recommendations"
+                    >
+                      <span>✨</span> Related Papers (FR-14)
+                    </button>
+
+                    {/* Comments / Discussion & Mentions Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleComments(paper.id)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition cursor-pointer shadow-2xs ${
+                        isCommentsOpen
+                          ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                          : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
+                      }`}
+                      title="Toggle inline comments and user mentions"
+                    >
+                      <span>@</span>
+                      <span>Mentions</span>
+                      <span className="text-[11px] text-slate-400">
+                        ({paperComments.length})
+                      </span>
+                      <span>{isCommentsOpen ? '▲' : '▼'}</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Expandable Discussions & Mentions Section */}
@@ -499,7 +517,8 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
                     <div className="space-y-2 max-h-56 overflow-y-auto">
                       {paperComments.length === 0 && (
                         <p className="text-xs text-slate-400 py-3 text-center">
-                          No discussion comments yet. Start the conversation by mentioning a peer with @username!
+                          No discussion comments yet. Start the conversation by
+                          mentioning a peer with @username!
                         </p>
                       )}
                       {paperComments.map((c) => (
@@ -518,7 +537,9 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
                               })}
                             </span>
                           </div>
-                          <p className="text-slate-700 whitespace-pre-wrap">{c.content}</p>
+                          <p className="text-slate-700 whitespace-pre-wrap">
+                            {c.content}
+                          </p>
                         </div>
                       ))}
                     </div>
@@ -570,7 +591,8 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
             </div>
 
             <p className="text-xs text-slate-500">
-              Meaningful changes to title, abstract, or authors will automatically notify all users who have starred this paper.
+              Meaningful changes to title, abstract, or authors will
+              automatically notify all users who have starred this paper.
             </p>
 
             {editError && (
@@ -652,14 +674,14 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
         onClose={() => setSelectedCollabPaper(null)}
       />
 
-      {/* Discussion Panel */}
+      {/* Discussion Panel Drawer */}
       <DiscussionPanel
         paper={selectedDiscussionPaper}
         isOpen={Boolean(selectedDiscussionPaper)}
         onClose={() => setSelectedDiscussionPaper(null)}
       />
 
-      {/* Citation Graph */}
+      {/* FR-16: Citation Graph Explorer Modal */}
       {selectedCitationPaper && (
         <CitationGraph
           paperId={selectedCitationPaper.id}

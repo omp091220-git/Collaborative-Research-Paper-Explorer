@@ -27,6 +27,7 @@ import { authenticateToken } from "../middleware/authenticate.js";
 import { authorizeRoles, requirePermission } from "../middleware/authorize.js";
 import { ROLES, PERMISSIONS } from "../utils/roles.js";
 import { isValidPdf } from "../utils/pdfValidator.js";
+import pool from "../config/database.js";
 import * as paperStarRepo from "../repositories/paperStar.repository.js";
 import {
   notifyStarrersMetadataChange,
@@ -183,7 +184,6 @@ router.get(
       return next(error);
     }
   }
-  listPapers
 );
 
 // ─── GET /api/papers/:id ──────────────────────────────────────────────────────
@@ -244,7 +244,6 @@ router.get(
       return next(error);
     }
   }
-  getPaperById
 );
 
 // ─── GET /api/papers/:id/citation-graph ─────────────────────────────────────
