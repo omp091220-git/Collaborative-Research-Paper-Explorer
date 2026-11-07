@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 function formatTimestamp(timestamp) {
@@ -13,6 +14,7 @@ function formatTimestamp(timestamp) {
 }
 
 export default function NotificationBell({ onNavigateToPaper }) {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -149,6 +151,8 @@ export default function NotificationBell({ onNavigateToPaper }) {
     setIsOpen(false);
     if (onNavigateToPaper && item.paper_id) {
       onNavigateToPaper(item.paper_id);
+    } else if (item.paper_id) {
+      navigate(`/papers/${item.paper_id}`);
     }
   };
 

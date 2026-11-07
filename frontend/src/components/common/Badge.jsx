@@ -1,11 +1,12 @@
 const variants = {
-  default: 'bg-slate-100 text-slate-700 border-slate-200',
-  primary: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-  success: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  warning: 'bg-amber-50 text-amber-700 border-amber-200',
-  danger: 'bg-rose-50 text-rose-700 border-rose-200',
-  purple: 'bg-purple-50 text-purple-700 border-purple-200',
-  blue: 'bg-sky-50 text-sky-700 border-sky-200',
+  default: 'bg-slate-100 text-slate-800 border-slate-300',
+  primary: 'bg-indigo-50 text-indigo-800 border-indigo-300 font-semibold',
+  success: 'bg-emerald-50 text-emerald-800 border-emerald-300 font-semibold',
+  warning: 'bg-amber-50 text-amber-900 border-amber-300 font-semibold',
+  danger: 'bg-rose-50 text-rose-800 border-rose-300 font-semibold',
+  purple: 'bg-purple-50 text-purple-900 border-purple-300 font-semibold',
+  blue: 'bg-sky-50 text-sky-900 border-sky-300 font-semibold',
+  indigo: 'bg-indigo-50 text-indigo-800 border-indigo-300 font-semibold',
 };
 
 const sizes = {
@@ -29,6 +30,7 @@ export default function Badge({
     danger: 'bg-rose-500',
     purple: 'bg-purple-500',
     blue: 'bg-sky-500',
+    indigo: 'bg-indigo-600',
   };
 
   return (
