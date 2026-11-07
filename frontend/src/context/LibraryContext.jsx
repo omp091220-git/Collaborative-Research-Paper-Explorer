@@ -20,8 +20,8 @@ export function LibraryProvider({ children }) {
     }
   });
 
-  // Reading status: { [paperId]: 'want_to_read' | 'reading' | 'completed' }
-  const [readingStatus, setReadingStatus] = useState(() => {
+  // Reading status: { [paperId]: { status, title, updatedAt } }
+  const [readingStatus, setReadingStatusState] = useState(() => {
     try {
       const saved = localStorage.getItem(`${storagePrefix}reading_status`);
       return saved ? JSON.parse(saved) : {};
@@ -57,7 +57,7 @@ export function LibraryProvider({ children }) {
       setBookmarks(b ? JSON.parse(b) : []);
 
       const r = localStorage.getItem(`${storagePrefix}reading_status`);
-      setReadingStatus(r ? JSON.parse(r) : {});
+      setReadingStatusState(r ? JSON.parse(r) : {});
 
       const c = localStorage.getItem(`${storagePrefix}collections`);
       if (c) {
@@ -90,7 +90,7 @@ export function LibraryProvider({ children }) {
   }, [storagePrefix]);
 
   const syncReadingStatus = useCallback((newStatus) => {
-    setReadingStatus(newStatus);
+    setReadingStatusState(newStatus);
     try {
       localStorage.setItem(`${storagePrefix}reading_status`, JSON.stringify(newStatus));
     } catch {
@@ -132,12 +132,35 @@ export function LibraryProvider({ children }) {
   }, [bookmarks, syncBookmarks, success, info]);
 
   const isBookmarked = useCallback((paperId) => {
-    return bookmarks.some((p) => (typeof p === 'string' ? p === paperId : p.id === paperId));
+    return (bookmarks || []).some((p) => (typeof p === 'string' ? p === paperId : p.id === paperId));
   }, [bookmarks]);
 
-  const setPaperStatus = useCallback((paperId, status) => {
-    const next = { ...readingStatus, [paperId]: status };
-    if (!status) delete next[paperId];
+  const removeBookmark = useCallback((paperId) => {
+    const next = (bookmarks || []).filter((p) => (typeof p === 'string' ? p !== paperId : p.id !== paperId));
+    syncBookmarks(next);
+  }, [bookmarks, syncBookmarks]);
+
+  const clearAllBookmarks = useCallback(() => {
+    syncBookmarks([]);
+    info('Bookmarks Cleared', 'All saved papers have been removed from your library.');
+  }, [syncBookmarks, info]);
+
+  const setReadingStatus = useCallback((paperId, status, title = '') => {
+    if (!paperId) return;
+    const current = readingStatus && typeof readingStatus === 'object' && !Array.isArray(readingStatus)
+      ? readingStatus
+      : {};
+    const next = { ...current };
+    if (!status) {
+      delete next[paperId];
+    } else {
+      const existing = typeof current[paperId] === 'object' ? current[paperId] : {};
+      next[paperId] = {
+        status,
+        title: title || existing.title || `Paper #${paperId}`,
+        updatedAt: new Date().toISOString(),
+      };
+    }
     syncReadingStatus(next);
   }, [readingStatus, syncReadingStatus]);
 
@@ -174,12 +197,16 @@ export function LibraryProvider({ children }) {
   return (
     <LibraryContext.Provider
       value={{
-        bookmarks,
-        readingStatus,
-        collections,
+        bookmarks: Array.isArray(bookmarks) ? bookmarks : [],
+        readingStatus: readingStatus && typeof readingStatus === 'object' && !Array.isArray(readingStatus) ? readingStatus : {},
+        readingList: readingStatus && typeof readingStatus === 'object' && !Array.isArray(readingStatus) ? readingStatus : {},
+        collections: Array.isArray(collections) ? collections : [],
         toggleBookmark,
+        removeBookmark,
+        clearAllBookmarks,
         isBookmarked,
-        setPaperStatus,
+        setPaperStatus: setReadingStatus,
+        setReadingStatus,
         createCollection,
         deleteCollection,
         togglePaperInCollection,

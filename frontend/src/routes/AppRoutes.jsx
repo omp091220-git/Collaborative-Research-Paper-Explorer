@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import AdminRoute from './AdminRoute';
 import AppLayout from '../components/layout/AppLayout';
+import ScrollToTop from '../components/common/ScrollToTop';
 import { Loader2 } from 'lucide-react';
 
 // Route-level code splitting via React.lazy()
@@ -20,6 +21,8 @@ const LibraryPage = lazy(() => import('../pages/LibraryPage/LibraryPage'));
 const CollectionsPage = lazy(() => import('../pages/CollectionsPage/CollectionsPage'));
 const CollaborationsPage = lazy(() => import('../pages/CollaborationsPage/CollaborationsPage'));
 const DiscussionsPage = lazy(() => import('../pages/DiscussionsPage/DiscussionsPage'));
+const TopicTaxonomyPage = lazy(() => import('../pages/TopicTaxonomyPage/TopicTaxonomyPage'));
+const PaperTaggingPage = lazy(() => import('../pages/PaperTaggingPage/PaperTaggingPage'));
 const ProfilePage = lazy(() => import('../pages/ProfilePage/ProfilePage'));
 const SettingsPage = lazy(() => import('../pages/SettingsPage/SettingsPage'));
 const AdminMonitoringPage = lazy(() => import('../pages/AdminMonitoringPage/AdminMonitoringPage'));
@@ -30,7 +33,7 @@ function PageLoader() {
   return (
     <div className="min-h-[50vh] flex flex-col items-center justify-center">
       <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-      <span className="mt-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+      <span className="mt-3 text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
         Loading view...
       </span>
     </div>
@@ -39,8 +42,10 @@ function PageLoader() {
 
 export default function AppRoutes() {
   return (
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
+    <>
+      <ScrollToTop />
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -65,6 +70,10 @@ export default function AppRoutes() {
           <Route path="/collections" element={<CollectionsPage />} />
           <Route path="/collaborations" element={<CollaborationsPage />} />
           <Route path="/discussions" element={<DiscussionsPage />} />
+          <Route path="/taxonomy" element={<TopicTaxonomyPage />} />
+          <Route path="/tags" element={<Navigate to="/taxonomy" replace />} />
+          <Route path="/tagging" element={<PaperTaggingPage />} />
+          <Route path="/paper-tags" element={<Navigate to="/tagging" replace />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
 
@@ -83,5 +92,6 @@ export default function AppRoutes() {
         </Route>
       </Routes>
     </Suspense>
+    </>
   );
 }

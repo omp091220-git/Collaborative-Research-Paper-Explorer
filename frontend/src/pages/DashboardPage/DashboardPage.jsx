@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   BookOpen,
   Bookmark,
@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const { user, isAdmin, hasPermission } = useAuth();
   const { bookmarks, collections } = useLibrary();
   const { addToast } = useToast();
+  const navigate = useNavigate();
 
   const [papers, setPapers] = useState([]);
   const [invitations, setInvitations] = useState([]);
@@ -317,7 +318,7 @@ export default function DashboardPage() {
             description="Be the first to upload a research paper or import a preprint directly from ArXiv."
             icon={FilePlus}
             actionLabel={canUpload ? 'Explore Papers' : undefined}
-            onAction={canUpload ? () => (window.location.href = '/explore') : undefined}
+            onAction={canUpload ? () => navigate('/explore') : undefined}
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

@@ -22,3 +22,5 @@ export const annotationsService = {
     return res.data;
   },
 };
+
+export default annotationsService;
