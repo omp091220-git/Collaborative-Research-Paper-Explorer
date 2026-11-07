@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   BookOpen,
+  FileText,
   Sparkles,
   MessageSquare,
   Users2,
@@ -20,6 +21,7 @@ import papersService from '../../services/papers.service';
 import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
 import PaperMetadata from '../../components/papers/PaperMetadata';
+import PaperPdfViewer from '../../components/papers/PaperPdfViewer';
 import PaperSummaryModal from '../../components/papers/PaperSummaryModal';
 import AnnotationList from '../../components/annotations/AnnotationList';
 import AddAnnotationModal from '../../components/annotations/AddAnnotationModal';
@@ -27,14 +29,18 @@ import DiscussionPanel from '../../components/DiscussionPanel';
 import CollaboratorsModal from '../../components/CollaboratorsModal';
 import CitationGraph from '../../components/CitationGraph';
 import RecommendedPapersModal from '../../components/RecommendedPapersModal';
+import PaperTagSection from '../../components/tagging/PaperTagSection';
+import paperTagsService from '../../services/paperTags.service';
+import tagsService from '../../services/tags.service';
 import ErrorState from '../../components/common/ErrorState';
 import LoadingSkeleton from '../../components/common/LoadingSkeleton';
 import { formatDate } from '../../utils/formatters';
 
 export default function PaperDetailsPage() {
   const { id } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isResearcher } = useAuth();
   const { isBookmarked, toggleBookmark } = useLibrary();
   const { addToast } = useToast();
 
@@ -42,8 +48,50 @@ export default function PaperDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Tabs: overview | annotations | discussions | citations
-  const [activeTab, setActiveTab] = useState('overview');
+  // FR-11 Paper Tag Assignments & Shared Taxonomy
+  const [paperAssignments, setPaperAssignments] = useState([]);
+  const [loadingAssignments, setLoadingAssignments] = useState(false);
+  const [tagTree, setTagTree] = useState([]);
+
+  const fetchPaperAssignments = useCallback(async () => {
+    if (!id) return;
+    setLoadingAssignments(true);
+    try {
+      const [assignRes, treeRes] = await Promise.allSettled([
+        paperTagsService.getAssignmentsForPaper(id),
+        tagsService.getTagTree(),
+      ]);
+      if (assignRes.status === 'fulfilled') {
+        setPaperAssignments(assignRes.value.assignments || []);
+      }
+      if (treeRes.status === 'fulfilled') {
+        setTagTree(treeRes.value || []);
+      }
+    } catch (err) {
+      console.error('Failed to load paper tags:', err);
+    } finally {
+      setLoadingAssignments(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchPaperAssignments();
+  }, [fetchPaperAssignments]);
+
+  // Tabs: pdf | overview | annotations | discussions | citations
+  const urlTab = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(urlTab || 'pdf');
+
+  useEffect(() => {
+    if (urlTab && urlTab !== activeTab) {
+      setActiveTab(urlTab);
+    }
+  }, [urlTab]);
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setSearchParams({ tab: tabId }, { replace: true });
+  };
 
   // Modals state
   const [summaryModalOpen, setSummaryModalOpen] = useState(false);
@@ -126,6 +174,7 @@ export default function PaperDetailsPage() {
   };
 
   const tabs = [
+    { id: 'pdf', label: 'PDF Document Viewer', icon: FileText },
     { id: 'overview', label: 'Overview & Abstract', icon: BookOpen },
     { id: 'annotations', label: 'Annotations', icon: Edit3 },
     { id: 'discussions', label: 'Discussions', icon: MessageSquare },
@@ -139,7 +188,7 @@ export default function PaperDetailsPage() {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer self-start"
+          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white transition-colors cursor-pointer self-start"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back</span>
@@ -222,25 +271,37 @@ export default function PaperDetailsPage() {
           </p>
         )}
 
-        {/* Primary external links */}
+        {/* Primary external links & action triggers */}
         <div className="flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800 flex-wrap">
-          {paper.pdf_url && (
-            <a
-              href={paper.pdf_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
-            >
-              <FileDown className="w-4 h-4" />
-              <span>Download / View PDF</span>
-            </a>
-          )}
+          <button
+            type="button"
+            onClick={() => handleTabChange('pdf')}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs ${
+              activeTab === 'pdf'
+                ? 'bg-indigo-600 text-white shadow-indigo-500/20 shadow-sm'
+                : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 dark:hover:bg-indigo-900/60'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            <span>Open in PDF Viewer</span>
+          </button>
+
+          <a
+            href={paper.pdf_url || `/api/papers/${paper.id}/pdf`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 transition"
+          >
+            <FileDown className="w-4 h-4" />
+            <span>Download PDF</span>
+          </a>
+
           {paper.arxiv_id && (
             <a
               href={`https://arxiv.org/abs/${paper.arxiv_id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:underline"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               <span>View on arXiv.org</span>
@@ -250,7 +311,7 @@ export default function PaperDetailsPage() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="border-b border-slate-200 dark:border-slate-800">
+      <div className="border-b border-slate-300 dark:border-slate-800">
         <nav className="flex space-x-6 overflow-x-auto scrollbar-none" aria-label="Tabs">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -259,14 +320,14 @@ export default function PaperDetailsPage() {
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 whitespace-nowrap cursor-pointer transition-colors ${
+                onClick={() => handleTabChange(tab.id)}
+                className={`py-3 px-1 border-b-2 text-sm flex items-center gap-2 whitespace-nowrap cursor-pointer transition-colors ${
                   isActive
-                    ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 font-semibold'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-200'
+                    ? 'border-indigo-600 text-indigo-700 dark:text-indigo-400 font-bold'
+                    : 'border-transparent text-slate-700 hover:text-slate-950 hover:border-slate-400 dark:text-slate-300 dark:hover:text-white font-medium'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'}`} />
+                <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`} />
                 <span>{tab.label}</span>
               </button>
             );
@@ -276,12 +337,22 @@ export default function PaperDetailsPage() {
 
       {/* Tab Content */}
       <div className="pt-2">
+        {/* Tab 0: Interactive PDF Viewer */}
+        {activeTab === 'pdf' && (
+          <div className="space-y-4">
+            <PaperPdfViewer
+              paperId={paper.id}
+              paper={paper}
+              pdfUrl={paper.pdf_url || `/api/papers/${paper.id}/pdf`}
+            />
+          </div>
+        )}
         {/* Tab 1: Overview */}
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
               {/* Abstract */}
-              <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+              <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-xs">
                 <h3 className="text-base font-bold text-slate-900 dark:text-white mb-3">
                   Abstract
                 </h3>
@@ -289,6 +360,16 @@ export default function PaperDetailsPage() {
                   {paper.abstract || 'No abstract is available for this research paper.'}
                 </p>
               </div>
+
+              {/* FR-10 & FR-11 Paper-Level Topic Tags */}
+              <PaperTagSection
+                paper={paper}
+                assignments={paperAssignments}
+                tagTree={tagTree}
+                onRefresh={fetchPaperAssignments}
+                canAssign={isAdmin || isResearcher}
+                loading={loadingAssignments}
+              />
 
               {/* Sections / Extracted Text if available */}
               {paper.sections && paper.sections.length > 0 && (

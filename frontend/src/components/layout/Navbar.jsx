@@ -68,13 +68,13 @@ export default function Navbar({ onToggleSidebar, onOpenUpload }) {
           <button
             type="button"
             onClick={() => navigate('/explore')}
-            className="w-full flex items-center justify-between px-3.5 py-1.5 text-sm text-slate-400 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-xl hover:border-slate-300 dark:hover:border-slate-600 transition-colors cursor-pointer group"
+            className="w-full flex items-center justify-between px-3.5 py-1.5 text-sm text-slate-600 dark:text-slate-300 bg-slate-100/80 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl hover:border-indigo-400 dark:hover:border-slate-600 transition-colors cursor-pointer group shadow-2xs"
           >
-            <span className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-              <Search className="w-4 h-4 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+            <span className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
+              <Search className="w-4 h-4 text-slate-500 group-hover:text-indigo-600 transition-colors" />
               <span>Search papers, topics, authors...</span>
             </span>
-            <kbd className="hidden lg:inline-flex items-center gap-0.5 px-2 py-0.5 text-[11px] font-mono font-medium text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-2xs">
+            <kbd className="hidden lg:inline-flex items-center gap-0.5 px-2 py-0.5 text-[11px] font-mono font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md shadow-2xs">
               /
             </kbd>
           </button>

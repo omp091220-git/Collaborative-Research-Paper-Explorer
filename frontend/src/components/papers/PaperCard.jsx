@@ -10,7 +10,7 @@ export default function PaperCard({ paper }) {
   const saved = isBookmarked(paper.id);
 
   return (
-    <Card hoverable className="flex flex-col h-full group bg-white border-slate-200/80">
+    <Card hoverable className="flex flex-col h-full group bg-white border-slate-300 shadow-2xs hover:shadow-md hover:border-indigo-200 transition-all">
       <div className="p-5 flex-1 flex flex-col justify-between">
         <div>
           {/* Header row: arXiv badge & bookmark */}
@@ -22,7 +22,7 @@ export default function PaperCard({ paper }) {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200/80 hover:bg-amber-100 transition"
+                  className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 transition font-semibold"
                   title="View on arXiv"
                 >
                   <span>arXiv:{paper.arxiv_id}</span>
@@ -30,8 +30,8 @@ export default function PaperCard({ paper }) {
                 </a>
               ) : (
                 <Badge variant="default" size="xs">
-                  <FileText className="w-3 h-3 text-slate-400" />
-                  <span>PDF Document</span>
+                  <FileText className="w-3 h-3 text-slate-600" />
+                  <span className="font-semibold">PDF Document</span>
                 </Badge>
               )}
             </div>
@@ -45,57 +45,57 @@ export default function PaperCard({ paper }) {
               }}
               className={`p-1.5 rounded-lg border transition cursor-pointer ${
                 saved
-                  ? 'bg-amber-50 border-amber-300 text-amber-600'
-                  : 'bg-white border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-300'
+                  ? 'bg-amber-50 border-amber-400 text-amber-700 shadow-2xs'
+                  : 'bg-white border-slate-300 text-slate-500 hover:text-slate-900 hover:border-slate-400'
               }`}
               title={saved ? 'Remove from saved library' : 'Save to library'}
               aria-label={saved ? 'Remove from saved library' : 'Save to library'}
             >
-              <Bookmark className={`w-3.5 h-3.5 ${saved ? 'fill-amber-500' : ''}`} />
+              <Bookmark className={`w-3.5 h-3.5 ${saved ? 'fill-amber-500 text-amber-600' : ''}`} />
             </button>
           </div>
 
           {/* Title */}
           <Link to={`/papers/${paper.id}`} className="block group-hover:text-indigo-600 transition">
-            <h3 className="text-sm font-semibold text-slate-900 leading-snug line-clamp-2 mb-1.5">
+            <h3 className="text-sm font-bold text-slate-900 leading-snug line-clamp-2 mb-1.5">
               {paper.title}
             </h3>
           </Link>
 
           {/* Authors */}
-          <p className="text-xs text-slate-500 font-medium mb-2.5 line-clamp-1">
+          <p className="text-xs text-slate-700 font-semibold mb-2.5 line-clamp-1">
             {formatAuthors(paper.authors, 3)}
           </p>
 
           {/* Abstract */}
           {paper.abstract && (
-            <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed mb-4">
+            <p className="text-xs text-slate-700 line-clamp-3 leading-relaxed mb-4">
               {paper.abstract}
             </p>
           )}
         </div>
 
         {/* Footer info: date & size */}
-        <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+        <div className="pt-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600 font-medium">
           <div className="flex items-center gap-1.5">
-            <Calendar className="w-3 h-3" />
+            <Calendar className="w-3.5 h-3.5 text-slate-500" />
             <span>{formatDate(paper.uploaded_at, { shortMonth: true })}</span>
           </div>
 
           <div className="flex items-center gap-3">
             {paper.file_size_bytes && (
               <span className="flex items-center gap-1">
-                <HardDrive className="w-3 h-3" />
+                <HardDrive className="w-3.5 h-3.5 text-slate-500" />
                 <span>{formatBytes(paper.file_size_bytes)}</span>
               </span>
             )}
 
             <Link
               to={`/papers/${paper.id}`}
-              className="inline-flex items-center gap-0.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition"
+              className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition"
             >
-              <span>Explore</span>
-              <ArrowUpRight className="w-3 h-3" />
+              <span>Explore & Read</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>

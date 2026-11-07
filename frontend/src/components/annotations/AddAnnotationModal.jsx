@@ -10,8 +10,10 @@ export default function AddAnnotationModal({
   paperId,
   annotationToEdit = null,
   onSaved,
+  onCreated,
 }) {
   const { success, error: showError } = useToast();
+  const notifySuccess = onSaved || onCreated;
   const [pageNumber, setPageNumber] = useState(1);
   const [content, setContent] = useState('');
   const [useCoords, setUseCoords] = useState(false);
@@ -80,11 +82,11 @@ export default function AddAnnotationModal({
         };
         const res = await annotationsService.updateAnnotation(annotationToEdit.id, updatePayload);
         success('Annotation Updated', 'Your changes have been saved.');
-        if (onSaved) onSaved(res.annotation);
+        if (notifySuccess) notifySuccess(res.annotation);
       } else {
         const res = await annotationsService.createAnnotation(payload);
         success('Annotation Created', 'Your annotation was added to the paper.');
-        if (onSaved) onSaved(res.annotation);
+        if (notifySuccess) notifySuccess(res.annotation);
       }
       onClose();
     } catch (err) {

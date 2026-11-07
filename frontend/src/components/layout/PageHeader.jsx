@@ -6,7 +6,7 @@ export default function PageHeader({
   children,
 }) {
   return (
-    <div className="mb-6 pb-4 border-b border-slate-200 dark:border-slate-800">
+    <div className="mb-6 pb-4 border-b border-slate-300 dark:border-slate-800">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
@@ -16,7 +16,7 @@ export default function PageHeader({
             {badge}
           </div>
           {description && (
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-3xl">
+            <p className="mt-1 text-sm text-slate-700 dark:text-slate-300 font-medium max-w-3xl">
               {description}
             </p>
           )}
