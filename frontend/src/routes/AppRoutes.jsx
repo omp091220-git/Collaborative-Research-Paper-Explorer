@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import AdminRoute from './AdminRoute';
 import AppLayout from '../components/layout/AppLayout';
+import ScrollToTop from '../components/common/ScrollToTop';
 import { Loader2 } from 'lucide-react';
 
 // Route-level code splitting via React.lazy()
@@ -41,8 +42,10 @@ function PageLoader() {
 
 export default function AppRoutes() {
   return (
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
+    <>
+      <ScrollToTop />
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -89,5 +92,6 @@ export default function AppRoutes() {
         </Route>
       </Routes>
     </Suspense>
+    </>
   );
 }

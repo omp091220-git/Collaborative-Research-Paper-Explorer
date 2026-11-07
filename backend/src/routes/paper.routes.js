@@ -275,8 +275,13 @@ router.get(
       const paper = result.rows[0];
 
       if (paper.file_path) {
-        const projectRoot = path.resolve(__dirname, "../../..");
-        const absolutePath = path.resolve(projectRoot, paper.file_path);
+        let absolutePath;
+        if (path.isAbsolute(paper.file_path)) {
+          absolutePath = paper.file_path;
+        } else {
+          const projectRoot = path.resolve(__dirname, "../../..");
+          absolutePath = path.resolve(projectRoot, paper.file_path);
+        }
 
         if (fs.existsSync(absolutePath)) {
           const safeTitle = (paper.title || "paper")
@@ -287,7 +292,11 @@ router.get(
             "Content-Disposition",
             `inline; filename="${encodeURIComponent(safeTitle)}.pdf"`
           );
-          return res.sendFile(absolutePath);
+          return res.sendFile(absolutePath, (err) => {
+            if (err && !res.headersSent) {
+              return next(err);
+            }
+          });
         }
       }
 

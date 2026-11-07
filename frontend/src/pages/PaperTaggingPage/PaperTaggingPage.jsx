@@ -1,21 +1,17 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
-  Tag,
   BookOpen,
   Search,
   RefreshCw,
   FolderTree,
   ExternalLink,
-  Edit3,
   Calendar,
   User,
-  ArrowRight,
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { useToast } from '../../context/ToastContext';
 import papersService from '../../services/papers.service';
 import tagsService from '../../services/tags.service';
 import paperTagsService from '../../services/paperTags.service';
@@ -24,20 +20,18 @@ import { getApiErrorMessage } from '../../services/api';
 import PageHeader from '../../components/layout/PageHeader';
 import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
-import EmptyState from '../../components/common/EmptyState';
 import ErrorState from '../../components/common/ErrorState';
 import PaperTagSection from '../../components/tagging/PaperTagSection';
 import AnnotationTagSection from '../../components/tagging/AnnotationTagSection';
 import { formatDate } from '../../utils/formatters';
 
 export default function PaperTaggingPage() {
-  const { user, isAdmin, isResearcher } = useAuth();
-  const { addToast } = useToast();
+  const { isAdmin, isResearcher } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const canAssign = isAdmin || isResearcher;
 
-  // Selected paper ID from URL or local state
+  // Selected paper ID from URL
   const selectedPaperIdFromUrl = searchParams.get('paperId');
 
   // Papers list state
@@ -55,7 +49,6 @@ export default function PaperTaggingPage() {
 
   // Shared Tag Tree
   const [tagTree, setTagTree] = useState([]);
-  const [loadingTree, setLoadingTree] = useState(true);
 
   // Fetch all papers from FR-6 backend
   const fetchPapers = useCallback(async () => {
@@ -65,31 +58,20 @@ export default function PaperTaggingPage() {
       const res = await papersService.getPapers({ limit: 50 });
       const paperList = res.papers || res.data || (Array.isArray(res) ? res : []);
       setPapers(paperList);
-
-      // Auto-select paper if specified in URL, or first paper
-      if (selectedPaperIdFromUrl) {
-        const found = paperList.find((p) => p.id === selectedPaperIdFromUrl);
-        if (found) setSelectedPaper(found);
-      } else if (paperList.length > 0 && !selectedPaper) {
-        setSelectedPaper(paperList[0]);
-      }
     } catch (err) {
       setPapersError(getApiErrorMessage(err, 'Failed to retrieve research papers.'));
     } finally {
       setLoadingPapers(false);
     }
-  }, [selectedPaperIdFromUrl]);
+  }, []);
 
   // Fetch shared tag tree from FR-10 backend
   const fetchTagTree = useCallback(async () => {
-    setLoadingTree(true);
     try {
       const tree = await tagsService.getTagTree();
       setTagTree(tree || []);
     } catch (err) {
       console.error('Failed to load taxonomy tree:', err);
-    } finally {
-      setLoadingTree(false);
     }
   }, []);
 
@@ -131,6 +113,24 @@ export default function PaperTaggingPage() {
     fetchTagTree();
   }, [fetchPapers, fetchTagTree]);
 
+  // Synchronize selected paper with URL query parameter
+  useEffect(() => {
+    if (papers.length === 0) return;
+    if (selectedPaperIdFromUrl) {
+      const found = papers.find((p) => String(p.id) === String(selectedPaperIdFromUrl));
+      if (found) {
+        if (selectedPaper?.id !== found.id) {
+          setSelectedPaper(found);
+        }
+        return;
+      }
+    }
+    // If no paper selected yet or current selection is not in list, select first
+    if (!selectedPaper || !papers.some((p) => p.id === selectedPaper.id)) {
+      setSelectedPaper(papers[0]);
+    }
+  }, [selectedPaperIdFromUrl, papers, selectedPaper]);
+
   // When selected paper changes, fetch its assignments and annotations and sync URL
   useEffect(() => {
     if (selectedPaper?.id) {
@@ -147,12 +147,13 @@ export default function PaperTaggingPage() {
       (p) =>
         p.title?.toLowerCase().includes(q) ||
         p.arxiv_id?.toLowerCase().includes(q) ||
-        p.authors?.some((a) => a.toLowerCase().includes(q))
+        (Array.isArray(p.authors) ? p.authors.some((a) => a.toLowerCase().includes(q)) : false)
     );
   }, [papers, paperSearch]);
 
   const handleSelectPaper = (paper) => {
     setSelectedPaper(paper);
+    setSearchParams({ paperId: paper.id }, { replace: true });
   };
 
   const handleRefreshCurrentPaper = () => {

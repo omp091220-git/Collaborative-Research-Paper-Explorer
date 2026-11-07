@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Bookmark, Clock, BookOpen, Trash2 } from 'lucide-react';
 import { useLibrary } from '../../context/LibraryContext';
 import { useToast } from '../../context/ToastContext';
@@ -19,13 +19,21 @@ export default function LibraryPage() {
     clearAllBookmarks,
   } = useLibrary();
   const { addToast } = useToast();
+  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('bookmarks'); // 'bookmarks' | 'queue'
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [summaryPaper, setSummaryPaper] = useState(null);
 
+  const safeBookmarks = Array.isArray(bookmarks) ? bookmarks : [];
+  const queue = readingList && typeof readingList === 'object' && !Array.isArray(readingList)
+    ? readingList
+    : {};
+
   const handleRemove = (paperId, title) => {
-    removeBookmark(paperId);
+    if (removeBookmark) {
+      removeBookmark(paperId);
+    }
     addToast({
       type: 'info',
       title: 'Bookmark Removed',
@@ -33,9 +41,11 @@ export default function LibraryPage() {
     });
   };
 
-  const filteredQueue = Object.entries(readingList).filter(([, item]) => {
+  const filteredQueue = Object.entries(queue).filter(([, rawItem]) => {
+    if (!rawItem) return false;
+    const itemStatus = typeof rawItem === 'string' ? rawItem : rawItem.status;
     if (statusFilter === 'ALL') return true;
-    return item.status === statusFilter;
+    return itemStatus === statusFilter;
   });
 
   return (
@@ -45,7 +55,7 @@ export default function LibraryPage() {
         title="My Research Library"
         description="Organize your reading list, track research papers in progress, and review saved bookmarks."
         actions={
-          bookmarks.length > 0 && activeTab === 'bookmarks' ? (
+          safeBookmarks.length > 0 && activeTab === 'bookmarks' && clearAllBookmarks ? (
             <Button
               variant="outline"
               size="sm"
@@ -74,7 +84,7 @@ export default function LibraryPage() {
             <Bookmark className="w-4 h-4" />
             <span>Saved Bookmarks</span>
             <Badge variant="indigo" size="sm">
-              {bookmarks.length}
+              {safeBookmarks.length}
             </Badge>
           </button>
 
@@ -90,7 +100,7 @@ export default function LibraryPage() {
             <Clock className="w-4 h-4" />
             <span>Reading Queue</span>
             <Badge variant="default" size="sm">
-              {Object.keys(readingList).length}
+              {Object.keys(queue).length}
             </Badge>
           </button>
         </nav>
@@ -99,17 +109,17 @@ export default function LibraryPage() {
       {/* Content */}
       {activeTab === 'bookmarks' && (
         <div>
-          {bookmarks.length === 0 ? (
+          {safeBookmarks.length === 0 ? (
             <EmptyState
               title="No bookmarks yet"
               description="Save research papers as you explore to easily find them later in your personal library."
               icon={Bookmark}
               actionLabel="Explore Papers"
-              onAction={() => (window.location.href = '/explore')}
+              onAction={() => navigate('/explore')}
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {bookmarks.map((paper) => (
+              {safeBookmarks.map((paper) => (
                 <div key={paper.id} className="relative group">
                   <PaperCard
                     paper={paper}
@@ -159,48 +169,54 @@ export default function LibraryPage() {
               description="Track your reading status for individual papers to maintain a structured literature review."
               icon={BookOpen}
               actionLabel="Explore Papers"
-              onAction={() => (window.location.href = '/explore')}
+              onAction={() => navigate('/explore')}
             />
           ) : (
             <div className="space-y-3">
-              {filteredQueue.map(([paperId, item]) => (
-                <div
-                  key={paperId}
-                  className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                >
-                  <div>
-                    <Link
-                      to={`/papers/${paperId}`}
-                      className="font-bold text-sm text-slate-900 dark:text-white hover:text-indigo-600 hover:underline"
-                    >
-                      {item.title || `Paper #${paperId}`}
-                    </Link>
-                    <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
-                      <span>Updated {new Date(item.updatedAt).toLocaleDateString()}</span>
+              {filteredQueue.map(([paperId, rawItem]) => {
+                const item = typeof rawItem === 'object' && rawItem !== null ? rawItem : { status: rawItem };
+                const currentStatus = item.status || 'WANT_TO_READ';
+                const formattedDate = item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : 'Recently';
+
+                return (
+                  <div
+                    key={paperId}
+                    className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  >
+                    <div>
+                      <Link
+                        to={`/papers/${paperId}`}
+                        className="font-bold text-sm text-slate-900 dark:text-white hover:text-indigo-600 hover:underline"
+                      >
+                        {item.title || `Paper #${paperId}`}
+                      </Link>
+                      <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+                        <span>Updated {formattedDate}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={currentStatus}
+                        onChange={(e) =>
+                          setReadingStatus && setReadingStatus(paperId, e.target.value, item.title)
+                        }
+                        className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer"
+                      >
+                        <option value="WANT_TO_READ">Want to read</option>
+                        <option value="READING">Reading</option>
+                        <option value="COMPLETED">Completed</option>
+                      </select>
+
+                      <Link to={`/papers/${paperId}`}>
+                        <Button variant="outline" size="sm">
+                          View Paper
+                        </Button>
+                      </Link>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={item.status}
-                      onChange={(e) =>
-                        setReadingStatus(paperId, e.target.value, item.title)
-                      }
-                      className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer"
-                    >
-                      <option value="WANT_TO_READ">Want to read</option>
-                      <option value="READING">Reading</option>
-                      <option value="COMPLETED">Completed</option>
-                    </select>
-
-                    <Link to={`/papers/${paperId}`}>
-                      <Button variant="outline" size="sm">
-                        View Paper
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

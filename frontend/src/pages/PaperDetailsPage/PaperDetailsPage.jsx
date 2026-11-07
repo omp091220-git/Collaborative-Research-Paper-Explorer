@@ -82,11 +82,14 @@ export default function PaperDetailsPage() {
   const urlTab = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState(urlTab || 'pdf');
 
+  // Synchronize tab state with URL query parameter
   useEffect(() => {
     if (urlTab && urlTab !== activeTab) {
       setActiveTab(urlTab);
+    } else if (!urlTab && activeTab !== 'pdf') {
+      setActiveTab('pdf');
     }
-  }, [urlTab]);
+  }, [urlTab, activeTab]);
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
@@ -102,6 +105,20 @@ export default function PaperDetailsPage() {
   const [citationGraphOpen, setCitationGraphOpen] = useState(false);
 
   const [annotationRefreshKey, setAnnotationRefreshKey] = useState(0);
+
+  // Reset route-specific states when switching between papers
+  useEffect(() => {
+    setPaper(null);
+    setPaperAssignments([]);
+    setError(null);
+    setSummaryModalOpen(false);
+    setAnnotationModalOpen(false);
+    setDiscussionOpen(false);
+    setCollaboratorsOpen(false);
+    setRecommendationsOpen(false);
+    setCitationGraphOpen(false);
+    setAnnotationRefreshKey(0);
+  }, [id]);
 
   const fetchPaperDetails = useCallback(async () => {
     setLoading(true);
@@ -343,7 +360,7 @@ export default function PaperDetailsPage() {
             <PaperPdfViewer
               paperId={paper.id}
               paper={paper}
-              pdfUrl={paper.pdf_url || `/api/papers/${paper.id}/pdf`}
+              pdfUrl={paper.pdf_url || `/papers/${paper.id}/pdf`}
             />
           </div>
         )}
