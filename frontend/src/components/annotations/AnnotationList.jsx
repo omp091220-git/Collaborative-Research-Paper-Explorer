@@ -8,6 +8,7 @@ import { MessageSquarePlus, MessageSquare, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { annotationsService } from '../../services/annotations.service';
+import paperTagsService from '../../services/paperTags.service';
 
 export default function AnnotationList({
   paperId,
@@ -20,6 +21,7 @@ export default function AnnotationList({
   const { addToast } = useToast();
 
   const [annotations, setAnnotations] = useState(initialAnnotations || []);
+  const [annotationTagsMap, setAnnotationTagsMap] = useState({});
   const [loading, setLoading] = useState(paperId ? true : Boolean(initialLoading));
   const [error, setError] = useState(null);
   const [selectedPage, setSelectedPage] = useState('all');
@@ -33,8 +35,28 @@ export default function AnnotationList({
     setLoading(true);
     setError(null);
     try {
-      const data = await annotationsService.getAnnotations(paperId);
-      setAnnotations(Array.isArray(data) ? data : []);
+      const [annotRes, assignRes] = await Promise.allSettled([
+        annotationsService.getAnnotations(paperId),
+        paperTagsService.getAssignmentsForPaper(paperId),
+      ]);
+
+      if (annotRes.status === 'fulfilled') {
+        setAnnotations(Array.isArray(annotRes.value) ? annotRes.value : []);
+      } else {
+        throw annotRes.reason;
+      }
+
+      if (assignRes.status === 'fulfilled') {
+        const assignments = assignRes.value?.assignments || [];
+        const map = {};
+        for (const a of assignments) {
+          if (a.annotation_id) {
+            if (!map[a.annotation_id]) map[a.annotation_id] = [];
+            map[a.annotation_id].push(a);
+          }
+        }
+        setAnnotationTagsMap(map);
+      }
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to retrieve annotations for this paper.');
     } finally {
@@ -189,6 +211,7 @@ export default function AnnotationList({
             <AnnotationCard
               key={item.id}
               annotation={item}
+              tags={annotationTagsMap[item.id] || []}
               onEdit={handleEdit}
               onDelete={handleDelete}
             />

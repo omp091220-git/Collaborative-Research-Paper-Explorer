@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Calendar,
   HardDrive,
@@ -7,6 +8,7 @@ import {
   Check,
   User,
   Share2,
+  Tag,
 } from 'lucide-react';
 import Badge from '../common/Badge';
 import Button from '../common/Button';
@@ -128,6 +130,20 @@ export default function PaperMetadata({ paper }) {
           <Badge variant="success" size="xs" dot>
             Magic bytes verified (%PDF-)
           </Badge>
+        </div>
+
+        {/* FR-11 Topic Tagging Workspace */}
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+          <Link
+            to={`/tagging?paperId=${paper.id}`}
+            className="w-full inline-flex items-center justify-between px-3 py-2 rounded-lg bg-indigo-50/80 dark:bg-indigo-950/50 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 font-semibold text-xs border border-indigo-200 dark:border-indigo-800 transition"
+          >
+            <span className="flex items-center gap-1.5">
+              <Tag className="w-3.5 h-3.5" />
+              <span>Tagging Workspace</span>
+            </span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </Link>
         </div>
       </div>
     </div>
