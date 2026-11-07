@@ -14,6 +14,7 @@ export default function Dashboard() {
   const [testActionStatus, setTestActionStatus] = useState(null);
   const [testLoading, setTestLoading] = useState(false);
   const [paperRefresh, setPaperRefresh] = useState(0);
+  const [selectedPaperId, setSelectedPaperId] = useState(null);
 
   const handlePaperAdded = () => setPaperRefresh((n) => n + 1);
 
@@ -69,7 +70,13 @@ export default function Dashboard() {
               </p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <NotificationBell />
+              <NotificationBell
+                onNavigateToPaper={(paperId) => {
+                  setSelectedPaperId(paperId);
+                  const el = document.getElementById(`paper-${paperId}`);
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+              />
               <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
                 ✓ Authenticated
               </span>
@@ -343,7 +350,10 @@ export default function Dashboard() {
         )}
 
         {/* Research Paper Listing */}
-        <PaperList refreshTrigger={paperRefresh} />
+        <PaperList
+          refreshTrigger={paperRefresh}
+          selectedPaperId={selectedPaperId}
+        />
       </div>
     </div>
   );
