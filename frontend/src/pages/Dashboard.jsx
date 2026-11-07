@@ -70,13 +70,6 @@ export default function Dashboard() {
               </p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <NotificationBell
-                onNavigateToPaper={(paperId) => {
-                  setSelectedPaperId(paperId);
-                  const el = document.getElementById(`paper-${paperId}`);
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-              />
               <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
                 ✓ Authenticated
               </span>
@@ -91,6 +84,13 @@ export default function Dashboard() {
                   <span>📊</span> Monitoring Dashboard
                 </button>
               )}
+              <NotificationBell
+                onNavigateToPaper={(paperId) => {
+                  setSelectedPaperId(paperId);
+                  const el = document.getElementById(`paper-${paperId}`);
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+              />
               <button
                 onClick={handleLogout}
                 className="px-4 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-semibold shadow-xs transition duration-200 cursor-pointer"

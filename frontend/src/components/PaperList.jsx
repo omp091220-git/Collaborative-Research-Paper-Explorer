@@ -474,7 +474,7 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
                     <button
                       type="button"
                       onClick={() => setSelectedPaperForRecs(paper)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold shadow-2xs transition cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold shadow-2xs transition cursor-pointer"
                       title="View AI literature recommendations"
                     >
                       <span>✨</span> Related Papers (FR-14)
