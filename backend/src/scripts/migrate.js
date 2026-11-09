@@ -23,6 +23,7 @@ async function runMigrations() {
     '20261025_discussions_and_collaborators.sql',
     '20261027_citations.sql',
     '20261027_paper_sections_and_recommendations.sql',
+    '20261106_paper_assets_and_extraction_jobs.sql',
   ];
 
   console.log('--- Starting Database Migrations ---');

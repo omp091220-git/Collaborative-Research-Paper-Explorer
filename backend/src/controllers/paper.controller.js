@@ -19,8 +19,11 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import pool from "../config/database.js";
+
 import {
   insertPaper,
+  insertPaperWithJob,
   findAllPapers,
   findPaperById,
   findPaperByArxivId,
@@ -120,21 +123,38 @@ export const uploadPaper = async (req, res, next) => {
       .relative(path.resolve(__dirname, "../../.."), uploadedFilePath)
       .replace(/\\/g, "/");
 
-    let paper;
+    let client;
     try {
-      paper = await insertPaper({
-        title,
-        abstract,
-        authors,
-        doi,
-        publicationYear,
-        arxivId: null,
-        filePath: relativeFilePath,
-        fileSizeBytes: req.file.size,
-        mimeType: "application/pdf",
-        uploaderId: req.user.id,
+      client = await pool.connect();
+    } catch (connError) {
+      safeUnlink(uploadedFilePath);
+      return next(connError);
+    }
+
+    let paper;
+    let extractionJob;
+    try {
+      await client.query("BEGIN");
+      const result = await insertPaperWithJob({
+        client,
+        paperData: {
+          title,
+          abstract,
+          authors,
+          doi,
+          publicationYear,
+          arxivId: null,
+          filePath: relativeFilePath,
+          fileSizeBytes: req.file.size,
+          mimeType: "application/pdf",
+          uploaderId: req.user.id,
+        },
       });
+      await client.query("COMMIT");
+      paper = result.paper;
+      extractionJob = result.job;
     } catch (dbError) {
+      await client.query("ROLLBACK").catch(() => {});
       safeUnlink(uploadedFilePath);
       // Unique constraint violation (file_path or doi)
       if (dbError.code === "23505") {
@@ -149,11 +169,14 @@ export const uploadPaper = async (req, res, next) => {
         });
       }
       return next(dbError);
+    } finally {
+      client.release();
     }
 
     return res.status(201).json({
       message: "Paper uploaded successfully.",
       paper,
+      extraction_job: extractionJob,
     });
   } catch (error) {
     safeUnlink(uploadedFilePath);
@@ -239,21 +262,38 @@ export const importPaper = async (req, res, next) => {
       .relative(path.resolve(__dirname, "../../.."), destPath)
       .replace(/\\/g, "/");
 
-    let paper;
+    let client;
     try {
-      paper = await insertPaper({
-        title: metadata.title,
-        abstract: metadata.abstract,
-        authors: metadata.authors,
-        doi: metadata.doi,              // FR-07: from <arxiv:doi> in Atom feed
-        publicationYear: metadata.publicationYear, // FR-07: from <published>
-        arxivId,
-        filePath: relativeFilePath,
-        fileSizeBytes: fileSize,
-        mimeType: "application/pdf",
-        uploaderId: req.user.id,
+      client = await pool.connect();
+    } catch (connError) {
+      safeUnlink(destPath);
+      return next(connError);
+    }
+
+    let paper;
+    let extractionJob;
+    try {
+      await client.query("BEGIN");
+      const result = await insertPaperWithJob({
+        client,
+        paperData: {
+          title: metadata.title,
+          abstract: metadata.abstract,
+          authors: metadata.authors,
+          doi: metadata.doi,              // FR-07: from <arxiv:doi> in Atom feed
+          publicationYear: metadata.publicationYear, // FR-07: from <published>
+          arxivId,
+          filePath: relativeFilePath,
+          fileSizeBytes: fileSize,
+          mimeType: "application/pdf",
+          uploaderId: req.user.id,
+        },
       });
+      await client.query("COMMIT");
+      paper = result.paper;
+      extractionJob = result.job;
     } catch (dbError) {
+      await client.query("ROLLBACK").catch(() => {});
       safeUnlink(destPath);
       if (dbError.code === "23505") {
         return res.status(409).json({
@@ -266,11 +306,14 @@ export const importPaper = async (req, res, next) => {
         });
       }
       return next(dbError);
+    } finally {
+      client.release();
     }
 
     return res.status(201).json({
       message: `Paper "${metadata.title}" imported from arXiv successfully.`,
       paper,
+      extraction_job: extractionJob,
     });
   } catch (error) {
     if (destPath) {
