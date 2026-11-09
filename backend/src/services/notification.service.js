@@ -788,3 +788,22 @@ export const deleteNotification = async ({ notificationId, userId }) => {
   }
   return deleted;
 };
+
+/**
+ * Creates a single notification (used by collaboration invitations).
+ */
+export const createNotification = async (params, client = pool) => {
+  const normalizedParams = {
+    ...params,
+    recipientId: params.recipientId || params.userId,
+  };
+  return await notificationRepo.createNotification(normalizedParams, client);
+};
+export const markNotificationAsRead = async (notificationId, userId) => {
+  return await markAsRead({ notificationId, userId });
+};
+
+export const markAllNotificationsAsRead = async (userId) => {
+  const result = await markAllAsRead(userId);
+  return result?.updated_count || 0;
+};

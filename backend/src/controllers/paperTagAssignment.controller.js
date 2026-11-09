@@ -267,4 +267,3 @@ export const syncPaperTags = async (req, res, next) => {
     return handleError(error, res, next);
   }
 };
-

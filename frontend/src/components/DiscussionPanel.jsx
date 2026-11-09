@@ -637,7 +637,7 @@ export default function DiscussionPanel({ paper, isOpen, onClose }) {
                       {/* Messages History */}
                       {details?.messages && (
                         <div className="space-y-3">
-                          {details.messages.map((m, idx) => {
+                          {details.messages.map((m) => {
                             const isChild = Boolean(m.parent_id);
                             return (
                               <div

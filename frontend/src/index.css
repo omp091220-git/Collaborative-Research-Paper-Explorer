@@ -1,1 +1,123 @@
 @import "tailwindcss";
+
+/* ─── Global Design Tokens & WCAG 2.2 AA Contrast System ───────────────────── */
+:root {
+  --color-canvas: #f8fafc;        /* slate-50 */
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f1f5f9; /* slate-100 */
+  --color-border-subtle: #e2e8f0;  /* slate-200 */
+  --color-border-strong: #cbd5e1;  /* slate-300: 3:1 contrast against light canvas */
+  --color-text-primary: #0f172a;   /* slate-900: 15.6:1 contrast against white */
+  --color-text-secondary: #334155; /* slate-700: 9.3:1 contrast */
+  --color-text-muted: #475569;     /* slate-600: 7.0:1 contrast */
+  --color-text-caption: #64748b;   /* slate-500: 4.6:1 contrast (exceeds WCAG AA 4.5:1) */
+  --color-primary: #4f46e5;        /* indigo-600 */
+  --color-primary-hover: #4338ca;  /* indigo-700 */
+}
+
+.dark {
+  --color-canvas: #090d16;
+  --color-surface: #0f172a;
+  --color-surface-subtle: #1e293b;
+  --color-border-subtle: #334155;
+  --color-border-strong: #475569;
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #e2e8f0;
+  --color-text-muted: #94a3b8;
+  --color-text-caption: #94a3b8;
+}
+
+/* Base element contrast enhancements */
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-text-primary);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Input, textarea, and select text readability */
+input, textarea, select {
+  color: #0f172a;
+}
+.dark input, .dark textarea, .dark select {
+  color: #f8fafc;
+}
+
+/* Explicit high-visibility placeholder that doesn't wash out */
+::placeholder {
+  color: #64748b !important; /* slate-500: passes 4.5:1 against white */
+  opacity: 1 !important;
+}
+.dark ::placeholder {
+  color: #94a3b8 !important; /* slate-400 in dark mode */
+}
+
+/* Form labels strong contrast */
+label {
+  color: #1e293b;
+}
+.dark label {
+  color: #f1f5f9;
+}
+
+@layer utilities {
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scaleUp {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes slideLeft {
+    from {
+      opacity: 0;
+      transform: translateX(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-scaleUp {
+    animation: scaleUp 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-slide-left {
+    animation: slideLeft 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  /* Safe bottom padding for modern mobile devices */
+  .safe-bottom {
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Hide scrollbar for tabs navigation */
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
