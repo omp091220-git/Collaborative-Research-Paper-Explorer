@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import AssetSection from './AssetSection';
 import { useAuth } from '../context/AuthContext';
 import CollaboratorsModal from './CollaboratorsModal';
 import DiscussionPanel from './DiscussionPanel';
@@ -17,6 +18,7 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
   const [search, setSearch] = useState('');
   const [selectedPaperForRecs, setSelectedPaperForRecs] = useState(null);
   const [seeding, setSeeding] = useState(false);
+  const [assetsPaperId, setAssetsPaperId] = useState(null);
 
   // Modal states
   const [selectedCollabPaper, setSelectedCollabPaper] = useState(null);
@@ -420,8 +422,15 @@ export default function PaperList({ refreshTrigger, selectedPaperId }) {
                         ({paper.star_count || 0})
                       </span>
                     </button>
-
-                    {/* Edit Metadata Button */}
+                    {/* View Assets Button */}
+                    <button
+                      type="button"
+                      onClick={() => setAssetsPaperId(assetsPaperId === paper.id ? null : paper.id)}
+                      className={`ml-2 px-2 py-1 text-xs rounded ${assetsPaperId === paper.id ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-800'} transition`}
+                    >
+                      {assetsPaperId === paper.id ? 'Hide Assets' : 'View Assets'}
+                    </button>
+                    {assetsPaperId === paper.id && <AssetSection paperId={paper.id} />}
                     {canEdit && (
                       <button
                         type="button"

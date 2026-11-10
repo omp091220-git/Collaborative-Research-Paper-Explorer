@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import annotationRoutes from "./routes/annotation.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import paperRoutes from "./routes/paper.routes.js";
+import paperAssetRoutes from "./routes/paperAsset.routes.js";
 import adminMonitoringRoutes from "./routes/adminMonitoring.routes.js";
 import tagRoutes from "./routes/tag.routes.js";
 import paperTagAssignmentRoutes from "./routes/paperTagAssignment.routes.js";
@@ -38,6 +39,7 @@ app.get("/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/papers/:paperId/collaborators", collaboratorRoutes);
 app.use("/api/papers/:paperId/discussions", discussionRoutes);
+app.use("/api/papers/:paperId", paperAssetRoutes);
 app.use("/api/papers", paperRoutes);
 app.use("/api/annotations", annotationRoutes);
 app.use("/api/admin/monitoring", adminMonitoringRoutes);
