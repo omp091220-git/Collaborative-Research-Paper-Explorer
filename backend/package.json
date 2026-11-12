@@ -19,6 +19,7 @@
   "license": "ISC",
   "dependencies": {
     "@google/genai": "^2.31.0",
+    "@napi-rs/canvas": "^0.1.65",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.58.5",
     "cookie-parser": "^1.4.7",
@@ -29,7 +30,7 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.5.0",
     "nodemailer": "^10.1.1",
-    "pdfjs-dist": "^5.7.284",
+    "pdfjs-dist": "^4.10.38",
     "pg": "^8.23.1"
   },
   "devDependencies": {
