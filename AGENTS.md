@@ -64,10 +64,12 @@ PostgreSQL 15+, optional Redis + BullMQ for the summary queue. Node >= 22.13 req
 - Migrations follow every rule above and are registered in migrate.js.
 - Final summary lists: changed files, new migration files, tests run with results, and anything uncertain.
 
-## Known baseline (before any of my changes)
-- Backend tests: 687 pass, 33 fail on a fresh checkout. Causes found so far:
-  1. `notifications` table conflict (user_id vs recipient_id) between two migrations.
-  2. Missing PDF test fixtures.
-  3. Other failing assertions, not yet investigated.
-- Do NOT try to fix these unless I ask. Your goal is that you add no NEW failures.
-  Report the pass/fail count before and after your change.
+## Known baseline (fresh checkout, before any changes)
+Backend `npm test`: 720 tests, 687 pass, 33 fail. Do NOT fix these unless asked:
+- paperAssetIntegration (3): notifications migration conflict
+- captionDetector, figureTableRegionDetector, pageGeometryExtractor, regionCropper (14):
+  missing sample PDFs in uploads/
+- arxivImport, paperMetadata, paperUpload (13): outdated mocks (pool.query vs pool.connect)
+- discussions (3): outdated notification mock parameter order
+Known real defect: paper routes omit doi and publication_year from their SQL.
+Your pass mark is no NEW failures. Always report counts before and after.
