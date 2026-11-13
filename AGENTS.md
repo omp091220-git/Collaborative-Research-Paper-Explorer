@@ -63,3 +63,11 @@ PostgreSQL 15+, optional Redis + BullMQ for the summary queue. Node >= 22.13 req
 - New behavior has tests next to the existing ones.
 - Migrations follow every rule above and are registered in migrate.js.
 - Final summary lists: changed files, new migration files, tests run with results, and anything uncertain.
+
+## Known baseline (before any of my changes)
+- Backend tests: 687 pass, 33 fail on a fresh checkout. Causes found so far:
+  1. `notifications` table conflict (user_id vs recipient_id) between two migrations.
+  2. Missing PDF test fixtures.
+  3. Other failing assertions, not yet investigated.
+- Do NOT try to fix these unless I ask. Your goal is that you add no NEW failures.
+  Report the pass/fail count before and after your change.
