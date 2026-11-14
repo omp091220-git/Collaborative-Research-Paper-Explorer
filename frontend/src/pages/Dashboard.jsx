@@ -5,6 +5,7 @@ import axios from 'axios';
 import PaperUpload from '../components/PaperUpload';
 import PaperList from '../components/PaperList';
 import DirectMessaging from '../components/DirectMessaging';
+import GroupMessaging from '../components/GroupMessaging';
 import NotificationBell from '../components/NotificationBell';
 import PendingInvitations from '../components/PendingInvitations';
 
@@ -329,6 +330,9 @@ export default function Dashboard() {
 
         {/* FR-31 Direct Messaging */}
         <DirectMessaging />
+
+        {/* FR-33 & FR-34 Research Groups & Messaging */}
+        <GroupMessaging />
       </div>
     </div>
   );
