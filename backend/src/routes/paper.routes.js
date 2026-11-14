@@ -40,6 +40,7 @@ const isValidUUID = (value) =>
     value
   );
 import { getCitationGraph } from "../controllers/citation.controller.js";
+import { exportSummaryPdf } from "../controllers/summaryExport.controller.js";
 
 import {
   listPapers,
@@ -320,6 +321,14 @@ router.get(
   authenticateToken,
   authorizeRoles(...ALL_ROLES),
   getCitationGraph
+);
+
+// FR-35 & FR-36: Export summary PDF with failure handling
+router.get(
+  "/:id/export/summary-pdf",
+  authenticateToken,
+  authorizeRoles(...ALL_ROLES),
+  exportSummaryPdf
 );
 
 // ─── POST /api/papers/upload ─────────────────────────────────────────────────
