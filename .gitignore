@@ -9,3 +9,5 @@ coverage/
 # User uploaded and imported paper PDFs
 uploads/*
 !uploads/.gitkeep
+
+.DS_Store

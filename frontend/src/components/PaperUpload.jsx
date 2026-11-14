@@ -3,12 +3,31 @@ import axios from 'axios';
 
 const MAX_SIZE_BYTES = 31_457_280; // 30 MiB
 
+function StatusBanner({ status }) {
+  if (!status) return null;
+  const isSuccess = status.type === 'success';
+  return (
+    <div
+      className={`mt-3 p-3 rounded-lg text-sm font-medium flex items-start gap-2 border ${
+        isSuccess
+          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+          : 'bg-red-50 text-red-800 border-red-200'
+      }`}
+    >
+      <span className="mt-0.5">{isSuccess ? '✓' : '✕'}</span>
+      <span>{status.message}</span>
+    </div>
+  );
+}
+
 export default function PaperUpload({ onPaperAdded }) {
   // PDF Upload state
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadAbstract, setUploadAbstract] = useState('');
   const [uploadAuthors, setUploadAuthors] = useState('');
+  const [uploadDoi, setUploadDoi] = useState('');
+  const [uploadYear, setUploadYear] = useState('');
   const [uploadLoading, setUploadLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState(null);
@@ -56,11 +75,28 @@ export default function PaperUpload({ onPaperAdded }) {
     if (authorsArray.length === 0)
       return setUploadStatus({ type: 'error', message: 'At least one author is required.' });
 
+    // Validate publication year if provided
+    if (uploadYear.trim()) {
+      const yr = Number(uploadYear);
+      if (!Number.isInteger(yr) || yr < 1665 || yr > 2100) {
+        return setUploadStatus({
+          type: 'error',
+          message: 'Publication year must be an integer between 1665 and 2100.',
+        });
+      }
+    }
+
     const formData = new FormData();
     formData.append('pdf', selectedFile);
     formData.append('title', uploadTitle.trim());
     formData.append('abstract', uploadAbstract.trim());
     formData.append('authors', JSON.stringify(authorsArray));
+    if (uploadDoi.trim()) {
+      formData.append('doi', uploadDoi.trim());
+    }
+    if (uploadYear.trim()) {
+      formData.append('publication_year', uploadYear.trim());
+    }
 
     setUploadLoading(true);
     setUploadProgress(0);
@@ -81,6 +117,8 @@ export default function PaperUpload({ onPaperAdded }) {
       setUploadTitle('');
       setUploadAbstract('');
       setUploadAuthors('');
+      setUploadDoi('');
+      setUploadYear('');
       setUploadProgress(0);
       if (fileInputRef.current) fileInputRef.current.value = '';
       if (onPaperAdded) onPaperAdded(res.data.paper);
@@ -117,23 +155,6 @@ export default function PaperUpload({ onPaperAdded }) {
     } finally {
       setImportLoading(false);
     }
-  };
-
-  const StatusBanner = ({ status }) => {
-    if (!status) return null;
-    const isSuccess = status.type === 'success';
-    return (
-      <div
-        className={`mt-3 p-3 rounded-lg text-sm font-medium flex items-start gap-2 border ${
-          isSuccess
-            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-            : 'bg-red-50 text-red-800 border-red-200'
-        }`}
-      >
-        <span className="mt-0.5">{isSuccess ? '✓' : '✕'}</span>
-        <span>{status.message}</span>
-      </div>
-    );
   };
 
   return (
@@ -226,6 +247,40 @@ export default function PaperUpload({ onPaperAdded }) {
               rows={3}
               className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white text-slate-800 placeholder-slate-400 resize-y"
             />
+          </div>
+
+          {/* DOI and Publication Year (FR-07 optional metadata) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="upload-doi" className="block text-xs font-medium text-slate-600 mb-1">
+                DOI <span className="text-slate-400">(optional)</span>
+              </label>
+              <input
+                id="upload-doi"
+                type="text"
+                value={uploadDoi}
+                onChange={(e) => setUploadDoi(e.target.value)}
+                placeholder="e.g. 10.1000/182"
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white text-slate-800 placeholder-slate-400"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="upload-year" className="block text-xs font-medium text-slate-600 mb-1">
+                Publication Year <span className="text-slate-400">(optional, 1665–2100)</span>
+              </label>
+              <input
+                id="upload-year"
+                type="number"
+                min="1665"
+                max="2100"
+                step="1"
+                value={uploadYear}
+                onChange={(e) => setUploadYear(e.target.value)}
+                placeholder="e.g. 2023"
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white text-slate-800 placeholder-slate-400"
+              />
+            </div>
           </div>
 
           {/* Upload progress */}

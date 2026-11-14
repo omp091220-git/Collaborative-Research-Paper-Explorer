@@ -72,8 +72,8 @@ describe('Paper Upload and Import Test Suite', () => {
         return { rows: [] };
       }
 
-      // GET /api/papers
-      if (text.includes('SELECT id, title, abstract, authors, arxiv_id')) {
+      // GET /api/papers (repository now selects doi, publication_year too)
+      if (text.includes('SELECT') && text.includes('FROM papers') && !text.includes('WHERE')) {
         return {
           rows: [
             {
@@ -82,10 +82,13 @@ describe('Paper Upload and Import Test Suite', () => {
               abstract: 'The dominant sequence transduction models are based on complex recurrent networks...',
               authors: ['Ashish Vaswani', 'Noam Shazeer'],
               arxiv_id: '1706.03762',
+              doi: '10.5555/12345678',
+              publication_year: 2017,
               file_size_bytes: 524288,
               mime_type: 'application/pdf',
               uploader_id: RESEARCHER_ID,
               uploaded_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
             },
           ],
         };
@@ -102,6 +105,9 @@ describe('Paper Upload and Import Test Suite', () => {
       }
 
       // INSERT INTO papers
+      // New column order (paper.repository.js insertPaper):
+      //   $1=title, $2=abstract, $3=authors, $4=doi, $5=publication_year,
+      //   $6=arxiv_id, $7=file_path, $8=file_size_bytes, $9=mime_type, $10=uploader_id
       if (text.includes('INSERT INTO papers')) {
         return {
           rows: [
@@ -110,12 +116,14 @@ describe('Paper Upload and Import Test Suite', () => {
               title: params[0],
               abstract: params[1],
               authors: params[2],
-              arxiv_id: params[3] || null,
-              file_path: params[4],
-              file_size_bytes: params[5],
+              doi: params[3] || null,
+              publication_year: params[4] || null,
+              arxiv_id: params[5] || null,
+              file_size_bytes: params[7],
               mime_type: 'application/pdf',
-              uploader_id: params[params.length - 1],
+              uploader_id: params[9],
               uploaded_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
             },
           ],
         };

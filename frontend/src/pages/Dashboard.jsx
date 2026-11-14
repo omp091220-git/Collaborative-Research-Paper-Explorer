@@ -5,6 +5,8 @@ import axios from 'axios';
 import PaperUpload from '../components/PaperUpload';
 import PaperList from '../components/PaperList';
 import DirectMessaging from '../components/DirectMessaging';
+import NotificationBell from '../components/NotificationBell';
+import PendingInvitations from '../components/PendingInvitations';
 
 export default function Dashboard() {
   const { user, logout, isAdmin, isResearcher, hasPermission } = useAuth();
@@ -68,6 +70,7 @@ export default function Dashboard() {
               </p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
+              <NotificationBell />
               <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
                 Γ£ô Authenticated
               </span>
@@ -312,6 +315,9 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+
+        {/* Pending Collaboration Invitations */}
+        <PendingInvitations onInvitationHandled={handlePaperAdded} />
 
         {/* Research Paper Upload & Import (only for authorized roles) */}
         {hasPermission('papers:upload') && (
