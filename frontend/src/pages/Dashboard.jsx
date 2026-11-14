@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import PaperUpload from '../components/PaperUpload';
 import PaperList from '../components/PaperList';
+import DirectMessaging from '../components/DirectMessaging';
 
 export default function Dashboard() {
   const { user, logout, isAdmin, isResearcher, hasPermission } = useAuth();
@@ -57,7 +58,7 @@ export default function Dashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-slate-100">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-2xl">📄</span>
+                <span className="text-2xl">≡ƒôä</span>
                 <h1 className="text-2xl md:text-3xl font-bold text-slate-800">
                   Welcome, {user?.full_name}!
                 </h1>
@@ -68,10 +69,10 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                ✓ Authenticated
+                Γ£ô Authenticated
               </span>
               <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                ⏱ 30m Inactivity Window
+                ΓÅ▒ 30m Inactivity Window
               </span>
               <button
                 onClick={handleLogout}
@@ -144,7 +145,7 @@ export default function Dashboard() {
         <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
           <div className="mb-6">
             <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-              <span>🛡️</span> Role-Based Functionality (FR-05)
+              <span>≡ƒ¢í∩╕Å</span> Role-Based Functionality (FR-05)
             </h2>
             <p className="text-sm text-slate-500 mt-1">
               Actions are conditionally accessible based on your assigned role (
@@ -157,7 +158,7 @@ export default function Dashboard() {
             <div className="p-4 border rounded-xl bg-emerald-50/40 border-emerald-200">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-semibold text-slate-800 text-sm flex items-center gap-1.5">
-                  <span>📖</span> Browse Research Papers
+                  <span>≡ƒôû</span> Browse Research Papers
                 </span>
                 <span className="text-xs px-2 py-0.5 bg-emerald-100 text-emerald-800 font-medium rounded-full">
                   All Roles
@@ -167,7 +168,7 @@ export default function Dashboard() {
                 Search, filter, and read academic papers stored in the system.
               </p>
               <span className="text-xs font-semibold text-emerald-700">
-                ✓ Permitted for {user?.role}
+                Γ£ô Permitted for {user?.role}
               </span>
             </div>
 
@@ -175,7 +176,7 @@ export default function Dashboard() {
             <div className="p-4 border rounded-xl bg-emerald-50/40 border-emerald-200">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-semibold text-slate-800 text-sm flex items-center gap-1.5">
-                  <span>🤖</span> AI Paper Summaries
+                  <span>≡ƒñû</span> AI Paper Summaries
                 </span>
                 <span className="text-xs px-2 py-0.5 bg-emerald-100 text-emerald-800 font-medium rounded-full">
                   All Roles
@@ -185,7 +186,7 @@ export default function Dashboard() {
                 Request multi-format AI summaries (comprehensive, brief, technical, layperson).
               </p>
               <span className="text-xs font-semibold text-emerald-700">
-                ✓ Permitted for {user?.role}
+                Γ£ô Permitted for {user?.role}
               </span>
             </div>
 
@@ -199,7 +200,7 @@ export default function Dashboard() {
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="font-semibold text-slate-800 text-sm flex items-center gap-1.5">
-                  <span>📤</span> Upload Research Papers
+                  <span>≡ƒôñ</span> Upload Research Papers
                 </span>
                 <span
                   className={`text-xs px-2 py-0.5 font-medium rounded-full ${
@@ -223,8 +224,8 @@ export default function Dashboard() {
                   }`}
                 >
                   {hasPermission('papers:upload')
-                    ? '✓ Permitted for ' + user?.role
-                    : '✗ Requires RESEARCHER or SYSTEM_ADMIN role'}
+                    ? 'Γ£ô Permitted for ' + user?.role
+                    : 'Γ£ù Requires RESEARCHER or SYSTEM_ADMIN role'}
                 </span>
                 <button
                   type="button"
@@ -252,7 +253,7 @@ export default function Dashboard() {
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="font-semibold text-slate-800 text-sm flex items-center gap-1.5">
-                  <span>⚙️</span> Administer Roles & Users
+                  <span>ΓÜÖ∩╕Å</span> Administer Roles & Users
                 </span>
                 <span
                   className={`text-xs px-2 py-0.5 font-medium rounded-full ${
@@ -274,8 +275,8 @@ export default function Dashboard() {
                   }`}
                 >
                   {isAdmin
-                    ? '✓ Permitted (SYSTEM_ADMIN)'
-                    : '✗ Forbidden for ' + user?.role}
+                    ? 'Γ£ô Permitted (SYSTEM_ADMIN)'
+                    : 'Γ£ù Forbidden for ' + user?.role}
                 </span>
                 <button
                   type="button"
@@ -306,7 +307,7 @@ export default function Dashboard() {
                 onClick={() => setTestActionStatus(null)}
                 className="text-xs font-bold text-slate-500 hover:text-slate-700 ml-4 cursor-pointer"
               >
-                ✕
+                Γ£ò
               </button>
             </div>
           )}
@@ -319,6 +320,9 @@ export default function Dashboard() {
 
         {/* Research Paper Listing */}
         <PaperList refreshTrigger={paperRefresh} />
+
+        {/* FR-31 Direct Messaging */}
+        <DirectMessaging />
       </div>
     </div>
   );
