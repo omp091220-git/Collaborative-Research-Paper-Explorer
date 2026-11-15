@@ -3,6 +3,7 @@ import { authenticateToken } from '../middleware/authenticate.js';
 import { authorizeRoles } from '../middleware/authorize.js';
 import { ROLES } from '../utils/roles.js';
 import * as tagController from '../controllers/tag.controller.js';
+import * as intelligenceController from '../controllers/tagIntelligence.controller.js';
 
 const router = express.Router();
 
@@ -27,6 +28,27 @@ router.get(
   '/tree',
   authorizeRoles(...ALL_ROLES),
   tagController.getTree
+);
+
+// FR-12: Detect duplicate or equivalent tags using Agentic AI & tag database
+router.post(
+  '/check-duplicate',
+  authorizeRoles(...ALL_ROLES),
+  intelligenceController.checkDuplicateTag
+);
+
+// FR-12: Consolidate / alias duplicate tags
+router.post(
+  '/consolidate',
+  authorizeRoles(...EDIT_ROLES),
+  intelligenceController.consolidateTag
+);
+
+// FR-13: Search/filter papers across personal libraries and global indexes by hierarchical topic tags
+router.get(
+  '/search/papers',
+  authorizeRoles(...ALL_ROLES),
+  intelligenceController.searchPapersByTag
 );
 
 // List tags with optional filtering and pagination
