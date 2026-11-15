@@ -22,14 +22,17 @@ export default function TagTreeItem({
   expandedMap = {},
   onToggleExpand,
 }) {
-  const hasChildren = node.children && node.children.length > 0;
+  if (!node) return null;
+
+  const hasChildren = Boolean(node.children && node.children.length > 0);
   const isExpanded = expandedMap[node.id] ?? true;
   const isSelected = selectedTagId === node.id;
 
   // Highlight search text if query provided
   const renderHighlightedName = (text, query) => {
-    if (!query || !query.trim()) return text;
-    const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+    const safeText = String(text || '');
+    if (!query || !query.trim()) return safeText;
+    const parts = safeText.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
     return parts.map((part, i) =>
       part.toLowerCase() === query.toLowerCase() ? (
         <mark key={i} className="bg-amber-200 dark:bg-amber-900/60 text-slate-900 dark:text-amber-100 rounded px-0.5 font-bold">
