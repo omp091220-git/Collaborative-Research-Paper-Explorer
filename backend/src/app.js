@@ -11,6 +11,7 @@ import discussionRoutes from "./routes/discussion.routes.js";
 import invitationRoutes from "./routes/invitation.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import recommendationRoutes from "./routes/recommendation.routes.js";
+import groupRoutes from "./routes/group.routes.js";
 import errorHandler from "./middleware/errorHandler.js";
 
 const app = express();
@@ -44,6 +45,7 @@ app.use("/api/paper-tags", paperTagAssignmentRoutes);
 app.use("/api/invitations", invitationRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/recommendations", recommendationRoutes);
+app.use("/api/groups", groupRoutes);
 
 // Handle unknown routes
 app.use((req, res) => {
