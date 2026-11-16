@@ -175,3 +175,17 @@ Completing a new summary perspective preserves existing perspectives. FR-20
 exports include every saved perspective/model for the same paper, including the
 new Technical summary and older Brief/Comprehensive summaries. Regenerating the
 same model/perspective updates that one entry; revision history is not stored.
+
+
+### Longer papers
+
+Extraction now accepts up to 500,000 text characters and 50,000 source passages
+(previously 100,000 and 20,000). Every extracted passage and its original page/
+coordinates is retained. The existing 150-page and 32 MiB original-file limits
+still apply. The serialized text/ID payload is separately capped at 1,500,000
+characters before calling the provider, bounding requests with many tiny passages
+or heavily escaped text. These are application budgets, not provider token limits.
+Oversized documents are rejected with a clear instruction to split the PDF; they
+are never silently truncated. Changing an API key or retrying the same oversized
+file does not change those limits. No migration or new environment setting is
+required.

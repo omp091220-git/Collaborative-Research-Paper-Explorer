@@ -40,6 +40,9 @@ function SummaryModalContent({ isOpen, onClose, paper }) {
       const messages = {
         ORIGINAL_PDF_REQUIRED: 'Only a generated report is available locally. Upload the original paper PDF to summarize its evidence.',
         PDF_UNAVAILABLE: 'The original PDF is missing on this server.',
+        PDF_TEXT_TOO_LONG: 'The previous attempt reached the extraction limit. The updated backend supports 500,000 characters or 50,000 passages. Retry once after updating; if it still fails, split the PDF into smaller files.',
+        PDF_TOO_LONG: 'Summaries support up to 150 PDF pages. Split this document into smaller PDFs.',
+        AI_INPUT_TOO_LONG: 'The extracted passages exceed the summary request budget. Split the PDF into smaller documents; the original text has not been truncated.',
         PDF_HAS_NO_TEXT: 'This PDF has no readable text. Scanned PDFs need OCR first.',
         SOURCE_DOWNLOAD_FAILED: 'Could not retrieve the original paper from arXiv. Please retry later.',
         AI_NOT_CONFIGURED: 'The worker that ran the previous attempt had no Gemini key. Retry from your configured backend.',
