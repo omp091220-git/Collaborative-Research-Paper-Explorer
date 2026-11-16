@@ -28,7 +28,8 @@
     "nodemailer": "^10.1.1",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^4.10.38",
-    "pg": "^8.23.1"
+    "pg": "^8.23.1",
+    "react-pdf": "^11.1.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14",

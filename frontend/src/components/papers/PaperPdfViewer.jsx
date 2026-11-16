@@ -5,6 +5,12 @@ export default function PaperPdfViewer({
   paper,
   pdfUrl,
   className = '',
+  onOpenDetails,
+  onOpenDiscussions,
+  onOpenSummaries,
+  onOpenCollaborators,
+  isBookmarked,
+  onToggleBookmark,
 }) {
   return (
     <ResearchWorkspace
@@ -12,6 +18,12 @@ export default function PaperPdfViewer({
       paper={paper}
       pdfUrl={pdfUrl}
       className={className}
+      onOpenDetails={onOpenDetails}
+      onOpenDiscussions={onOpenDiscussions}
+      onOpenSummaries={onOpenSummaries}
+      onOpenCollaborators={onOpenCollaborators}
+      isBookmarked={isBookmarked}
+      onToggleBookmark={onToggleBookmark}
     />
   );
 }

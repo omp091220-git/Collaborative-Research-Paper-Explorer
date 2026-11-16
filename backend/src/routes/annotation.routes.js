@@ -94,17 +94,21 @@ router.get(
       }
 
       const query = paper_id
-        ? `SELECT id, paper_id, created_by, page_number, content,
-                  position_x, position_y, region_width, region_height,
-                  created_at, updated_at
-           FROM annotations
-           WHERE paper_id = $1
-           ORDER BY created_at DESC`
-        : `SELECT id, paper_id, created_by, page_number, content,
-                  position_x, position_y, region_width, region_height,
-                  created_at, updated_at
-           FROM annotations
-           ORDER BY created_at DESC`;
+        ? `SELECT a.id, a.paper_id, a.created_by, a.page_number, a.content,
+                  a.position_x, a.position_y, a.region_width, a.region_height,
+                  a.created_at, a.updated_at,
+                  u.full_name AS author_name, u.email AS author_email
+           FROM annotations a
+           LEFT JOIN users u ON a.created_by = u.id
+           WHERE a.paper_id = $1
+           ORDER BY a.created_at DESC`
+        : `SELECT a.id, a.paper_id, a.created_by, a.page_number, a.content,
+                  a.position_x, a.position_y, a.region_width, a.region_height,
+                  a.created_at, a.updated_at,
+                  u.full_name AS author_name, u.email AS author_email
+           FROM annotations a
+           LEFT JOIN users u ON a.created_by = u.id
+           ORDER BY a.created_at DESC`;
 
       const result = paper_id
         ? await pool.query(query, [paper_id])
@@ -344,11 +348,11 @@ router.patch(
   }
 );
 
-// Only system admins can delete annotations.
+// Admins can delete any annotation; annotators can delete their own.
 router.delete(
   "/:id",
   authenticateToken,
-  authorizeRoles(...ADMIN_ROLE),
+  authorizeRoles(...EDIT_ROLES),
   async (req, res, next) => {
     try {
       const { id } = req.params;
@@ -359,16 +363,40 @@ router.delete(
         });
       }
 
+      if (req.user.role === ROLES.SYSTEM_ADMIN) {
+        const result = await pool.query(
+          "DELETE FROM annotations WHERE id = $1 RETURNING id",
+          [id]
+        );
+
+        if (result.rows.length === 0) {
+          return res.status(404).json({
+            error: "Annotation not found.",
+          });
+        }
+
+        return res.status(200).json({
+          message: "Annotation deleted successfully.",
+          id: result.rows[0].id,
+        });
+      }
+
+      // Researchers can delete their own annotations
+      const existing = await pool.query(
+        "SELECT id, created_by FROM annotations WHERE id = $1",
+        [id]
+      );
+
+      if (existing.rows.length === 0 || existing.rows[0].created_by !== req.user.id) {
+        return res.status(403).json({
+          error: "You can only delete your own annotations.",
+        });
+      }
+
       const result = await pool.query(
         "DELETE FROM annotations WHERE id = $1 RETURNING id",
         [id]
       );
-
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          error: "Annotation not found.",
-        });
-      }
 
       return res.status(200).json({
         message: "Annotation deleted successfully.",

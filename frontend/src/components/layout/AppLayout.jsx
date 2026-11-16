@@ -40,6 +40,26 @@ export default function AppLayout() {
     window.dispatchEvent(new CustomEvent('paper:created', { detail: paper }));
   };
 
+  // Dedicated full-screen reading workspace mode when viewing paper PDF
+  const searchParams = new URLSearchParams(location.search);
+  const isReadingWorkspace =
+    location.pathname.startsWith('/papers/') &&
+    (!searchParams.get('tab') || searchParams.get('tab') === 'pdf');
+
+  if (isReadingWorkspace) {
+    return (
+      <div className="h-screen w-screen overflow-hidden bg-slate-950 text-slate-100 antialiased flex flex-col">
+        <main className="flex-1 flex flex-col min-w-0 h-full w-full overflow-hidden p-0 m-0">
+          <ErrorBoundary title="ScholarSphere Research Workspace Error">
+            <Suspense fallback={<ContentLoader />}>
+              <Outlet />
+            </Suspense>
+          </ErrorBoundary>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-100/60 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased flex flex-col">
       {/* Top Navbar */}
