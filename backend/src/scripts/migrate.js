@@ -29,8 +29,25 @@ async function runMigrations() {
     '20261108_direct_messaging.sql',
     '20261113_external_publications.sql',
     '20261114_group_membership.sql',
+    '20261114_messaging_groups.sql',
+    '20261116_unify_group_participant_roles.sql',
     '20261116_structured_summaries.sql',
   ];
+  // Optionally run only one explicitly selected migration.
+  const onlyIndex = process.argv.indexOf('--only');
+  let filesToRun = migrationFiles;
+
+  if (onlyIndex !== -1) {
+    const selectedFile = process.argv[onlyIndex + 1];
+
+    if (!selectedFile || !migrationFiles.includes(selectedFile)) {
+      throw new Error(
+        `Invalid migration selection: ${selectedFile || 'missing filename'}`
+      );
+    }
+
+    filesToRun = [selectedFile];
+  }
 
   console.log('--- Starting Database Migrations ---');
   const client = await pool.connect();
@@ -48,7 +65,7 @@ async function runMigrations() {
     const appliedResult = await client.query('SELECT name FROM schema_migrations');
     const appliedSet = new Set(appliedResult.rows.map(r => r.name));
 
-    for (const fileName of migrationFiles) {
+    for (const fileName of filesToRun) {
       if (appliedSet.has(fileName)) {
         console.log(`[SKIPPED] ${fileName} already applied.`);
         continue;

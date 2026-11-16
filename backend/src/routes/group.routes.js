@@ -1,24 +1,39 @@
-import express from 'express';
+import { Router } from 'express';
 import { authenticateToken } from '../middleware/authenticate.js';
-import * as groupController from '../controllers/group.controller.js';
+import {
+  createGroup,
+  getGroups,
+  getGroup,
+  searchUsers,
+  joinGroup,
+  leaveGroup,
+  reviewJoinRequest,
+  sendGroupMessage,
+  getGroupMessages,
+} from '../controllers/group.controller.js';
 
-const router = express.Router();
+const router = Router();
 
-// Enforce authentication on all group endpoints
+// All group endpoints require an authenticated session
 router.use(authenticateToken);
 
-// FR-33: Group Discovery & Creation
-router.get('/', groupController.listGroups);
-router.post('/', groupController.createGroup);
-router.get('/:id', groupController.getGroupDetails);
+// Search users to add or invite. Registered before /:id.
+router.get('/users', searchUsers);
 
-// FR-33: Join, Leave, and Admin Approval Rules
-router.post('/:id/join', groupController.joinGroup);
-router.post('/:id/leave', groupController.leaveGroup);
-router.post('/:id/members/:userId/review', groupController.reviewJoinRequest);
+// Create and list groups (list supports ?filter=all|my&search=...)
+router.get('/', getGroups);
+router.post('/', createGroup);
 
-// FR-34: Group Messaging (Access restricted to approved members)
-router.get('/:id/messages', groupController.getGroupMessages);
-router.post('/:id/messages', groupController.sendGroupMessage);
+// FR-34: Group messaging for approved members
+router.get('/:id/messages', getGroupMessages);
+router.post('/:id/messages', sendGroupMessage);
+
+// FR-33: Join, leave, and admin approval
+router.post('/:id/join', joinGroup);
+router.post('/:id/leave', leaveGroup);
+router.post('/:id/members/:userId/review', reviewJoinRequest);
+
+// Group details and member roster
+router.get('/:id', getGroup);
 
 export default router;

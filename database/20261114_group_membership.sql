@@ -41,19 +41,35 @@ CREATE INDEX IF NOT EXISTS idx_conversations_group_discovery
 
 -- 4. Extend conversation_participants for role and membership status (FR-33)
 ALTER TABLE conversation_participants
-    ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'member',
+    ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'MEMBER',
     ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'joined';
 
--- Safe constraint additions
+UPDATE conversation_participants
+SET role = CASE LOWER(role)
+    WHEN 'owner' THEN 'OWNER'
+    WHEN 'admin' THEN 'ADMIN'
+    WHEN 'member' THEN 'MEMBER'
+    ELSE 'MEMBER'
+END
+WHERE role IS NULL
+   OR role NOT IN ('OWNER', 'ADMIN', 'MEMBER');
+
+ALTER TABLE conversation_participants
+    ALTER COLUMN role SET DEFAULT 'MEMBER';
+
+-- Safe constraint additions. Roles are OWNER, ADMIN, MEMBER.
 DO $$
 BEGIN
-    IF NOT EXISTS (
+    IF EXISTS (
         SELECT 1 FROM pg_constraint WHERE conname = 'chk_group_participant_role'
     ) THEN
         ALTER TABLE conversation_participants
-            ADD CONSTRAINT chk_group_participant_role
-            CHECK (role IN ('admin', 'member'));
+            DROP CONSTRAINT chk_group_participant_role;
     END IF;
+
+    ALTER TABLE conversation_participants
+        ADD CONSTRAINT chk_group_participant_role
+        CHECK (role IN ('OWNER', 'ADMIN', 'MEMBER'));
 
     IF NOT EXISTS (
         SELECT 1 FROM pg_constraint WHERE conname = 'chk_group_participant_status'
