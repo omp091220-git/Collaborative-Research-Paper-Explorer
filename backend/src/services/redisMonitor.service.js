@@ -137,6 +137,15 @@ export const probeRedisServer = (host, port, password = null, timeoutMs = 2000) 
         error: err.code === "ECONNREFUSED" ? "Connection refused (Redis is offline or port is closed)" : err.message,
       });
     });
+
+    try {
+      socket.connect(port, host);
+    } catch (err) {
+      finish({
+        connected: false,
+        error: err.message,
+      });
+    }
   });
 };
 
