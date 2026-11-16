@@ -34,6 +34,7 @@ import paperTagsService from '../../services/paperTags.service';
 import tagsService from '../../services/tags.service';
 import ErrorState from '../../components/common/ErrorState';
 import LoadingSkeleton from '../../components/common/LoadingSkeleton';
+import ErrorBoundary from '../../components/common/ErrorBoundary';
 import { formatDate } from '../../utils/formatters';
 
 export default function PaperDetailsPage() {
@@ -354,16 +355,17 @@ export default function PaperDetailsPage() {
 
       {/* Tab Content */}
       <div className="pt-2">
-        {/* Tab 0: Interactive PDF Viewer */}
-        {activeTab === 'pdf' && (
-          <div className="space-y-4">
-            <PaperPdfViewer
-              paperId={paper.id}
-              paper={paper}
-              pdfUrl={paper.pdf_url || `/papers/${paper.id}/pdf`}
-            />
-          </div>
-        )}
+        <ErrorBoundary title="Paper Details Tab Error">
+          {/* Tab 0: Interactive PDF Viewer */}
+          {activeTab === 'pdf' && (
+            <div className="space-y-4">
+              <PaperPdfViewer
+                paperId={paper.id}
+                paper={paper}
+                pdfUrl={paper.pdf_url || `/papers/${paper.id}/pdf`}
+              />
+            </div>
+          )}
         {/* Tab 1: Overview */}
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -528,6 +530,7 @@ export default function PaperDetailsPage() {
             </div>
           </div>
         )}
+        </ErrorBoundary>
       </div>
 
       {/* AI Perspectives Summary Modal */}

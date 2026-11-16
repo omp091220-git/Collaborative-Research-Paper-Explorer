@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
   BookOpen,
@@ -50,12 +50,15 @@ export default function PaperTaggingPage() {
   // Shared Tag Tree
   const [tagTree, setTagTree] = useState([]);
 
+  // Ref to track latest requested paperId and prevent stale responses
+  const activePaperIdRef = useRef(null);
+
   // Fetch all papers from FR-6 backend
   const fetchPapers = useCallback(async () => {
     setLoadingPapers(true);
     setPapersError(null);
     try {
-      const res = await papersService.getPapers({ limit: 50 });
+      const res = await papersService.getPapers({ limit: 100 });
       const paperList = res.papers || res.data || (Array.isArray(res) ? res : []);
       setPapers(paperList);
     } catch (err) {
@@ -83,6 +86,7 @@ export default function PaperTaggingPage() {
       return;
     }
 
+    activePaperIdRef.current = paperId;
     setLoadingAssignments(true);
     setAssignmentError(null);
     try {
@@ -90,6 +94,8 @@ export default function PaperTaggingPage() {
         paperTagsService.getAssignmentsForPaper(paperId),
         annotationsService.getAnnotations(paperId),
       ]);
+
+      if (activePaperIdRef.current !== paperId) return;
 
       if (assignmentsRes.status === 'fulfilled') {
         setAssignments(assignmentsRes.value.assignments || []);
@@ -101,9 +107,12 @@ export default function PaperTaggingPage() {
         setAnnotations(annotationsRes.value || []);
       }
     } catch (err) {
+      if (activePaperIdRef.current !== paperId) return;
       setAssignmentError(getApiErrorMessage(err, 'Failed to fetch paper tag assignments.'));
     } finally {
-      setLoadingAssignments(false);
+      if (activePaperIdRef.current === paperId) {
+        setLoadingAssignments(false);
+      }
     }
   }, []);
 
@@ -113,31 +122,32 @@ export default function PaperTaggingPage() {
     fetchTagTree();
   }, [fetchPapers, fetchTagTree]);
 
-  // Synchronize selected paper with URL query parameter
+  // Synchronize selected paper with URL query parameter without race condition loops
   useEffect(() => {
     if (papers.length === 0) return;
+
     if (selectedPaperIdFromUrl) {
       const found = papers.find((p) => String(p.id) === String(selectedPaperIdFromUrl));
       if (found) {
-        if (selectedPaper?.id !== found.id) {
-          setSelectedPaper(found);
-        }
+        setSelectedPaper((prev) => (prev?.id === found.id ? prev : found));
         return;
       }
     }
-    // If no paper selected yet or current selection is not in list, select first
-    if (!selectedPaper || !papers.some((p) => p.id === selectedPaper.id)) {
-      setSelectedPaper(papers[0]);
-    }
-  }, [selectedPaperIdFromUrl, papers, selectedPaper]);
 
-  // When selected paper changes, fetch its assignments and annotations and sync URL
+    // Fallback to first paper when none specified
+    const first = papers[0];
+    if (first) {
+      setSelectedPaper((prev) => (prev?.id === first.id ? prev : first));
+      setSearchParams({ paperId: first.id }, { replace: true });
+    }
+  }, [selectedPaperIdFromUrl, papers, setSearchParams]);
+
+  // When selected paper ID changes, fetch its assignments and annotations
   useEffect(() => {
     if (selectedPaper?.id) {
       fetchPaperDetailsAndTags(selectedPaper.id);
-      setSearchParams({ paperId: selectedPaper.id }, { replace: true });
     }
-  }, [selectedPaper, fetchPaperDetailsAndTags, setSearchParams]);
+  }, [selectedPaper?.id, fetchPaperDetailsAndTags]);
 
   // Filter papers list by search query
   const filteredPapers = useMemo(() => {
@@ -152,6 +162,10 @@ export default function PaperTaggingPage() {
   }, [papers, paperSearch]);
 
   const handleSelectPaper = (paper) => {
+    if (!paper || paper.id === selectedPaper?.id) return;
+    setAssignments([]);
+    setAnnotations([]);
+    setAssignmentError(null);
     setSelectedPaper(paper);
     setSearchParams({ paperId: paper.id }, { replace: true });
   };
