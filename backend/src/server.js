@@ -44,7 +44,7 @@ const startServer = async () => {
         const results = await Promise.allSettled([
           serverClosed,
           supervisor.stop(),
-          summaryWorker.stop(),
+          serverClosed.then(() => summaryWorker.stop()),
         ]);
 
         const failure = results.find(

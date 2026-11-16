@@ -2,7 +2,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
-import app from '../app.js';
+import express from 'express';
+import { createSummaryRouter } from '../routes/summary.routes.js';
+import { createSummaryController } from '../controllers/summary.controller.js';
+const dispatched=[];
+const app=express();app.use(express.json());
+app.use('/api/papers/:paperId',createSummaryRouter(createSummaryController({dispatch:async job=>{dispatched.push(job);}})));
 import pool from '../config/database.js';
 const paperId='11111111-1111-4111-8111-111111111111';
 const student='22222222-2222-4222-8222-222222222222';
@@ -15,7 +20,7 @@ test('students can summarize the same library papers they can read; missing and 
   const text=String(sql);
   if(text.includes('FROM users'))return {rows:[{id:args[0],role:'STUDENT'}]};
   if(text.includes('FROM papers'))return {rows:exists?[{id:paperId,uploader_id:'another-user'}]:[]};
-  if(text.includes('INSERT INTO structured_summary_jobs')){queued++;row={id:'job',status:'pending',sections:null};return {rows:[]};}
+  if(text.includes('INSERT INTO structured_summary_jobs')){queued++;row={id:'job',status:'processing',sections:null,lease_token:'internal-only'};return {rows:[row]};}
   if(text.includes('UPDATE structured_summary_jobs')){row={...row,status:'pending',attempts:0};return {rows:[]};}
   if(text.includes('FROM structured_summary_jobs'))return {rows:row?[row]:[]};
   return {rows:[]};
@@ -33,11 +38,11 @@ test('students can summarize the same library papers they can read; missing and 
   delete process.env.GEMINI_API_KEY;
   assert.equal((await post({})).status,503);
   process.env.GEMINI_API_KEY='test-only';
-  assert.equal((await post({})).status,202);
-  assert.equal((await post({})).status,202);assert.equal(queued,1);
+  const started=await post({});assert.equal(started.status,202);assert.equal(started.body.summary.lease_token,undefined);
+  assert.equal((await post({})).status,202);assert.equal(queued,1);assert.equal(dispatched.length,1);assert.equal(dispatched[0].lease_token,'internal-only');
   row={id:'job',status:'completed',sections:[]};delete process.env.GEMINI_API_KEY;
   assert.equal((await post({})).status,200);
   row={id:'job',status:'failed',attempts:3};process.env.GEMINI_API_KEY='test-only';
-  const retry=await post({});assert.equal(retry.status,202);assert.equal(retry.body.summary.attempts,0);
+  const retry=await post({});assert.equal(retry.status,202);assert.equal(retry.body.summary.status,'processing');
  } finally {pool.query=original;if(key===undefined)delete process.env.GEMINI_API_KEY;else process.env.GEMINI_API_KEY=key;}
 });
