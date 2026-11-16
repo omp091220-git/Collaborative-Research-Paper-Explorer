@@ -56,7 +56,7 @@ test('annotated PDFs preserve pages, existing comments, Unicode, embedded notes 
   const bytes=await buildAnnotatedPdf(await original.save(),all,{markdown,bibtex});
   const pdf=await pdfjs.getDocument({data:new Uint8Array(bytes),isEvalSupported:false}).promise;
   try {
-    assert.equal(pdf.numPages,4);
+    assert.ok(pdf.numPages > 4, 'Visible research report follows the four original pages');
     for (let n=1;n<=4;n++) {
       const page=await pdf.getPage(n);
       assert.ok((await page.getTextContent()).items.some(i=>i.str==='Original research evidence'));
@@ -71,6 +71,11 @@ test('annotated PDFs preserve pages, existing comments, Unicode, embedded notes 
         assert.ok(notes.some(a=>a.contentsObj?.str==='Existing comment'));
         assert.ok(notes.some(a=>a.contentsObj?.str.includes('saved page 99 is outside this PDF')));
       }
+    }
+    let visibleReport = '';
+    for (let n=5;n<=pdf.numPages;n++) visibleReport += (await (await pdf.getPage(n)).getTextContent()).items.map(i=>i.str).join(' ')+' ';
+    for (const expected of ['Research report','Summaries','Supported result.','Annotations','Section tags','AI > Vision','Methods','Citations','Reference context.','café']) {
+      assert.ok(visibleReport.includes(expected), `Visible PDF report includes ${expected}`);
     }
     const files=await pdf.getAttachments();
     assert.equal(Buffer.from(files['research-notes.md'].content).toString('utf8'),markdown);
@@ -98,6 +103,30 @@ test('PDF exports keep page-only notes, clamp edge regions, and refuse invalid o
   finally {await reader.destroy();}
   const repo={snapshot:async()=>data};
   await assert.rejects(createResearchExport(id,'pdf',{repository:repo,readPdf:async()=>Buffer.from('not a PDF')}),{statusCode:422});
+});
+
+
+test('visible PDF report paginates long notes without clipping and makes empty categories explicit', async () => {
+  const source=await PDFDocument.create(); source.addPage().drawText('Source page');
+  const long='verylongtoken'.repeat(80)+' '+('Long saved annotation with readable evidence. '.repeat(1400))+' END_OF_NOTE';
+  const content={paper:data.paper,annotations:[{id:'long',page_number:1,content:long}],summaries:[],tags:[],citations:[]};
+  const bytes=await buildAnnotatedPdf(await source.save(),content,{markdown:toMarkdown(content),bibtex:toBibtex(content)});
+  const reader=await pdfjs.getDocument({data:new Uint8Array(bytes),isEvalSupported:false}).promise;
+  try {
+    assert.ok(reader.numPages > 3);
+    let text='';
+    for(let n=2;n<=reader.numPages;n++) {
+      const page=await reader.getPage(n), viewport=page.getViewport({scale:1});
+      for(const item of (await page.getTextContent()).items) {
+        text += item.str+' ';
+        if(!item.str.trim()) continue;
+        const x=item.transform[4], y=item.transform[5];
+        assert.ok(x>=47 && x+item.width<=viewport.width-46,'Text stays inside horizontal margins');
+        assert.ok(y>=24 && y<=viewport.height-47,'Text stays inside vertical margins');
+      }
+    }
+    for(const expected of ['END_OF_NOTE','No summaries saved','No tags saved','No outgoing citations saved']) assert.ok(text.includes(expected), expected);
+  } finally {await reader.destroy();}
 });
 
 test('text exports work without a PDF or AI key; formats and missing papers fail clearly', async () => {

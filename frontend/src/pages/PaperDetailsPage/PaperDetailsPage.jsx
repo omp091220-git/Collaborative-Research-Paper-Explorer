@@ -246,7 +246,7 @@ export default function PaperDetailsPage() {
             <span>Collaborators</span>
           </Button>
 
-          <Button variant="outline" size="sm" onClick={() => setExportModalOpen(true)} iconLeft={FileDown}>
+          <Button variant="outline" size="sm" onClick={() => setExportModalOpen(true)} iconLeft={FileDown} className="h-9 min-w-24 px-4 whitespace-nowrap">
             Export
           </Button>
 

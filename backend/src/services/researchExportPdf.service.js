@@ -1,4 +1,5 @@
 import { PDFDocument, PDFName, PDFHexString } from 'pdf-lib';
+import { appendResearchReport } from './researchExportReport.service.js';
 
 // Stored regions use the rendered page's top-left origin. PDF annotations use
 // unrotated user space, including crop-box offsets (not just page dimensions).
@@ -53,5 +54,6 @@ export async function buildAnnotatedPdf(original, data, attachments) {
   add(1, attachments.markdown + (unplaced.length ? '\n\nPlacement notices:\n'+unplaced.join('\n') : ''), 'Research export: notes, summaries, tags and citations');
   await doc.attach(Buffer.from(attachments.markdown,'utf8'), 'research-notes.md', {mimeType:'text/markdown', description:'Complete research notes, saved summaries, section tags, citations and source coordinates.'});
   await doc.attach(Buffer.from(attachments.bibtex,'utf8'), 'references.bib', {mimeType:'application/x-bibtex', description:'Paper, outgoing references and research notes in BibTeX.'});
+  await appendResearchReport(doc, data, unplaced);
   return Buffer.from(await doc.save());
 }

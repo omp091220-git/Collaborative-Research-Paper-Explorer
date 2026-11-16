@@ -18,12 +18,19 @@ papers they can read in the shared library. No new summaries or AI calls are mad
   Use a Unicode-capable bibliography workflow for non-ASCII metadata.
 - **Annotated PDF (.pdf):** original pages with native highlights/comments for
   regions and page comments for notes without regions. A research comment on page
-  one contains the full report. `research-notes.md` and `references.bib` are embedded
+  one contains the full report. A readable, searchable research report is also
+  appended after the original pages, including all four content categories and
+  source-page references. No comments or attachments panel is required to read it.
+  `research-notes.md` and `references.bib` are embedded
   attachments. Unicode comments use UTF-16 PDF strings. Existing pages, text,
   rotations, crop boxes and annotations are preserved. Invalid saved page numbers
   are reported instead of silently placed elsewhere. Use a reader with **Comments**
   and **Attachments** panels, such as Acrobat Reader; browser viewers may not expose
-  them. Comments retain source Markdown/LaTeX without mathematical typesetting.
+  them. The visible report and comments retain source Markdown/LaTeX without
+  mathematical typesetting. The appendix embeds the redistributable DejaVu Sans
+  font, so it works on Windows without installing fonts. Characters outside that
+  font are labelled with Unicode code points; exact originals remain in comments
+  and attachments.
 
 Original-PDF downloads, the metadata BibTeX copy button, and standalone summary-PDF
 exports (`/api/papers/:id/export/summary-pdf`, FR-35/36) are unchanged.
@@ -45,7 +52,7 @@ file paths or embeddings.
 
 No new migrations or environment variables are needed. The existing main schema,
 including FR-08's structured-summary migration, must already be applied. Install
-the updated backend lockfile with `npm ci`; PDF editing uses `pdf-lib`. Original
+the updated backend lockfile with `npm ci`; PDF editing uses `pdf-lib` and `@pdf-lib/fontkit`. Original
 PDF retrieval reuses FR-08's validated uploads and fixed arXiv host, its 32 MiB
 input limit, and a maximum of 150 pages for annotated exports.
 
