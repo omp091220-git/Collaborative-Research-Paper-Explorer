@@ -26,7 +26,7 @@ of this migration with the database maintainer before using a shared team DB.
 Do not run automated tests or experimental migrations against shared Neon data.
 
 Set GEMINI_API_KEY privately in the backend process. GEMINI_SUMMARY_MODEL selects
-the model, with GEMINI_MODEL accepted as a fallback; default gemini-2.5-flash.
+the model, with GEMINI_MODEL accepted as a fallback; default gemini-3.5-flash-lite.
 Verify the chosen model is available to the actual key. No new npm dependencies
 or lockfile changes are required. HTTPS to generativelanguage.googleapis.com and,
 for arXiv papers, arxiv.org must be available. Honor the environment's proxy and
@@ -125,3 +125,8 @@ shared database.
 Recovery validation: 20 focused tests pass. Full backend: 841 tests, 808 pass,
 the same 33 baseline failures, zero skipped/cancelled. Frontend build, changed-
 component lint, and the desktop/mobile browser smoke checks pass.
+
+Device validation: live Brief/Executive generation and saved-summary retrieval
+succeeded with gemini-3.5-flash-lite. This is now the configurable default; verify
+availability for each runtime key. Model metadata access alone does not establish
+generation access or quota.

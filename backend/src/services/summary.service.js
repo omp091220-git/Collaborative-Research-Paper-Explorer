@@ -9,7 +9,7 @@ import { isPgConnectionError } from '../utils/pgClientErrors.js';
 
 export const SUMMARY_TYPES = ['comprehensive','brief','technical','layperson'];
 export const HEADINGS = ['Background','Methodology','Results','Limitations'];
-export const summaryModel = () => process.env.GEMINI_SUMMARY_MODEL || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+export const summaryModel = () => process.env.GEMINI_SUMMARY_MODEL || process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
 const root=fileURLToPath(new URL('../../../',import.meta.url));
 const fault=(code,retryable=false) => Object.assign(new Error(code),{code,retryable});
 

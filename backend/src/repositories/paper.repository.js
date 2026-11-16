@@ -140,7 +140,7 @@ export async function insertPaperWithJob({ client, paperData, jobData = {} }) {
     await client.query(
       `INSERT INTO structured_summary_jobs(paper_id, model_name)
        VALUES ($1, $2) ON CONFLICT(paper_id, summary_type, model_name) DO NOTHING`,
-      [paper.id, process.env.GEMINI_SUMMARY_MODEL || process.env.GEMINI_MODEL || 'gemini-2.5-flash']
+      [paper.id, process.env.GEMINI_SUMMARY_MODEL || process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite']
     );
   }
   return { paper, job };
