@@ -130,3 +130,15 @@ Device validation: live Brief/Executive generation and saved-summary retrieval
 succeeded with gemini-3.5-flash-lite. This is now the configurable default; verify
 availability for each runtime key. Model metadata access alone does not establish
 generation access or quota.
+
+## PR #53 target-branch reconciliation
+
+PR #53 targets the group's fr-08 branch, which contains the superseded early
+FR-08 implementation. Its history is merged into this feature branch while the
+tested current-main application code is retained. Obsolete duplicate SDK/Redis
+workers, UI and tests are replaced by this integration. The two copies of
+20261025_fr08_ai_summaries.sql are retained unchanged for historical deployments;
+the current runner does not newly register or execute that obsolete migration.
+No SQL is executed as part of conflict resolution, and no existing database
+objects or user data are removed. The PR also carries main updates absent from
+the older target branch, so reviewers should review the full branch comparison.
