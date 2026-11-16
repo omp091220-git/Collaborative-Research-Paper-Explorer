@@ -105,11 +105,11 @@ export default function Login() {
           </div>
         </div>
 
-        <h1 className="text-2xl md:text-3xl font-bold text-center text-slate-800 mb-1">
+        <h1 className="text-2xl md:text-3xl font-extrabold text-center text-slate-900 mb-1">
           Welcome Back
         </h1>
-        <p className="text-center text-slate-500 text-sm mb-6">
-          Sign in to continue to <span className="font-semibold text-indigo-600">Paper Explorer</span>
+        <p className="text-center text-slate-600 text-sm mb-6 font-medium">
+          Sign in to continue to <span className="font-bold text-indigo-700">ScholarSphere</span>
         </p>
 
         {/* Error Alert */}

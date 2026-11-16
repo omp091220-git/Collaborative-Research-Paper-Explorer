@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const MAX_SIZE_BYTES = 31_457_280; // 30 MiB
 
-function StatusBanner({ status }) {
+const StatusBanner = ({ status }) => {
   if (!status) return null;
   const isSuccess = status.type === 'success';
   return (
@@ -18,7 +18,7 @@ function StatusBanner({ status }) {
       <span>{status.message}</span>
     </div>
   );
-}
+};
 
 export default function PaperUpload({ onPaperAdded }) {
   // PDF Upload state

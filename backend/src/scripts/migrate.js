@@ -16,17 +16,23 @@ async function runMigrations() {
     '20261018_roles_and_permissions.sql',
     '20261018_rbac.sql',
     '20261019_annotations.sql',
+    '20261026_genai_usage_tracking.sql',
     '20261024_topic_tags.sql',
     '20261024_paper_metadata.sql',
     '20261026_paper_tag_assignments.sql',
+    '20261027_notifications_and_stars.sql',
     '20261025_discussions_and_collaborators.sql',
     '20261026_paper_tags_and_search.sql',
     '20261027_citations.sql',
     '20261027_paper_sections_and_recommendations.sql',
+    '20261106_paper_assets_and_extraction_jobs.sql',
     '20261108_direct_messaging.sql',
+    '20261113_external_publications.sql',
+    '20261114_group_membership.sql',
     '20261114_messaging_groups.sql',
+    '20261116_unify_group_participant_roles.sql',
   ];
-    // Optionally run only one explicitly selected migration.
+  // Optionally run only one explicitly selected migration.
   const onlyIndex = process.argv.indexOf('--only');
   let filesToRun = migrationFiles;
 

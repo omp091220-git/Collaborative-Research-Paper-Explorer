@@ -74,6 +74,70 @@ export async function insertPaper({
 }
 
 /**
+ * Inserts a new paper record and its initial extraction job atomically.
+ * MUST be called with a dedicated transaction client owned by the caller.
+ * Never uses pool.query() or acquires an independent connection.
+ *
+ * @param {object} params
+ * @param {object} params.client - The PostgreSQL transaction client
+ * @param {object} params.paperData - Metadata and file properties for the paper
+ * @param {object} [params.jobData] - Optional overrides for the initial extraction job
+ * @returns {Promise<{ paper: object, job: object }>}
+ */
+export async function insertPaperWithJob({ client, paperData, jobData = {} }) {
+  if (!client || typeof client.query !== "function") {
+    throw new Error("insertPaperWithJob requires a transaction client with query method.");
+  }
+
+  const {
+    title,
+    authors,
+    abstract,
+    doi,
+    publicationYear,
+    arxivId,
+    filePath,
+    fileSizeBytes,
+    mimeType,
+    uploaderId,
+  } = paperData;
+
+  const paperResult = await client.query(
+    `INSERT INTO papers
+       (title, abstract, authors, doi, publication_year,
+        arxiv_id, file_path, file_size_bytes, mime_type, uploader_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+     RETURNING ${PAPER_SELECT_COLS}`,
+    [
+      title,
+      abstract ?? null,
+      authors,
+      doi ?? null,
+      publicationYear ?? null,
+      arxivId ?? null,
+      filePath,
+      fileSizeBytes,
+      mimeType,
+      uploaderId,
+    ]
+  );
+
+  const paper = paperResult.rows[0];
+  const maxAttempts = jobData.maxAttempts ?? 3;
+
+  const jobResult = await client.query(
+    `INSERT INTO paper_extraction_jobs
+       (paper_id, status, attempts, max_attempts)
+     VALUES ($1, 'pending', 0, $2)
+     RETURNING id, paper_id, status, attempts, max_attempts, assets_count, created_at`,
+    [paper.id, maxAttempts]
+  );
+
+  const job = jobResult.rows[0];
+  return { paper, job };
+}
+
+/**
  * Return all papers ordered newest-first.
  * @returns {Promise<object[]>}
  */
