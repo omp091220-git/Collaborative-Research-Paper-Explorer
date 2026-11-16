@@ -258,20 +258,20 @@ export default function ExplorePapersPage() {
       />
 
       {/* Discovery Navigation Tabs */}
-      <div className="border-b border-slate-200 dark:border-slate-800">
+      <div className="border-b border-white/[0.08]">
         <nav className="flex space-x-2 sm:space-x-4 overflow-x-auto scrollbar-none" aria-label="Explorer Tabs">
           <button
             type="button"
             onClick={() => handleTabChange('papers')}
-            className={`py-3 px-3 border-b-2 text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap cursor-pointer transition-colors ${
+            className={`py-3.5 px-3 border-b-2 text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap cursor-pointer transition-colors ${
               activeTab === 'papers'
-                ? 'border-indigo-600 text-indigo-700 dark:text-indigo-400 font-bold'
-                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'
+                ? 'border-violet-500 text-violet-400 font-bold'
+                : 'border-transparent text-[#71758B] hover:text-[#F8FAFC] font-medium'
             }`}
           >
             <BookOpen className="w-4 h-4" />
             <span>Papers Explorer</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#23263A] text-[#A1A1B5] border border-white/10">
               {totalPapers}
             </span>
           </button>
@@ -279,20 +279,18 @@ export default function ExplorePapersPage() {
           <button
             type="button"
             onClick={() => handleTabChange('topics')}
-            className={`py-3 px-3 border-b-2 text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap cursor-pointer transition-colors ${
+            className={`py-3.5 px-3 border-b-2 text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap cursor-pointer transition-colors ${
               activeTab === 'topics'
-                ? 'border-purple-600 text-purple-700 dark:text-purple-400 font-bold'
-                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'
+                ? 'border-cyan-400 text-cyan-300 font-bold'
+                : 'border-transparent text-[#71758B] hover:text-[#F8FAFC] font-medium'
             }`}
           >
-            <FolderTree className="w-4 h-4 text-purple-500" />
+            <FolderTree className="w-4 h-4 text-cyan-400" />
             <span>Topic Explorer (FR-10)</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300">
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
               {flatTags.length} Topics
             </span>
           </button>
-
-
         </nav>
       </div>
 
@@ -376,7 +374,7 @@ export default function ExplorePapersPage() {
                   ))}
                 </div>
               ) : (
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800 shadow-xs">
+                <div className="space-y-3">
                   {papers.map((paper) => (
                     <PaperListItem
                       key={paper.id}

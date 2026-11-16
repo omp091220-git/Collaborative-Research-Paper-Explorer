@@ -14,11 +14,11 @@ export default function Pagination({
   const end = Math.min(currentPage * pageSize, totalItems);
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 font-medium">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 border-t border-white/[0.08] text-xs text-[#A1A1B5] font-medium">
       <div>
-        Showing <span className="font-bold text-slate-900 dark:text-white">{start}</span> to{' '}
-        <span className="font-bold text-slate-900 dark:text-white">{end}</span> of{' '}
-        <span className="font-bold text-slate-900 dark:text-white">{totalItems}</span> results
+        Showing <span className="font-bold text-[#F8FAFC]">{start}</span> to{' '}
+        <span className="font-bold text-[#F8FAFC]">{end}</span> of{' '}
+        <span className="font-bold text-[#F8FAFC]">{totalItems}</span> results
       </div>
 
       <div className="flex items-center gap-1.5">
@@ -44,13 +44,15 @@ export default function Pagination({
 
             return (
               <span key={page} className="flex items-center">
-                {showEllipsis && <span className="px-1 text-slate-500 font-bold">...</span>}
+                {showEllipsis && (
+                  <span className="px-1.5 text-[#71758B] font-bold">...</span>
+                )}
                 <button
                   onClick={() => onPageChange(page)}
-                  className={`w-7 h-7 text-xs rounded-md font-bold transition cursor-pointer ${
+                  className={`w-7 h-7 text-xs rounded-lg font-bold transition cursor-pointer ${
                     currentPage === page
-                      ? 'bg-indigo-600 text-white shadow-2xs'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
+                      ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm shadow-violet-600/30 font-extrabold'
+                      : 'text-[#A1A1B5] hover:text-[#F8FAFC] hover:bg-white/10'
                   }`}
                 >
                   {page}

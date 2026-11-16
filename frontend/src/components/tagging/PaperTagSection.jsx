@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Tag, Plus, X, AlertCircle, RefreshCw } from 'lucide-react';
+import { Tag, Plus, X, AlertCircle, RefreshCw, Lock } from 'lucide-react';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
 import HierarchicalTagPicker from '../tags/HierarchicalTagPicker';
@@ -7,6 +7,7 @@ import ConfirmationDialog from '../common/ConfirmationDialog';
 import paperTagsService from '../../services/paperTags.service';
 import { getApiErrorMessage } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 
 export default function PaperTagSection({
   paper,
@@ -16,6 +17,7 @@ export default function PaperTagSection({
   canAssign = false,
   loading = false,
 }) {
+  const { user, isAdmin } = useAuth();
   const { addToast } = useToast();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [assignmentToDelete, setAssignmentToDelete] = useState(null);
@@ -26,6 +28,10 @@ export default function PaperTagSection({
   // Filter paper-level assignments (annotation_id is null/undefined)
   const paperAssignments = assignments.filter((a) => !a.annotation_id);
   const assignedTagIds = paperAssignments.map((a) => a.tag_id);
+
+  // Authorization check: User can remove if they are SYSTEM_ADMIN or the assigner
+  const canRemoveAssignment = (a) =>
+    Boolean(isAdmin || (user?.id && a.assigned_by && a.assigned_by === user.id));
 
   const handleAssignTag = async (selectedTag) => {
     setActionError(null);
@@ -84,18 +90,18 @@ export default function PaperTagSection({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-700 p-5 shadow-xs space-y-4">
+    <div className="bg-[#1B1D2B] rounded-2xl border border-white/[0.08] p-5 sm:p-6 shadow-sm space-y-4 text-[#F8FAFC]">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-white/[0.07]">
         <div>
-          <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Tag className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+          <h3 className="text-sm sm:text-base font-bold text-[#F8FAFC] flex items-center gap-2">
+            <Tag className="w-4 h-4 text-violet-400" />
             <span>Paper-Level Topic Tags</span>
-            <Badge variant="indigo" size="xs">
+            <Badge variant="primary" size="xs">
               {paperAssignments.length}
             </Badge>
           </h3>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+          <p className="text-xs text-[#A1A1B5] mt-1">
             Hierarchical research taxonomy topics assigned to this entire publication
           </p>
         </div>
@@ -111,7 +117,6 @@ export default function PaperTagSection({
                 setPickerOpen((prev) => !prev);
               }}
               iconLeft={Plus}
-              className="gap-1.5"
             >
               <span>Assign Tag</span>
             </Button>
@@ -131,8 +136,8 @@ export default function PaperTagSection({
       </div>
 
       {actionError && (
-        <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 rounded-xl flex items-start gap-2 text-xs text-rose-800 dark:text-rose-200 font-semibold">
-          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+        <div className="p-3 bg-rose-500/15 border border-rose-500/25 rounded-xl flex items-start gap-2 text-xs text-rose-300 font-medium">
+          <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
           <span>{actionError}</span>
         </div>
       )}
@@ -152,55 +157,70 @@ export default function PaperTagSection({
 
       {/* Assigned Tags Badges */}
       {loading ? (
-        <div className="flex items-center gap-2 py-4 text-xs text-slate-500">
-          <RefreshCw className="w-4 h-4 animate-spin text-indigo-600" />
+        <div className="flex items-center gap-2.5 py-4 text-xs text-[#71758B]">
+          <RefreshCw className="w-4 h-4 animate-spin text-violet-400" />
           <span>Loading tag assignments...</span>
         </div>
       ) : paperAssignments.length === 0 ? (
-        <div className="p-6 text-center rounded-xl border border-dashed border-slate-300 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 text-xs text-slate-600 dark:text-slate-400">
-          <p className="font-semibold text-slate-800 dark:text-slate-200">
+        <div className="p-6 text-center rounded-2xl border border-dashed border-white/10 bg-[#161827]/50 text-xs text-[#A1A1B5]">
+          <p className="font-semibold text-[#F8FAFC]">
             No topic tags assigned to this paper yet.
           </p>
           {canAssign ? (
-            <p className="mt-1">
+            <p className="mt-1 text-[#71758B]">
               Click <strong>Assign Tag</strong> above to categorize this paper in the research taxonomy.
             </p>
           ) : (
-            <p className="mt-1">
+            <p className="mt-1 text-[#71758B]">
               Researchers and administrators can assign taxonomy tags to this paper.
             </p>
           )}
         </div>
       ) : (
         <div className="flex flex-wrap gap-2 pt-1">
-          {paperAssignments.map((assignment) => (
-            <div
-              key={assignment.id}
-              className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-slate-100 hover:border-indigo-300 dark:hover:border-indigo-700 transition shadow-2xs"
-            >
-              <Tag className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span>{assignment.tag_name}</span>
-              {assignment.canonical_path && (
-                <span
-                  className="text-[10px] font-mono text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 max-w-[200px] truncate"
-                  title={assignment.canonical_path}
-                >
-                  {assignment.canonical_path}
-                </span>
-              )}
-              {canAssign && (
-                <button
-                  type="button"
-                  onClick={() => setAssignmentToDelete(assignment)}
-                  className="ml-1 p-0.5 rounded hover:bg-rose-100 dark:hover:bg-rose-950/60 text-slate-400 hover:text-rose-600 transition cursor-pointer"
-                  title={`Remove "${assignment.tag_name}" assignment from this paper`}
-                  aria-label="Remove tag assignment"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          ))}
+          {paperAssignments.map((assignment) => {
+            const removable = canRemoveAssignment(assignment);
+            return (
+              <div
+                key={assignment.id}
+                className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#23263A] border border-white/10 text-xs font-semibold text-[#F8FAFC] hover:border-violet-500/40 transition shadow-xs"
+              >
+                <Tag className="w-3.5 h-3.5 text-violet-400" />
+                <span>{assignment.tag_name}</span>
+                {assignment.canonical_path && (
+                  <span
+                    className="text-[10px] font-mono text-[#A1A1B5] bg-[#161827] px-2 py-0.5 rounded-md border border-white/10 max-w-[200px] truncate"
+                    title={assignment.canonical_path}
+                  >
+                    {assignment.canonical_path}
+                  </span>
+                )}
+                {removable ? (
+                  <button
+                    type="button"
+                    disabled={deleting}
+                    onClick={() => setAssignmentToDelete(assignment)}
+                    className="ml-1 p-0.5 rounded-md hover:bg-rose-500/20 text-[#71758B] hover:text-rose-400 transition cursor-pointer disabled:opacity-40"
+                    title={
+                      isAdmin && assignment.assigned_by !== user?.id
+                        ? `Remove "${assignment.tag_name}" (Admin override)`
+                        : `Remove "${assignment.tag_name}" assignment from this paper`
+                    }
+                    aria-label="Remove tag assignment"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                ) : (
+                  <span
+                    className="ml-1 text-[#71758B]"
+                    title="Assigned by another collaborator. Only the assigner or an admin can remove this tag."
+                  >
+                    <Lock className="w-3 h-3 text-[#71758B]" />
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 

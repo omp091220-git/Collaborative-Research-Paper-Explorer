@@ -210,9 +210,15 @@ export const deleteAssignment = async (id, { userId, role }) => {
   }
 
   const isAdmin = role === 'SYSTEM_ADMIN';
-  const isOwner = assignment.assigned_by === userId;
+  const isOwner = assignment.assigned_by && assignment.assigned_by === userId;
 
   if (!isAdmin && !isOwner) {
+    if (!assignment.assigned_by) {
+      throw new AssignmentError(
+        'Forbidden. Legacy tag assignments without creator metadata can only be removed by a system administrator.',
+        403
+      );
+    }
     throw new AssignmentError(
       'Forbidden. You can only remove assignments you created.',
       403

@@ -8,6 +8,7 @@ import { MessageSquarePlus, MessageSquare, RefreshCw } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { annotationsService } from '../../services/annotations.service';
 import paperTagsService from '../../services/paperTags.service';
+import { getApiErrorMessage } from '../../services/api';
 
 export default function AnnotationList({
   paperId,
@@ -55,7 +56,7 @@ export default function AnnotationList({
         setAnnotationTagsMap(map);
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to retrieve annotations for this paper.');
+      setError(getApiErrorMessage(err, 'Failed to retrieve annotations for this paper.'));
     } finally {
       setLoading(false);
     }
@@ -96,8 +97,9 @@ export default function AnnotationList({
       addToast({
         type: 'error',
         title: 'Delete Failed',
-        message: err.response?.data?.error || 'Could not delete annotation.',
+        message: getApiErrorMessage(err, 'Could not delete annotation.'),
       });
+      throw err;
     }
   };
 
@@ -126,24 +128,24 @@ export default function AnnotationList({
       : annotations.filter((a) => a.page_number === Number(selectedPage));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5 text-[#F8FAFC]">
       {/* Header with Page Filter & Add CTA */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-          <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 pb-4 border-b border-white/[0.08]">
+        <div className="flex items-center gap-2.5">
+          <MessageSquare className="w-4 h-4 text-violet-400" />
+          <h3 className="text-sm sm:text-base font-bold text-[#F8FAFC]">
             Paper Annotations ({annotations.length})
           </h3>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap">
           {pages.length > 1 && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Filter Page:</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[#71758B]">Page:</span>
               <select
                 value={selectedPage}
                 onChange={(e) => setSelectedPage(e.target.value)}
-                className="text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1 text-slate-800 dark:text-slate-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="text-xs bg-[#23263A] border border-white/10 rounded-xl px-2.5 py-1.5 text-[#F8FAFC] cursor-pointer focus:outline-none focus:ring-2 focus:ring-violet-500/30"
               >
                 <option value="all">All Pages ({annotations.length})</option>
                 {pages.map((p) => (
@@ -173,7 +175,7 @@ export default function AnnotationList({
             onClick={handleOpenAdd}
             iconLeft={MessageSquarePlus}
           >
-            Add Annotation
+            Add Note
           </Button>
         </div>
       </div>
@@ -189,21 +191,21 @@ export default function AnnotationList({
 
       {/* Loading state */}
       {loading && !error ? (
-        <div className="py-12 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
-          <span className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <div className="py-12 text-center text-xs text-[#71758B] flex items-center justify-center gap-2.5">
+          <span className="w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
           <span className="font-medium">Loading research notes...</span>
         </div>
       ) : !error && filtered.length === 0 ? (
         <EmptyState
           icon={MessageSquare}
           title={selectedPage === 'all' ? 'No annotations yet' : `No annotations on Page ${selectedPage}`}
-          description="Add text comments, figure highlights, or page notes to collaborate with colleagues."
+          description="Add comments, highlight passages, or record mathematical insights on this preprint."
           actionLabel="Add First Annotation"
           onAction={handleOpenAdd}
           actionIcon={MessageSquarePlus}
         />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3.5">
           {filtered.map((item) => (
             <AnnotationCard
               key={item.id}

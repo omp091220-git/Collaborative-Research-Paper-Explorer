@@ -68,6 +68,11 @@ export default function RightSidebar({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [deleteType, setDeleteType] = useState('annotation'); // 'annotation' | 'paragraph' | 'topic'
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const canDeleteAnnotationItem = (ann) => {
+    return Boolean(isAdmin || (currentUser?.id && ann?.created_by && ann.created_by === currentUser.id));
+  };
 
   // Map tag assignments by annotation_id for fast lookup
   const assignmentsByAnnotation = useMemo(() => {
@@ -178,6 +183,7 @@ export default function RightSidebar({
 
   const handleConfirmDelete = async () => {
     if (!itemToDelete) return;
+    setIsDeleting(true);
     try {
       if (deleteType === 'annotation' || deleteType === 'paragraph') {
         await onDeleteAnnotation(itemToDelete.id);
@@ -188,6 +194,8 @@ export default function RightSidebar({
       setItemToDelete(null);
     } catch (err) {
       console.error('Delete error:', err);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -451,14 +459,16 @@ export default function RightSidebar({
                           </button>
                         )}
 
-                        <button
-                          type="button"
-                          onClick={() => requestDeleteAnnotation(ann)}
-                          className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition cursor-pointer"
-                          title="Delete note"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
+                        {canDeleteAnnotationItem(ann) && (
+                          <button
+                            type="button"
+                            onClick={() => requestDeleteAnnotation(ann)}
+                            className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition cursor-pointer"
+                            title="Delete note"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -722,14 +732,16 @@ export default function RightSidebar({
                           </button>
                         )}
 
-                        <button
-                          type="button"
-                          onClick={() => requestDeleteParagraph(ann)}
-                          className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition cursor-pointer"
-                          title="Delete paragraph annotation"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
+                        {canDeleteAnnotationItem(ann) && (
+                          <button
+                            type="button"
+                            onClick={() => requestDeleteParagraph(ann)}
+                            className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition cursor-pointer"
+                            title="Delete paragraph annotation"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -800,6 +812,7 @@ export default function RightSidebar({
       {/* Confirmation Dialog for Deletions */}
       <ConfirmationDialog
         isOpen={deleteConfirmOpen}
+        loading={isDeleting}
         onClose={() => {
           setDeleteConfirmOpen(false);
           setItemToDelete(null);

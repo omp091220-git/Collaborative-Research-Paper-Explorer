@@ -387,7 +387,21 @@ router.delete(
         [id]
       );
 
-      if (existing.rows.length === 0 || existing.rows[0].created_by !== req.user.id) {
+      if (existing.rows.length === 0) {
+        return res.status(404).json({
+          error: "Annotation not found.",
+        });
+      }
+
+      const annotation = existing.rows[0];
+
+      if (!annotation.created_by) {
+        return res.status(403).json({
+          error: "Legacy annotations without ownership metadata can only be deleted by a system administrator.",
+        });
+      }
+
+      if (annotation.created_by !== req.user.id) {
         return res.status(403).json({
           error: "You can only delete your own annotations.",
         });

@@ -1,4 +1,4 @@
-import { LayoutGrid, List, RotateCcw, Tag, Calendar } from 'lucide-react';
+import { LayoutGrid, List, RotateCcw } from 'lucide-react';
 import SearchInput from '../common/SearchInput';
 import Button from '../common/Button';
 
@@ -35,7 +35,7 @@ export default function PaperFilters({
   );
 
   return (
-    <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 mb-6 p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-800 shadow-xs">
+    <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3.5 mb-7 p-3.5 bg-[#1B1D2B] rounded-2xl border border-white/[0.08] shadow-sm">
       {/* Search Input */}
       <div className="flex-1 min-w-[240px]">
         <SearchInput
@@ -47,13 +47,13 @@ export default function PaperFilters({
       </div>
 
       {/* Filter and Sort controls */}
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-2.5 flex-wrap">
         {/* Topic Tag Filter */}
         {topics.length > 0 && (
           <select
             value={selectedTopic}
             onChange={(e) => onTopicChange && onTopicChange(e.target.value)}
-            className="text-xs bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-200 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-2xs cursor-pointer max-w-[170px] truncate"
+            className="text-xs bg-[#23263A] hover:bg-[#2B2F46] border border-white/10 rounded-xl px-3 py-2 text-[#F8FAFC] font-semibold focus:outline-none focus:ring-2 focus:ring-violet-500/30 shadow-xs cursor-pointer max-w-[170px] truncate transition"
             title="Filter by topic tag"
           >
             <option value="">All Topics</option>
@@ -69,18 +69,18 @@ export default function PaperFilters({
         <select
           value={currentSource}
           onChange={(e) => handleSourceChange && handleSourceChange(e.target.value)}
-          className="text-xs bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-200 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-2xs cursor-pointer"
+          className="text-xs bg-[#23263A] hover:bg-[#2B2F46] border border-white/10 rounded-xl px-3 py-2 text-[#F8FAFC] font-semibold focus:outline-none focus:ring-2 focus:ring-violet-500/30 shadow-xs cursor-pointer transition"
         >
           <option value="all">All Sources</option>
-          <option value="arxiv">arXiv Only</option>
-          <option value="upload">Direct Uploads</option>
+          <option value="arxiv">arXiv Preprints</option>
+          <option value="upload">Uploaded PDFs</option>
         </select>
 
         {/* Sort dropdown */}
         <select
           value={currentSort}
           onChange={(e) => handleSortChange && handleSortChange(e.target.value)}
-          className="text-xs bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-200 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-2xs cursor-pointer"
+          className="text-xs bg-[#23263A] hover:bg-[#2B2F46] border border-white/10 rounded-xl px-3 py-2 text-[#F8FAFC] font-semibold focus:outline-none focus:ring-2 focus:ring-violet-500/30 shadow-xs cursor-pointer transition"
         >
           <option value="newest">Newest First</option>
           <option value="oldest">Oldest First</option>
@@ -104,14 +104,14 @@ export default function PaperFilters({
         )}
 
         {/* View Mode Toggle */}
-        <div className="flex items-center border border-slate-300 dark:border-slate-700 rounded-lg p-0.5 bg-slate-100 dark:bg-slate-800">
+        <div className="flex items-center border border-white/10 rounded-xl p-0.5 bg-[#161827]">
           <button
             type="button"
             onClick={() => onViewModeChange('grid')}
-            className={`p-1.5 rounded-md transition cursor-pointer ${
+            className={`p-1.5 rounded-lg transition cursor-pointer ${
               viewMode === 'grid'
-                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-2xs font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-violet-600 text-white shadow-xs font-bold'
+                : 'text-[#71758B] hover:text-[#F8FAFC]'
             }`}
             title="Grid View"
             aria-label="Grid View"
@@ -121,10 +121,10 @@ export default function PaperFilters({
           <button
             type="button"
             onClick={() => onViewModeChange('list')}
-            className={`p-1.5 rounded-md transition cursor-pointer ${
+            className={`p-1.5 rounded-lg transition cursor-pointer ${
               viewMode === 'list'
-                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-2xs font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-violet-600 text-white shadow-xs font-bold'
+                : 'text-[#71758B] hover:text-[#F8FAFC]'
             }`}
             title="List View"
             aria-label="List View"

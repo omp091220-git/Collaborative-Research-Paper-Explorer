@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Edit2, Trash2, MapPin, User, Clock, Tag } from 'lucide-react';
+import { Edit2, Trash2, MapPin, User, Clock, Tag, Loader2 } from 'lucide-react';
 import Badge from '../common/Badge';
 import { formatDate } from '../../utils/formatters';
 import { useAuth } from '../../context/AuthContext';
@@ -16,15 +16,19 @@ export default function AnnotationCard({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const isAuthor = user?.id && annotation.created_by === user.id;
+  // Ownership & Permission Logic
+  const isAuthor = Boolean(user?.id && annotation.created_by && annotation.created_by === user.id);
   const canEdit = isAuthor || isAdmin;
-  const canDelete = isAdmin; // Backend strictly allows only SYSTEM_ADMIN to delete
+  // Researchers can delete their own annotations; Admins can delete any annotation (including legacy records)
+  const canDelete = isAuthor || isAdmin;
 
   const handleDelete = async () => {
     setDeleting(true);
     try {
       await onDelete(annotation.id);
       setDeleteConfirmOpen(false);
+    } catch {
+      // Error is caught & alerted by parent onDelete handler
     } finally {
       setDeleting(false);
     }
@@ -37,7 +41,7 @@ export default function AnnotationCard({
     annotation.position_y !== undefined;
 
   return (
-    <div className="p-4 rounded-xl border border-slate-200/90 bg-white hover:border-slate-300 transition shadow-2xs space-y-2.5">
+    <div className="p-4 sm:p-5 rounded-2xl border border-white/[0.08] bg-[#1B1D2B] hover:border-white/20 transition-all shadow-sm space-y-3 text-[#F8FAFC]">
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -46,10 +50,10 @@ export default function AnnotationCard({
           </Badge>
           {hasCoords && (
             <span
-              className="inline-flex items-center gap-1 text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded"
+              className="inline-flex items-center gap-1 text-[10px] font-mono text-[#A1A1B5] bg-[#23263A] px-2 py-0.5 rounded-md border border-white/10"
               title={`Coordinates: X: ${(annotation.position_x * 100).toFixed(0)}%, Y: ${(annotation.position_y * 100).toFixed(0)}%`}
             >
-              <MapPin className="w-2.5 h-2.5 text-indigo-500" />
+              <MapPin className="w-2.5 h-2.5 text-violet-400" />
               <span>
                 {(annotation.position_x * 100).toFixed(0)}%, {(annotation.position_y * 100).toFixed(0)}%
               </span>
@@ -59,11 +63,11 @@ export default function AnnotationCard({
 
         {/* Action icons */}
         <div className="flex items-center gap-1">
-          {canEdit && (
+          {canEdit && onEdit && (
             <button
               type="button"
               onClick={() => onEdit(annotation)}
-              className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+              className="p-1.5 rounded-lg text-[#71758B] hover:text-[#F8FAFC] hover:bg-white/10 transition cursor-pointer"
               title="Edit annotation"
               aria-label="Edit annotation"
             >
@@ -74,19 +78,24 @@ export default function AnnotationCard({
           {canDelete && (
             <button
               type="button"
+              disabled={deleting}
               onClick={() => setDeleteConfirmOpen(true)}
-              className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-              title="Delete annotation (Admin only)"
+              className="p-1.5 rounded-lg text-[#71758B] hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer disabled:opacity-40"
+              title={isAdmin && !isAuthor ? 'Delete annotation (Admin override)' : 'Delete annotation'}
               aria-label="Delete annotation"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              {deleting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="w-3.5 h-3.5" />
+              )}
             </button>
           )}
         </div>
       </div>
 
       {/* Content (FR-15 Rich Markdown & LaTeX) */}
-      <div className="text-xs text-slate-800 dark:text-slate-200 leading-relaxed font-sans">
+      <div className="text-xs sm:text-sm text-[#F8FAFC] leading-relaxed font-sans">
         <MarkdownMathRenderer content={annotation.content} />
       </div>
 
@@ -96,10 +105,10 @@ export default function AnnotationCard({
           {tags.map((t) => (
             <span
               key={t.id || t.assignment_id || t.tag_id}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800 text-[10px] font-bold text-purple-900 dark:text-purple-200"
+              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-violet-500/15 border border-violet-500/25 text-[10px] font-bold text-violet-300"
               title={t.canonical_path || t.canonicalPath || t.tag_name || t.name}
             >
-              <Tag className="w-2.5 h-2.5 text-purple-600" />
+              <Tag className="w-2.5 h-2.5 text-violet-400" />
               <span>{t.tag_name || t.name}</span>
             </span>
           ))}
@@ -107,14 +116,18 @@ export default function AnnotationCard({
       )}
 
       {/* Meta Footer */}
-      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-        <span className="flex items-center gap-1">
-          <User className="w-3 h-3" />
-          <span>{isAuthor ? 'You' : `User ${annotation.created_by?.slice(0, 8)}...`}</span>
+      <div className="pt-2.5 border-t border-white/[0.07] flex items-center justify-between text-[11px] text-[#71758B]">
+        <span className="flex items-center gap-1.5">
+          <User className="w-3 h-3 text-[#71758B]" />
+          <span>
+            {isAuthor
+              ? 'You'
+              : annotation.author_name || (annotation.created_by ? `Scholar (${annotation.created_by.slice(0, 8)})` : 'Legacy Record')}
+          </span>
         </span>
 
-        <span className="flex items-center gap-1">
-          <Clock className="w-3 h-3" />
+        <span className="flex items-center gap-1.5">
+          <Clock className="w-3 h-3 text-[#71758B]" />
           <span>{formatDate(annotation.created_at, { shortMonth: true })}</span>
         </span>
       </div>
@@ -126,7 +139,7 @@ export default function AnnotationCard({
         onConfirm={handleDelete}
         loading={deleting}
         title="Delete Annotation"
-        message="Are you sure you want to permanently delete this annotation from the research paper?"
+        message="Are you sure you want to permanently delete this annotation from the research paper? (The original document remains unaffected)."
         confirmText="Delete Annotation"
         danger
       />
