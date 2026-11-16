@@ -13,6 +13,8 @@ import discussionRoutes from "./routes/discussion.routes.js";
 import invitationRoutes from "./routes/invitation.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import recommendationRoutes from "./routes/recommendation.routes.js";
+import directMessageRoutes from "./routes/directMessage.routes.js";
+import groupRoutes from "./routes/group.routes.js";
 import researcherRoutes from "./routes/researcher.routes.js";
 import errorHandler from "./middleware/errorHandler.js";
 
@@ -49,6 +51,8 @@ app.use("/api/paper-tags", paperTagAssignmentRoutes);
 app.use("/api/invitations", invitationRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/recommendations", recommendationRoutes);
+app.use("/api/direct-messages", directMessageRoutes);
+app.use("/api/groups", groupRoutes);
 app.use("/api/researchers", researcherRoutes);
 
 // Handle unknown routes

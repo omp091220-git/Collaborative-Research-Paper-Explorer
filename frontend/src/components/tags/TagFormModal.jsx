@@ -27,9 +27,9 @@ export default function TagFormModal({
     text
       .toLowerCase()
       .trim()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/[\s_]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+      .replace(/[^a-z0-9\s_-]/g, '')
+      .replace(/[\s-]+/g, '_')
+      .replace(/^_+|_+$/g, '');
 
   useEffect(() => {
     if (!isOpen) return;
@@ -58,7 +58,7 @@ export default function TagFormModal({
   };
 
   const handleSlugChange = (val) => {
-    setSlug(val.toLowerCase().replace(/[^a-z0-9-]/g, ''));
+    setSlug(val.toLowerCase().replace(/[^a-z0-9_]/g, ''));
     setSlugManuallyEdited(true);
   };
 
@@ -78,8 +78,8 @@ export default function TagFormModal({
       return;
     }
 
-    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(effectiveSlug)) {
-      setError('Slug must contain only lowercase alphanumeric characters and single hyphens.');
+    if (!/^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(effectiveSlug)) {
+      setError('Slug must contain only lowercase alphanumeric characters separated by single underscores (e.g. solar_energy).');
       return;
     }
 
@@ -193,14 +193,14 @@ export default function TagFormModal({
               Identifier Slug <span className="text-rose-600">*</span>
             </label>
             <span className="text-[11px] text-slate-500 dark:text-slate-400">
-              Lowercase, hyphens only
+              Lowercase, underscores only
             </span>
           </div>
           <input
             type="text"
             value={slug}
             onChange={(e) => handleSlugChange(e.target.value)}
-            placeholder="perovskite-solar-cells"
+            placeholder="perovskite_solar_cells"
             className="w-full px-3 py-2 text-xs font-mono bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
             required
           />
