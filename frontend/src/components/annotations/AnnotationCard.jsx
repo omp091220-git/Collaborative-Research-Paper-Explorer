@@ -4,6 +4,7 @@ import Badge from '../common/Badge';
 import { formatDate } from '../../utils/formatters';
 import { useAuth } from '../../context/AuthContext';
 import ConfirmationDialog from '../common/ConfirmationDialog';
+import MarkdownMathRenderer from '../research/MarkdownMathRenderer';
 
 export default function AnnotationCard({
   annotation,
@@ -84,10 +85,10 @@ export default function AnnotationCard({
         </div>
       </div>
 
-      {/* Content */}
-      <p className="text-xs text-slate-800 leading-relaxed whitespace-pre-wrap font-sans">
-        {annotation.content}
-      </p>
+      {/* Content (FR-15 Rich Markdown & LaTeX) */}
+      <div className="text-xs text-slate-800 dark:text-slate-200 leading-relaxed font-sans">
+        <MarkdownMathRenderer content={annotation.content} />
+      </div>
 
       {/* Assigned Tags if present */}
       {tags && tags.length > 0 && (

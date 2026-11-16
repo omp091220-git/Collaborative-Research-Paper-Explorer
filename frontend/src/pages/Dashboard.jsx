@@ -8,6 +8,7 @@ import DirectMessaging from '../components/DirectMessaging';
 import GroupMessaging from '../components/GroupMessaging';
 import NotificationBell from '../components/NotificationBell';
 import PendingInvitations from '../components/PendingInvitations';
+import GroupList from '../components/GroupList';
 
 export default function Dashboard() {
   const { user, logout, isAdmin, isResearcher, hasPermission } = useAuth();
@@ -345,6 +346,9 @@ export default function Dashboard() {
 
         {/* Pending Collaboration Invitations */}
         <PendingInvitations onInvitationHandled={handlePaperAdded} />
+
+        {/* FR-32: Research Messaging Groups */}
+        <GroupList />
 
         {/* Research Paper Upload & Import (only for authorized roles) */}
         {hasPermission('papers:upload') && (
