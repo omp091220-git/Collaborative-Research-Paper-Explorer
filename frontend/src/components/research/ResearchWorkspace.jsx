@@ -133,6 +133,56 @@ export default function ResearchWorkspace({
   const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(false);
   const [rightSidebarTab, setRightSidebarTab] = useState('paragraphs'); // 'annotations' | 'topics' | 'paragraphs'
 
+  // ── FR-15: Split-Pane Resizable Width State ──────────────────────────────
+  const [splitWidth, setSplitWidth] = useState(() => {
+    try {
+      const saved = localStorage.getItem('crpe_reader_split_width');
+      const parsed = parseInt(saved, 10);
+      if (!isNaN(parsed) && parsed >= 280 && parsed <= 1200) return parsed;
+    } catch (_) {}
+    return 420; // default comfortable split width
+  });
+  const [isDraggingSplit, setIsDraggingSplit] = useState(false);
+
+  const handleSetSplitRatio = useCallback((ratio) => {
+    const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    const newWidth = Math.round(windowWidth * ratio);
+    const minWidth = 280;
+    const maxWidth = Math.floor(windowWidth * 0.65);
+    const clamped = Math.min(maxWidth, Math.max(minWidth, newWidth));
+    setSplitWidth(clamped);
+    try {
+      localStorage.setItem('crpe_reader_split_width', String(clamped));
+    } catch (_) {}
+  }, []);
+
+  useEffect(() => {
+    if (!isDraggingSplit) return;
+
+    const handleMouseMove = (e) => {
+      const windowWidth = window.innerWidth;
+      const newWidth = windowWidth - e.clientX;
+      const minWidth = 280;
+      const maxWidth = Math.floor(windowWidth * 0.65);
+      const clamped = Math.min(maxWidth, Math.max(minWidth, newWidth));
+      setSplitWidth(clamped);
+    };
+
+    const handleMouseUp = () => {
+      setIsDraggingSplit(false);
+      try {
+        localStorage.setItem('crpe_reader_split_width', String(splitWidth));
+      } catch (_) {}
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDraggingSplit, splitWidth]);
+
   // ── 6. Modals & Dialogs State ─────────────────────────────────────────────
   const [annotationModalOpen, setAnnotationModalOpen] = useState(false);
   const [activeSelectionForModal, setActiveSelectionForModal] = useState(null);
@@ -761,9 +811,35 @@ export default function ResearchWorkspace({
           </ErrorBoundary>
         </div>
 
+        {/* FR-15: Interactive Draggable Split-Pane Divider */}
+        {!rightSidebarCollapsed && (
+          <div
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setIsDraggingSplit(true);
+            }}
+            onDoubleClick={() => handleSetSplitRatio(0.5)}
+            title="Drag to resize split panes (Double click for 50/50 split)"
+            className={`w-2.5 cursor-col-resize select-none shrink-0 transition-colors z-20 flex items-center justify-center relative group ${
+              isDraggingSplit
+                ? 'bg-indigo-600 ring-2 ring-indigo-400'
+                : 'bg-slate-900 hover:bg-indigo-600/80 border-x border-slate-800 hover:border-indigo-500'
+            }`}
+          >
+            {/* Visual handle dots */}
+            <div className="flex flex-col gap-1 items-center pointer-events-none">
+              <span className={`w-0.5 h-1.5 rounded-full ${isDraggingSplit ? 'bg-white' : 'bg-slate-600 group-hover:bg-white'}`} />
+              <span className={`w-0.5 h-1.5 rounded-full ${isDraggingSplit ? 'bg-white' : 'bg-slate-600 group-hover:bg-white'}`} />
+              <span className={`w-0.5 h-1.5 rounded-full ${isDraggingSplit ? 'bg-white' : 'bg-slate-600 group-hover:bg-white'}`} />
+            </div>
+          </div>
+        )}
+
         {/* RIGHT PANEL: RESEARCH INTELLIGENCE (Annotations, Topics, Paragraphs) */}
         <ErrorBoundary compact title="Research Intelligence Panel Error">
           <RightSidebar
+            width={splitWidth}
+            onSetSplitRatio={handleSetSplitRatio}
             activeTab={rightSidebarTab}
             onTabChange={setRightSidebarTab}
             isCollapsed={rightSidebarCollapsed}
