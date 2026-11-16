@@ -98,8 +98,40 @@ function renderFallbackMath(latexStr) {
     s = s.split(sym).join(rep);
   }
 
-  // Handle \frac{a}{b} -> (a / b)
-  s = s.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1 / $2)');
+  // Handle \frac{a}{b} -> (a / b) with balanced curly braces
+  let idx = 0;
+  while ((idx = s.indexOf('\\frac{', idx)) !== -1) {
+    const numStart = idx + 6;
+    let depth = 1;
+    let numEnd = numStart;
+    while (numEnd < s.length && depth > 0) {
+      if (s[numEnd] === '{') depth++;
+      else if (s[numEnd] === '}') depth--;
+      numEnd++;
+    }
+    if (depth !== 0 || s[numEnd] !== '{') {
+      idx += 6;
+      continue;
+    }
+    const denStart = numEnd + 1;
+    depth = 1;
+    let denEnd = denStart;
+    while (denEnd < s.length && depth > 0) {
+      if (s[denEnd] === '{') depth++;
+      else if (s[denEnd] === '}') depth--;
+      denEnd++;
+    }
+    if (depth !== 0) {
+      idx += 6;
+      continue;
+    }
+
+    const numerator = s.slice(numStart, numEnd - 1);
+    const denominator = s.slice(denStart, denEnd - 1);
+    const replacement = `(${numerator} / ${denominator})`;
+    s = s.slice(0, idx) + replacement + s.slice(denEnd);
+    idx += replacement.length;
+  }
 
   // Handle \sqrt{a} -> √(a)
   s = s.replace(/\\sqrt\{([^}]+)\}/g, '√($1)');
