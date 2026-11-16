@@ -17,12 +17,15 @@ import {
   Check,
   FileText,
   Quote,
+  Code2,
+  Sparkles,
 } from 'lucide-react';
 import Badge from '../common/Badge';
 import Button from '../common/Button';
 import TagTreeItem from '../tags/TagTreeItem';
 import ConfirmationDialog from '../common/ConfirmationDialog';
 import { formatDate } from '../../utils/formatters';
+import MarkdownMathRenderer from './MarkdownMathRenderer';
 
 export default function RightSidebar({
   activeTab = 'annotations', // 'annotations' | 'topics' | 'paragraphs'
@@ -49,10 +52,17 @@ export default function RightSidebar({
   paperAssignments = [],
   canManageTaxonomy = true,
   isAdmin = false,
+  width = 384,
+  onSetSplitRatio,
 }) {
   const [annotationSearch, setAnnotationSearch] = useState('');
   const [paragraphSearch, setParagraphSearch] = useState('');
   const [topicSearch, setTopicSearch] = useState('');
+  const [rawViewMap, setRawViewMap] = useState({});
+
+  const toggleRawView = (id) => {
+    setRawViewMap((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
   const [expandedMap, setExpandedMap] = useState({});
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
@@ -222,7 +232,10 @@ export default function RightSidebar({
   }
 
   return (
-    <div className="w-80 sm:w-96 bg-slate-900 border-l border-slate-800 text-slate-200 flex flex-col h-full shrink-0 overflow-hidden select-none">
+    <div
+      style={{ width: `${width}px` }}
+      className="bg-slate-900 border-l border-slate-800 text-slate-200 flex flex-col h-full shrink-0 overflow-hidden select-none"
+    >
       {/* Tab Navigation Header - 3 Distinct Tabs */}
       <div className="h-13 bg-slate-950 border-b border-slate-800 px-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-1 bg-slate-900 p-0.5 rounded-xl border border-slate-800">
@@ -277,14 +290,38 @@ export default function RightSidebar({
           </button>
         </div>
 
-        <button
-          type="button"
-          onClick={onToggleCollapse}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
-          title="Collapse Panel"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          {/* FR-15 Split Ratio Presets */}
+          {onSetSplitRatio && (
+            <div className="hidden sm:flex items-center gap-0.5 bg-slate-900 border border-slate-800 p-0.5 rounded-lg text-[10px] font-mono">
+              <button
+                type="button"
+                onClick={() => onSetSplitRatio(0.35)}
+                className="px-1.5 py-0.5 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+                title="Split pane: 35% Annotations / 65% PDF"
+              >
+                35%
+              </button>
+              <button
+                type="button"
+                onClick={() => onSetSplitRatio(0.5)}
+                className="px-1.5 py-0.5 rounded bg-indigo-950/70 border border-indigo-800/80 hover:bg-indigo-900 text-indigo-300 font-bold transition cursor-pointer"
+                title="Split pane: 50/50 Equal Reader & Annotations"
+              >
+                50/50
+              </button>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            title="Collapse Panel"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* TAB 1: ANNOTATIONS */}
@@ -368,6 +405,19 @@ export default function RightSidebar({
                       <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                         <button
                           type="button"
+                          onClick={() => toggleRawView(ann.id)}
+                          className={`p-1 rounded transition cursor-pointer ${
+                            rawViewMap[ann.id]
+                              ? 'text-amber-400 bg-amber-950/60'
+                              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                          }`}
+                          title={rawViewMap[ann.id] ? 'Show formatted LaTeX/Markdown' : 'View raw syntax'}
+                        >
+                          <Code2 className="w-3 h-3" />
+                        </button>
+
+                        <button
+                          type="button"
                           onClick={() => onSelectAnnotation && onSelectAnnotation(ann)}
                           className="p-1 rounded text-slate-400 hover:text-indigo-300 hover:bg-slate-800 transition cursor-pointer"
                           title="Scroll to position in PDF"
@@ -399,10 +449,16 @@ export default function RightSidebar({
                       </div>
                     </div>
 
-                    {/* Annotation Content */}
-                    <p className="text-xs text-slate-200 leading-relaxed font-sans whitespace-pre-wrap">
-                      {ann.content}
-                    </p>
+                    {/* Annotation Content (FR-15 Rich LaTeX / Markdown) */}
+                    {rawViewMap[ann.id] ? (
+                      <pre className="p-2 rounded bg-slate-950 border border-slate-800 text-[11px] font-mono text-amber-200/90 whitespace-pre-wrap select-text">
+                        {ann.content}
+                      </pre>
+                    ) : (
+                      <div className="text-xs text-slate-200 leading-relaxed font-sans select-text">
+                        <MarkdownMathRenderer content={ann.content} />
+                      </div>
+                    )}
 
                     {/* Annotation-Level Topic Tags */}
                     <div className="pt-1.5 border-t border-slate-800/80 space-y-1.5">
@@ -638,9 +694,9 @@ export default function RightSidebar({
                       </div>
                     </div>
 
-                    {/* Tagged Paragraph Snippet */}
-                    <div className="p-2 rounded-lg bg-slate-900/90 border border-slate-800 text-xs text-slate-200 leading-relaxed font-sans italic border-l-2 border-l-emerald-500">
-                      "{ann.content}"
+                    {/* Tagged Paragraph Snippet (FR-15 Rich Markdown & LaTeX) */}
+                    <div className="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 text-xs text-slate-200 leading-relaxed font-sans border-l-2 border-l-emerald-500">
+                      <MarkdownMathRenderer content={ann.content} />
                     </div>
 
                     {/* Assigned Topic Tags */}

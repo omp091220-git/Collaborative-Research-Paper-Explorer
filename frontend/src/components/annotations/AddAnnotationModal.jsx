@@ -3,6 +3,8 @@ import Modal from '../common/Modal';
 import Button from '../common/Button';
 import { annotationsService } from '../../services/annotations.service';
 import { useToast } from '../../context/ToastContext';
+import { Edit3, Eye } from 'lucide-react';
+import MarkdownMathRenderer from '../research/MarkdownMathRenderer';
 
 export default function AddAnnotationModal({
   isOpen,
@@ -16,6 +18,7 @@ export default function AddAnnotationModal({
   const notifySuccess = onSaved || onCreated;
   const [pageNumber, setPageNumber] = useState(1);
   const [content, setContent] = useState('');
+  const [editorTab, setEditorTab] = useState('write'); // 'write' | 'preview'
   const [useCoords, setUseCoords] = useState(false);
   const [posX, setPosX] = useState('0.15');
   const [posY, setPosY] = useState('0.25');
@@ -121,17 +124,49 @@ export default function AddAnnotationModal({
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
-            Annotation Notes / Commentary <span className="text-rose-500">*</span>
-          </label>
-          <textarea
-            rows={4}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="e.g. In Equation 4, verify convergence guarantees under noisy gradients..."
-            className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-y"
-            required
-          />
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700">
+              Annotation Notes / Remarks (Markdown &amp; LaTeX) <span className="text-rose-500">*</span>
+            </label>
+
+            <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+              <button
+                type="button"
+                onClick={() => setEditorTab('write')}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition cursor-pointer flex items-center gap-1 ${
+                  editorTab === 'write' ? 'bg-white text-indigo-600 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Edit3 className="w-3 h-3" />
+                <span>Write</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditorTab('preview')}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition cursor-pointer flex items-center gap-1 ${
+                  editorTab === 'preview' ? 'bg-white text-indigo-600 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Eye className="w-3 h-3" />
+                <span>Preview</span>
+              </button>
+            </div>
+          </div>
+
+          {editorTab === 'write' ? (
+            <textarea
+              rows={4}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="e.g. In Equation 4 ($E = mc^2$), verify convergence guarantees under noisy gradients..."
+              className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-y font-mono"
+              required
+            />
+          ) : (
+            <div className="w-full min-h-[96px] max-h-[200px] overflow-y-auto px-3 py-2 bg-slate-900 text-slate-200 rounded-lg border border-slate-800">
+              <MarkdownMathRenderer content={content || '*Type remarks in the Write tab to see preview.*'} />
+            </div>
+          )}
         </div>
 
         {/* Spatial highlight coordinates toggle */}

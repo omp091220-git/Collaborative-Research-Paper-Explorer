@@ -18,6 +18,8 @@ import groupRoutes from "./routes/group.routes.js";
 import researcherRoutes from "./routes/researcher.routes.js";
 import errorHandler from "./middleware/errorHandler.js";
 
+import summaryRoutes from './routes/summary.routes.js';
+
 const app = express();
 
 app.use(
@@ -43,6 +45,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/papers/:paperId/collaborators", collaboratorRoutes);
 app.use("/api/papers/:paperId/discussions", discussionRoutes);
 app.use("/api/papers/:paperId", paperAssetRoutes);
+app.use("/api/papers/:paperId", summaryRoutes);
 app.use("/api/papers", paperRoutes);
 app.use("/api/annotations", annotationRoutes);
 app.use("/api/admin/monitoring", adminMonitoringRoutes);

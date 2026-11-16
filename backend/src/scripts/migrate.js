@@ -31,6 +31,7 @@ async function runMigrations() {
     '20261114_group_membership.sql',
     '20261114_messaging_groups.sql',
     '20261116_unify_group_participant_roles.sql',
+    '20261116_structured_summaries.sql',
   ];
   // Optionally run only one explicitly selected migration.
   const onlyIndex = process.argv.indexOf('--only');
