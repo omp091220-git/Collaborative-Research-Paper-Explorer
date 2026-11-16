@@ -162,3 +162,16 @@ actionable UI messages. Logs include only the classified error, HTTP status and
 model; raw provider responses, API keys and paper text are not logged or persisted.
 The summary extractor supplies PDF.js's installed standard-font directory, avoiding
 its missing `standardFontDataUrl` warning. No migration or new key is required.
+
+
+Temporary provider failures now retry with exponential queue delays (30 seconds,
+then 60 seconds, plus jitter), respecting `Retry-After` hints up to five minutes.
+No sleeps occur inside a database transaction. The UI shows the pending retry
+countdown and clearly identifies exhausted retries. HTTP 503 remains a provider
+availability failure; rotating a key is not a reliable remedy. No code change can
+guarantee a successful response during a provider outage.
+
+Completing a new summary perspective preserves existing perspectives. FR-20
+exports include every saved perspective/model for the same paper, including the
+new Technical summary and older Brief/Comprehensive summaries. Regenerating the
+same model/perspective updates that one entry; revision history is not stored.

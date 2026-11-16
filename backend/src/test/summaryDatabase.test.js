@@ -54,8 +54,11 @@ test('FR-08 migration preserves data; durable queue, fencing, retries, cache and
   const [one,two]=await Promise.all([repo.claim(),repo.claim()]);assert.notEqual(one.id,two.id);
   await repo.fail({...one,lease_token:randomUUID()},'INVALID_AI_RESPONSE',true);
   assert.equal((await repo.findJob(paper.id,one.summary_type,'model')).status,'processing','stale worker cannot mutate job');
-  await repo.fail(one,'AI_RATE_LIMITED',true);
-  assert.equal((await repo.findJob(paper.id,one.summary_type,'model')).status,'pending');
+  await repo.fail(one,'AI_RATE_LIMITED',true,120000);
+  const delayed=await repo.findJob(paper.id,one.summary_type,'model');
+  assert.equal(delayed.status,'pending');
+  const delay=new Date(delayed.available_at)-new Date(delayed.updated_at);
+  assert.ok(delay>=120000 && delay<=123000,'provider retry delay is persisted in PostgreSQL');
   assert.equal(await repo.claim(),undefined,'backoff must delay retry');
   await db.query(`UPDATE structured_summary_jobs SET available_at=now()-interval '1 second' WHERE id=$1`,[one.id]);
   const again=await repo.claim();assert.equal(again.attempts,2);

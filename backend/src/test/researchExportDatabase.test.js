@@ -5,6 +5,9 @@ import { randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { createResearchExportRepository } from '../repositories/researchExport.repository.js';
 import { createResearchExport } from '../services/researchExport.service.js';
+import { createSummaryRepository } from '../repositories/summary.repository.js';
+import { PDFDocument } from 'pdf-lib';
+import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 // Always isolated in a new schema on a localhost test DB. No shared Neon writes.
 test('export snapshot includes all tag stores and legacy/structured summaries, excludes other papers, and never mutates data',async()=>{
@@ -38,6 +41,14 @@ test('export snapshot includes all tag stores and legacy/structured summaries, e
     const sections=[{heading:'Results',text:'Structured evidence',sources:[{page:1,x:0.1,y:0.2,width:0.3,height:0.1}]}];
     await db.query("INSERT INTO structured_summary_jobs(paper_id,model_name,summary_type,status,sections) VALUES($1,'structured','brief','completed',$2)",[id,JSON.stringify(sections)]);
     await db.query("INSERT INTO citations(citing_paper_id,cited_paper_id,citation_context) VALUES($1,$2,'Reference context')",[id,other]);
+    // Completing Technical must preserve the already saved Brief and legacy summaries.
+    const oldSummaries=(await db.query('SELECT * FROM paper_summaries ORDER BY id')).rows;
+    const summaryRepo=createSummaryRepository(db);
+    const technical=await summaryRepo.reserveForRequest(id,'technical','technical-model');
+    const technicalSections=['Background','Methodology','Results','Limitations'].map(heading=>({heading,text:'New technical evidence',sources:sections[0].sources}));
+    await summaryRepo.withContentLock('fr08-technical-export',client=>summaryRepo.complete(client,technical,'technical-content-hash',technicalSections));
+    const saved=(await db.query('SELECT * FROM paper_summaries ORDER BY id')).rows;
+    for(const previous of oldSummaries)assert.deepEqual(saved.find(row=>row.id===previous.id),previous);
     const tables=['papers','annotations','paper_summaries','structured_summary_jobs','topic_tags','paper_tag_assignments','paper_tags','paper_sections','paper_section_tags','citations'];
     const dump=async()=>{
       const out={};
@@ -51,13 +62,21 @@ test('export snapshot includes all tag stores and legacy/structured summaries, e
     assert.equal(data.tags.length,4);
     assert.deepEqual(data.tags.map(t=>t.kind).sort(),['annotation','paper','paragraph','section']);
     assert.ok(data.tags.every(t=>t.path==='AI > Vision'));
-    assert.equal(data.summaries.length,2);
+    assert.equal(data.summaries.length,3);
     assert.deepEqual(data.summaries.find(s=>s.model_name==='structured').sections,sections);
     assert.equal(data.citations.length,1);
     const output=await createResearchExport(id,'markdown',{repository:repo});
     const md=output.buffer.toString('utf8');
-    for(const expected of ['Selected passage','Important finding','Legacy saved summary','Structured evidence','Methods','Paragraph','Reference context'])assert.ok(md.includes(expected),expected);
+    for(const expected of ['Selected passage','Important finding','Legacy saved summary','Structured evidence','Methods','Paragraph','Reference context','New technical evidence'])assert.ok(md.includes(expected),expected);
     assert.ok(!md.includes('DO NOT EXPORT'));
+    const original=await PDFDocument.create();for(let n=0;n<3;n++)original.addPage();
+    const pdf=await createResearchExport(id,'pdf',{repository:repo,readPdf:()=>original.save()});
+    const reader=await pdfjs.getDocument({data:new Uint8Array(pdf.buffer),isEvalSupported:false}).promise;
+    try {
+      let report='';
+      for(let n=4;n<=reader.numPages;n++)report+=(await (await reader.getPage(n)).getTextContent()).items.map(item=>item.str).join(' ')+' ';
+      for(const expected of ['New technical evidence','Structured evidence','Legacy saved summary','Selected passage','AI > Vision','Reference context'])assert.ok(report.includes(expected),`Combined PDF retains ${expected}`);
+    } finally {await reader.destroy();}
     assert.equal(await repo.snapshot(randomUUID()),null);
     assert.deepEqual(await dump(),before,'all source records unchanged by export');
     // A SQL failure rolls back and releases the client; a later export still works.

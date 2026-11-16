@@ -1,10 +1,11 @@
 import defaultPool from '../config/database.js';
 import { observePgClient, isPgConnectionError } from '../utils/pgClientErrors.js';
+import { summaryRetryDelay } from '../utils/summaryRetry.js';
 
 export function createSummaryRepository(pool = defaultPool) {
 
 const findJob = async (paperId, type, model) => (await pool.query(
-  `SELECT id, paper_id, summary_type, model_name, status, attempts, sections, error_code, updated_at
+  `SELECT id, paper_id, summary_type, model_name, status, attempts, sections, error_code, updated_at, available_at
    FROM structured_summary_jobs WHERE paper_id=$1 AND summary_type=$2 AND model_name=$3`, [paperId,type,model])).rows[0] || null;
 
 const enqueue = async (paperId,type,model) => {
@@ -91,10 +92,10 @@ async function complete(client,job,hash,sections) {
    DO UPDATE SET summary_text=EXCLUDED.summary_text`,[job.paper_id,job.model_name,job.summary_type,text]);
 }
 
-const fail = async (job,code,retryable) => pool.query(`UPDATE structured_summary_jobs
+const fail = async (job,code,retryable,retryAfterMs=0) => pool.query(`UPDATE structured_summary_jobs
  SET status=CASE WHEN $3 AND attempts < 3 THEN 'pending' ELSE 'failed' END,
- error_code=$4,available_at=now()+ attempts * interval '10 seconds',lease_until=NULL,updated_at=now()
- WHERE id=$1 AND lease_token=$2 AND status='processing'`,[job.id,job.lease_token,retryable,code]);
+ error_code=$4,available_at=now()+ ($5::double precision * interval '1 millisecond'),lease_until=NULL,updated_at=now()
+ WHERE id=$1 AND lease_token=$2 AND status='processing'`,[job.id,job.lease_token,retryable,code,summaryRetryDelay(job.attempts,retryAfterMs)]);
 
 const retry = async (paperId,type,model) => {
  await pool.query(`UPDATE structured_summary_jobs SET status='pending',attempts=0,error_code=NULL,

@@ -20,11 +20,14 @@ function SummaryModalContent({ isOpen, onClose, paper }) {
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState('');
   const [job, setJob] = useState(null);
+  const [observedAt, setObservedAt] = useState(0);
   const [refresh, setRefresh] = useState(0);
 
   const applyJob = useCallback((current) => {
     setJob(current);
+    setObservedAt(Date.now());
     setIsGenerating(['pending', 'processing'].includes(current?.status));
+    if (['pending', 'processing'].includes(current?.status)) setError('');
     if (current?.status === 'completed') {
       setSummary({
         type: current.summary_type,
@@ -47,7 +50,7 @@ function SummaryModalContent({ isOpen, onClose, paper }) {
         AI_ACCESS_DENIED: 'Gemini denied this key or project access (HTTP 403). Check model access and project restrictions.',
         AI_MODEL_UNAVAILABLE: 'This Gemini model is unavailable for the configured key (HTTP 404). Check GEMINI_SUMMARY_MODEL.',
         AI_INVALID_REQUEST: 'Gemini rejected the summary request (HTTP 400). The backend logs show its diagnostic code.',
-        AI_PROVIDER_UNAVAILABLE: 'Gemini is temporarily unavailable. The job retries automatically up to three attempts.',
+        AI_PROVIDER_UNAVAILABLE: 'Gemini remained unavailable after automatic retries. Previously saved summaries are safe. Retry later or use another available model.',
         AI_TIMEOUT: 'Gemini did not respond in time. Please retry later.',
         AI_CONNECTION_FAILED: 'The backend could not connect to Gemini. Check its internet and DNS connection.',
       };
@@ -98,6 +101,10 @@ function SummaryModalContent({ isOpen, onClose, paper }) {
     } catch { setError('Clipboard unavailable. Select the summary text to copy it.'); }
   };
 
+  const providerRetry = job?.status === 'pending' && ['AI_PROVIDER_UNAVAILABLE', 'AI_RATE_LIMITED'].includes(job?.error_code);
+  const retryAt = Date.parse(job?.available_at || '');
+  const retrySeconds = Number.isFinite(retryAt) ? Math.max(0, Math.ceil((retryAt - observedAt) / 1000)) : 0;
+
   return (
     <Modal
       isOpen={isOpen}
@@ -138,7 +145,9 @@ function SummaryModalContent({ isOpen, onClose, paper }) {
         </div>
 
         {error && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-        {isGenerating && <p role="status" className="text-sm text-indigo-600">{job?.status === 'processing' ? 'Generating structured summary' : 'Summary queued'} — attempt {job?.attempts || 1} of 3.</p>}
+        {isGenerating && <p role="status" className="text-sm text-indigo-700 dark:text-indigo-300">{providerRetry
+          ? `Gemini is temporarily unavailable or rate limited. Retrying ${retrySeconds ? `in ${retrySeconds} seconds` : 'shortly'} — next attempt ${Math.min(3, (job?.attempts || 0) + 1)} of 3.`
+          : `${job?.status === 'processing' ? 'Generating structured summary' : 'Summary queued'} — attempt ${job?.attempts || 1} of 3.`}</p>}
         <p className="text-xs text-slate-500">AI summaries use the original PDF. Verify claims using the source references below.</p>
 
         {/* Generate Trigger */}

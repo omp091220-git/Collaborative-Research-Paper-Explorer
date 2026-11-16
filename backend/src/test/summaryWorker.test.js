@@ -41,3 +41,19 @@ test('request processing is bounded and capacity is released idempotently',()=>{
  const three=reserveSummarySlot();assert.equal(typeof three,'function');
  two();three();
 });
+
+test('503 retry hints and exponential delays are bounded without blocking the worker',async()=>{
+ const {parseSummaryRetryAfter,summaryRetryDelay}=await import('../utils/summaryRetry.js');
+ assert.equal(parseSummaryRetryAfter('120'),120000);
+ assert.equal(parseSummaryRetryAfter('Wed, 21 Oct 2015 07:28:00 GMT',Date.parse('Wed, 21 Oct 2015 07:27:00 GMT')),60000);
+ assert.equal(parseSummaryRetryAfter('invalid'),0);
+ assert.equal(parseSummaryRetryAfter('-20'),0);
+ assert.equal(parseSummaryRetryAfter('999999'),300000);
+ assert.equal(summaryRetryDelay(1,0,()=>0),30000);
+ assert.equal(summaryRetryDelay(2,0,()=>0),60000);
+ assert.equal(summaryRetryDelay(2,120000,()=>0),120000);
+ const old=process.env.GEMINI_API_KEY;process.env.GEMINI_API_KEY='test-only';
+ try {
+  await assert.rejects(generateSummary([],'technical','model',async()=>new Response('',{status:503,headers:{'retry-after':'120'}})),e=>e.code==='AI_PROVIDER_UNAVAILABLE'&&e.retryable&&e.retryAfterMs===120000);
+ } finally {if(old===undefined)delete process.env.GEMINI_API_KEY;else process.env.GEMINI_API_KEY=old;}
+});
