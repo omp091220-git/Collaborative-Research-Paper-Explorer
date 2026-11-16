@@ -1,6 +1,13 @@
 import { getStorageMetrics } from "../services/storageMonitor.service.js";
 import { getRedisQueueMetrics } from "../services/redisMonitor.service.js";
 import { getGenAIMetrics, recordUsage } from "../services/genaiUsage.service.js";
+import { getStorageForecast } from "../services/storageForecasting.service.js";
+import { getSystemDiagnostics } from "../services/systemDiagnostics.service.js";
+import {
+  getGenAiAuditData,
+  convertAuditRowsToCsv,
+  summarizeAuditRows,
+} from "../services/adminAuditReport.service.js";
 
 /**
  * GET /api/admin/monitoring/overview
@@ -153,10 +160,72 @@ export const recordGenAIUsage = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /api/admin/monitoring/storage/forecast
+ * Calculates storage growth velocity and estimated days to quota limit.
+ */
+export const getStorageForecastHandler = async (req, res, next) => {
+  try {
+    const lookback = req.query.lookbackDays ? parseInt(req.query.lookbackDays, 10) : 30;
+    const forecast = await getStorageForecast(lookback);
+    return res.status(200).json(forecast);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
+ * GET /api/admin/monitoring/diagnostics/system
+ * Detailed Node.js memory, event loop, host OS, and DB pool connection diagnostics.
+ */
+export const getSystemDiagnosticsHandler = async (req, res, next) => {
+  try {
+    const diagnostics = await getSystemDiagnostics();
+    return res.status(200).json(diagnostics);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
+ * GET /api/admin/monitoring/reports/audit-export
+ * Generates audit reports for GenAI costs and token expenditures (JSON or CSV).
+ */
+export const exportGenAiAuditHandler = async (req, res, next) => {
+  try {
+    const period = req.query.period || "30d";
+    const format = (req.query.format || "json").toLowerCase();
+
+    const rows = await getGenAiAuditData(period);
+
+    if (format === "csv") {
+      const csv = convertAuditRowsToCsv(rows);
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="genai-audit-report-${period}.csv"`
+      );
+      return res.status(200).send(csv);
+    }
+
+    const summary = summarizeAuditRows(rows);
+    return res.status(200).json({
+      period,
+      summary,
+      logs: rows,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 export default {
   getOverview,
   getStorage,
   getRedis,
   getGenAI,
   recordGenAIUsage,
+  getStorageForecastHandler,
+  getSystemDiagnosticsHandler,
+  exportGenAiAuditHandler,
 };
