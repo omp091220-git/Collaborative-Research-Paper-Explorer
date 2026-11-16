@@ -134,6 +134,15 @@ export async function insertPaperWithJob({ client, paperData, jobData = {} }) {
   );
 
   const job = jobResult.rows[0];
+  // Generation is asynchronous; uploads queue a comprehensive summary when configured.
+  // This insert shares the upload transaction so a rolled-back paper cannot leave a job.
+  if (process.env.GEMINI_API_KEY) {
+    await client.query(
+      `INSERT INTO structured_summary_jobs(paper_id, model_name)
+       VALUES ($1, $2) ON CONFLICT(paper_id, summary_type, model_name) DO NOTHING`,
+      [paper.id, process.env.GEMINI_SUMMARY_MODEL || process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite']
+    );
+  }
   return { paper, job };
 }
 

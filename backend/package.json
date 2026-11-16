@@ -8,7 +8,8 @@
     "test": "node --import ./src/test/setup.js --test --test-concurrency=1",
     "migrate": "node src/scripts/migrate.js",
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "test:fr08": "node --import ./src/test/setup.js --test --test-concurrency=1 src/test/summary*.test.js"
   },
   "keywords": [],
   "author": "",

@@ -29,6 +29,7 @@ async function runMigrations() {
     '20261108_direct_messaging.sql',
     '20261113_external_publications.sql',
     '20261114_group_membership.sql',
+    '20261116_structured_summaries.sql',
   ];
 
   console.log('--- Starting Database Migrations ---');
