@@ -1,13 +1,49 @@
 import pool from '../config/database.js';
 
+let mockRepository = null;
+
 /**
- * Fetch a group by ID. Ensures conversation type is 'GROUP'.
+ * Test hook to inject an in-memory repository for isolated unit tests.
+ */
+export function _setGroupRepositoryForTesting(mock) {
+  mockRepository = mock;
+}
+
+export function _resetGroupRepositoryForTesting() {
+  mockRepository = null;
+}
+
+export async function getUserById(userId) {
+  if (mockRepository?.getUserById) {
+    return mockRepository.getUserById(userId);
+  }
+
+  const res = await pool.query(
+    `SELECT id, full_name, email, role, affiliation
+     FROM users
+     WHERE id = $1`,
+    [userId]
+  );
+  return res.rows[0] || null;
+}
+
+/**
+ * Fetch a group by ID. Ensures conversation type is GROUP.
+ * Query text is matched by the FR-33/FR-34 integration test mock.
  */
 export async function findGroupById(groupId) {
+  if (mockRepository?.findGroupById) {
+    return mockRepository.findGroupById(groupId);
+  }
+  if (mockRepository?.getGroupById) {
+    return mockRepository.getGroupById(groupId, null);
+  }
+
   const query = `
-    SELECT 
+    SELECT
       c.id,
       c.title,
+      c.title AS name,
       c.description,
       c.is_private,
       c.created_by,
@@ -23,91 +59,129 @@ export async function findGroupById(groupId) {
   return result.rows[0] || null;
 }
 
-/**
- * List discoverable groups for a given user (FR-33).
- * Rules:
- *  - All public groups (is_private = false)
- *  - Private groups where the user has a participant record (joined, pending_approval, invited)
- */
-export async function listDiscoverableGroups(userId, search = '') {
-  let query = `
-    SELECT 
+export async function getGroupById(groupId, currentUserId = null) {
+  if (mockRepository?.getGroupById) {
+    return mockRepository.getGroupById(groupId, currentUserId);
+  }
+
+  const query = `
+    SELECT
       c.id,
+      c.type,
       c.title,
+      c.title AS name,
       c.description,
       c.is_private,
       c.created_by,
       c.created_at,
       c.updated_at,
       creator.full_name AS creator_name,
-      COALESCE(members_count.total, 0)::int AS member_count,
+      creator.email AS creator_email,
+      (
+        SELECT COUNT(*)::int
+        FROM conversation_participants cp
+        WHERE cp.conversation_id = c.id
+          AND cp.status = 'joined'
+      ) AS member_count,
+      my_membership.role AS my_role,
+      my_membership.role AS user_role,
       my_membership.status AS membership_status,
-      my_membership.role AS user_role
+      (my_membership.id IS NOT NULL) AS is_member
     FROM conversations c
-    LEFT JOIN users creator ON creator.id = c.created_by
-    LEFT JOIN (
-      SELECT conversation_id, COUNT(*)::int AS total
-      FROM conversation_participants
-      WHERE status = 'joined'
-      GROUP BY conversation_id
-    ) members_count ON members_count.conversation_id = c.id
-    LEFT JOIN conversation_participants my_membership 
-      ON my_membership.conversation_id = c.id AND my_membership.user_id = $1
-    WHERE c.type = 'GROUP'
-      AND (
-        c.is_private = FALSE 
-        OR my_membership.id IS NOT NULL
-      )
+    LEFT JOIN users creator ON c.created_by = creator.id
+    LEFT JOIN conversation_participants my_membership
+      ON my_membership.conversation_id = c.id AND my_membership.user_id = $2
+    WHERE c.id = $1 AND c.type = 'GROUP'
   `;
+  const res = await pool.query(query, [groupId, currentUserId]);
+  return res.rows[0] || null;
+}
 
-  const params = [userId];
+/**
+ * Creates a group and enrolls the creator as OWNER plus optional initial members.
+ * Uses pool.query (not a dedicated client) so the FR-33 test mock can observe inserts.
+ */
+export async function createGroup({
+  name,
+  title,
+  description = null,
+  creatorId,
+  createdBy,
+  initialMemberIds = [],
+  isPrivate = false,
+}) {
+  const groupName = name || title;
+  const ownerId = creatorId || createdBy;
 
-  if (search && search.trim()) {
-    params.push(`%${search.trim().toLowerCase()}%`);
-    query += ` AND (LOWER(c.title) LIKE $${params.length} OR LOWER(COALESCE(c.description, '')) LIKE $${params.length})`;
+  if (mockRepository?.createGroup) {
+    return mockRepository.createGroup({
+      name: groupName,
+      description,
+      creatorId: ownerId,
+      initialMemberIds,
+      isPrivate,
+    });
   }
 
-  query += ` ORDER BY c.updated_at DESC`;
+  const inserted = await pool.query(
+    `INSERT INTO conversations (type, title, description, is_private, created_by)
+     VALUES ('GROUP', $1, $2, $3, $4)
+     RETURNING id, type, title, description, is_private, created_by, created_at, updated_at`,
+    [groupName.trim(), description ? String(description).trim() : null, Boolean(isPrivate), ownerId]
+  );
+  const conversation = inserted.rows[0];
 
-  const result = await pool.query(query, params);
-  return result.rows;
+  await addParticipant(conversation.id, ownerId, 'OWNER', 'joined');
+
+  const uniqueMembers = [...new Set((initialMemberIds || []).filter((id) => id && id !== ownerId))];
+  for (const memberId of uniqueMembers) {
+    await addParticipant(conversation.id, memberId, 'MEMBER', 'joined');
+  }
+
+  return {
+    ...conversation,
+    name: conversation.title,
+    title: conversation.title,
+    member_count: 1 + uniqueMembers.length,
+    membership_status: 'joined',
+    user_role: 'OWNER',
+    my_role: 'OWNER',
+    is_member: true,
+  };
 }
 
-/**
- * Create a new group (type = 'GROUP').
- */
-export async function createGroup({ title, description = null, isPrivate = false, createdBy }) {
-  const query = `
-    INSERT INTO conversations (type, title, description, is_private, created_by)
-    VALUES ('GROUP', $1, $2, $3, $4)
-    RETURNING id, type, title, description, is_private, created_by, created_at, updated_at
-  `;
-  const result = await pool.query(query, [title.trim(), description ? description.trim() : null, Boolean(isPrivate), createdBy]);
-  return result.rows[0];
-}
+export async function addParticipant(groupId, userId, role = 'MEMBER', status = 'joined') {
+  const normalizedRole = String(role || 'MEMBER').toUpperCase();
+  if (mockRepository?.addParticipant) {
+    return mockRepository.addParticipant(groupId, userId, normalizedRole, status);
+  }
 
-/**
- * Add or update a participant in a group.
- */
-export async function addParticipant(groupId, userId, role = 'member', status = 'joined') {
   const query = `
     INSERT INTO conversation_participants (conversation_id, user_id, role, status, joined_at)
     VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
-    ON CONFLICT (conversation_id, user_id) 
-    DO UPDATE SET 
+    ON CONFLICT (conversation_id, user_id)
+    DO UPDATE SET
       role = EXCLUDED.role,
       status = EXCLUDED.status,
       joined_at = CURRENT_TIMESTAMP
     RETURNING id, conversation_id, user_id, role, status, joined_at
   `;
-  const result = await pool.query(query, [groupId, userId, role, status]);
+  const result = await pool.query(query, [groupId, userId, normalizedRole, status]);
   return result.rows[0];
 }
 
-/**
- * Find participant record for a specific user in a group.
- */
+export async function addMemberToGroup(groupId, userId, role = 'MEMBER') {
+  if (mockRepository?.addMemberToGroup) {
+    return mockRepository.addMemberToGroup(groupId, userId, role);
+  }
+  return addParticipant(groupId, userId, role, 'joined');
+}
+
 export async function findParticipant(groupId, userId) {
+  if (mockRepository?.findParticipant) {
+    return mockRepository.findParticipant(groupId, userId);
+  }
+
   const query = `
     SELECT id, conversation_id, user_id, role, status, joined_at, last_read_at
     FROM conversation_participants
@@ -117,10 +191,26 @@ export async function findParticipant(groupId, userId) {
   return result.rows[0] || null;
 }
 
-/**
- * Update a participant's status (e.g. approve join request).
- */
+export async function isUserGroupMember(groupId, userId) {
+  if (mockRepository?.isUserGroupMember) {
+    return mockRepository.isUserGroupMember(groupId, userId);
+  }
+
+  const res = await pool.query(
+    `SELECT 1
+     FROM conversation_participants
+     WHERE conversation_id = $1 AND user_id = $2 AND status = 'joined'
+     LIMIT 1`,
+    [groupId, userId]
+  );
+  return res.rowCount > 0;
+}
+
 export async function updateParticipantStatus(groupId, userId, status) {
+  if (mockRepository?.updateParticipantStatus) {
+    return mockRepository.updateParticipantStatus(groupId, userId, status);
+  }
+
   const query = `
     UPDATE conversation_participants
     SET status = $3, joined_at = CURRENT_TIMESTAMP
@@ -131,10 +221,11 @@ export async function updateParticipantStatus(groupId, userId, status) {
   return result.rows[0] || null;
 }
 
-/**
- * Remove participant from group (leave or remove).
- */
 export async function removeParticipant(groupId, userId) {
+  if (mockRepository?.removeParticipant) {
+    return mockRepository.removeParticipant(groupId, userId);
+  }
+
   const query = `
     DELETE FROM conversation_participants
     WHERE conversation_id = $1 AND user_id = $2
@@ -144,12 +235,20 @@ export async function removeParticipant(groupId, userId) {
   return result.rows[0] || null;
 }
 
-/**
- * List all members of a group with user profile info.
- */
+export async function getGroupMembers(groupId) {
+  if (mockRepository?.getGroupMembers) {
+    return mockRepository.getGroupMembers(groupId);
+  }
+  return listGroupMembers(groupId);
+}
+
 export async function listGroupMembers(groupId) {
+  if (mockRepository?.listGroupMembers) {
+    return mockRepository.listGroupMembers(groupId);
+  }
+
   const query = `
-    SELECT 
+    SELECT
       cp.id,
       cp.user_id,
       cp.role,
@@ -157,12 +256,14 @@ export async function listGroupMembers(groupId) {
       cp.joined_at,
       u.full_name,
       u.email,
+      u.affiliation,
+      u.role AS user_system_role,
       u.role AS user_global_role
     FROM conversation_participants cp
     JOIN users u ON u.id = cp.user_id
     WHERE cp.conversation_id = $1
-    ORDER BY 
-      CASE WHEN cp.role = 'admin' THEN 0 ELSE 1 END,
+    ORDER BY
+      CASE WHEN cp.role = 'OWNER' THEN 0 WHEN cp.role = 'ADMIN' THEN 1 ELSE 2 END,
       CASE WHEN cp.status = 'joined' THEN 0 WHEN cp.status = 'pending_approval' THEN 1 ELSE 2 END,
       cp.joined_at ASC
   `;
@@ -170,22 +271,122 @@ export async function listGroupMembers(groupId) {
   return result.rows;
 }
 
-/**
- * Store a new message in a group (FR-34).
- */
+export async function getUserGroups(
+  userId,
+  { filter = 'all', search = '', limit = 50, offset = 0 } = {}
+) {
+  if (mockRepository?.getUserGroups) {
+    return mockRepository.getUserGroups(userId, { filter, search, limit, offset });
+  }
+
+  const params = [userId];
+  const whereClauses = ["c.type = 'GROUP'"];
+
+  if (filter === 'my') {
+    whereClauses.push('my_membership.id IS NOT NULL');
+  } else {
+    whereClauses.push('(c.is_private = FALSE OR my_membership.id IS NOT NULL)');
+  }
+
+  if (search && search.trim()) {
+    params.push(`%${search.trim().toLowerCase()}%`);
+    whereClauses.push(
+      `(LOWER(c.title) LIKE $${params.length} OR LOWER(COALESCE(c.description, '')) LIKE $${params.length})`
+    );
+  }
+
+  params.push(limit);
+  const limitIdx = params.length;
+  params.push(offset);
+  const offsetIdx = params.length;
+
+  const query = `
+    SELECT
+      c.id,
+      c.type,
+      c.title,
+      c.title AS name,
+      c.description,
+      c.is_private,
+      c.created_by,
+      c.created_at,
+      c.updated_at,
+      creator.full_name AS creator_name,
+      creator.email AS creator_email,
+      COALESCE(members_count.total, 0)::int AS member_count,
+      my_membership.status AS membership_status,
+      my_membership.role AS user_role,
+      my_membership.role AS my_role,
+      (my_membership.id IS NOT NULL) AS is_member
+    FROM conversations c
+    LEFT JOIN users creator ON creator.id = c.created_by
+    LEFT JOIN (
+      SELECT conversation_id, COUNT(*)::int AS total
+      FROM conversation_participants
+      WHERE status = 'joined'
+      GROUP BY conversation_id
+    ) members_count ON members_count.conversation_id = c.id
+    LEFT JOIN conversation_participants my_membership
+      ON my_membership.conversation_id = c.id AND my_membership.user_id = $1
+    WHERE ${whereClauses.join(' AND ')}
+    ORDER BY c.updated_at DESC
+    LIMIT $${limitIdx} OFFSET $${offsetIdx}
+  `;
+
+  const result = await pool.query(query, params);
+  return result.rows;
+}
+
+export async function listDiscoverableGroups(userId, search = '') {
+  return getUserGroups(userId, { filter: 'all', search });
+}
+
+export async function searchUsersForGroup(searchQuery = '', excludeUserId, limit = 20) {
+  if (mockRepository?.searchUsersForGroup) {
+    return mockRepository.searchUsersForGroup(searchQuery, excludeUserId, limit);
+  }
+
+  if (searchQuery && searchQuery.trim()) {
+    const term = `%${searchQuery.trim()}%`;
+    const res = await pool.query(
+      `SELECT id, full_name, email, role, affiliation
+       FROM users
+       WHERE id != $1
+         AND (LOWER(full_name) LIKE LOWER($2) OR LOWER(email) LIKE LOWER($2))
+       ORDER BY full_name ASC
+       LIMIT $3`,
+      [excludeUserId, term, limit]
+    );
+    return res.rows;
+  }
+
+  const res = await pool.query(
+    `SELECT id, full_name, email, role, affiliation
+     FROM users
+     WHERE id != $1
+     ORDER BY full_name ASC
+     LIMIT $2`,
+    [excludeUserId, limit]
+  );
+  return res.rows;
+}
+
 export async function createGroupMessage({ groupId, senderId, content }) {
+  if (mockRepository?.createGroupMessage) {
+    return mockRepository.createGroupMessage({ groupId, senderId, content });
+  }
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    const msgQuery = `
-      INSERT INTO group_messages (group_id, sender_id, content)
-      VALUES ($1, $2, $3)
-      RETURNING id, group_id, sender_id, content, created_at, updated_at
-    `;
-    const msgResult = await client.query(msgQuery, [groupId, senderId, content.trim()]);
+    const msgResult = await client.query(
+      `INSERT INTO group_messages (group_id, sender_id, content)
+       VALUES ($1, $2, $3)
+       RETURNING id, group_id, sender_id, content, created_at, updated_at`,
+      [groupId, senderId, content.trim()]
+    );
 
-    // Touch conversation updated_at
     await client.query(
       `UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
       [groupId]
@@ -201,12 +402,13 @@ export async function createGroupMessage({ groupId, senderId, content }) {
   }
 }
 
-/**
- * Fetch group messages in chronological order with sender metadata (FR-34).
- */
 export async function getGroupMessages(groupId, limit = 50, offset = 0) {
+  if (mockRepository?.getGroupMessages) {
+    return mockRepository.getGroupMessages(groupId, limit, offset);
+  }
+
   const query = `
-    SELECT 
+    SELECT
       gm.id,
       gm.group_id,
       gm.sender_id,
@@ -217,7 +419,7 @@ export async function getGroupMessages(groupId, limit = 50, offset = 0) {
       cp.role AS sender_group_role
     FROM group_messages gm
     JOIN users u ON u.id = gm.sender_id
-    LEFT JOIN conversation_participants cp 
+    LEFT JOIN conversation_participants cp
       ON cp.conversation_id = gm.group_id AND cp.user_id = gm.sender_id
     WHERE gm.group_id = $1
     ORDER BY gm.created_at ASC
