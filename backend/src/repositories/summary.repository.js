@@ -1,4 +1,5 @@
 import defaultPool from '../config/database.js';
+import { observePgClient, isPgConnectionError } from '../utils/pgClientErrors.js';
 
 export function createSummaryRepository(pool = defaultPool) {
 
@@ -26,22 +27,45 @@ const paperFile = async (id) => (await pool.query('SELECT file_path, arxiv_id FR
 const paperExists = async (id) => (await pool.query('SELECT id FROM papers WHERE id=$1',[id])).rows.length > 0;
 
 async function withContentLock(key, callback) {
- const client=await pool.connect();
+ const client = await pool.connect();
+ const state = observePgClient(client);
+ let inTransaction = false;
+ let result;
+ let failure;
  try {
-  await client.query('SELECT pg_advisory_lock(hashtextextended($1,0))',[key]);
-  return await callback(client);
+  await client.query('BEGIN');
+  inTransaction = true;
+  await client.query("SET LOCAL lock_timeout = '60s'");
+  await client.query("SET LOCAL statement_timeout = '90s'");
+  // A transaction-scoped lock pins a pooled Neon connection for this work.
+  // Session-level advisory locks are unsafe with transaction-mode poolers.
+  await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', ['fr08-summary-v2:' + key]);
+  if (state.error) throw state.error;
+  result = await callback(client);
+  if (state.error) throw state.error;
+  await client.query('COMMIT');
+  inTransaction = false;
+ } catch (error) {
+  failure = state.error || error;
  } finally {
-  try { await client.query('SELECT pg_advisory_unlock(hashtextextended($1,0))',[key]); }
-  finally { client.release(); }
+  if (inTransaction && !state.error) {
+   try { await client.query('ROLLBACK'); }
+   catch (error) { failure = state.error || failure || error; }
+  }
+  client.release(Boolean(state.error || isPgConnectionError(failure)));
  }
+ if (failure) {
+  if (isPgConnectionError(failure) || ['55P03', '57014'].includes(failure.code)) failure.retryable = true;
+  throw failure;
+ }
+ return result;
 }
 const readCache = async (client,hash,job) => (await client.query(
  `SELECT sections FROM structured_summary_cache WHERE content_hash=$1 AND summary_type=$2 AND model_name=$3`,
  [hash,job.summary_type,job.model_name])).rows[0]?.sections;
 
+// Must run inside withContentLock's transaction; never commit its caller's lock.
 async function complete(client,job,hash,sections) {
- await client.query('BEGIN');
- try {
   const result=await client.query(`UPDATE structured_summary_jobs SET status='completed',sections=$3::jsonb,
    error_code=NULL,lease_until=NULL,updated_at=now() WHERE id=$1 AND lease_token=$2 AND status='processing' RETURNING id`,
    [job.id,job.lease_token,JSON.stringify(sections)]);
@@ -52,9 +76,8 @@ async function complete(client,job,hash,sections) {
   await client.query(`INSERT INTO paper_summaries(paper_id,model_name,summary_type,summary_text)
    VALUES($1,$2,$3,$4) ON CONFLICT(paper_id,model_name,summary_type)
    DO UPDATE SET summary_text=EXCLUDED.summary_text`,[job.paper_id,job.model_name,job.summary_type,text]);
-  await client.query('COMMIT');
- } catch(e) { await client.query('ROLLBACK'); throw e; }
 }
+
 const fail = async (job,code,retryable) => pool.query(`UPDATE structured_summary_jobs
  SET status=CASE WHEN $3 AND attempts < 3 THEN 'pending' ELSE 'failed' END,
  error_code=$4,available_at=now()+ attempts * interval '10 seconds',lease_until=NULL,updated_at=now()

@@ -9,7 +9,7 @@ export function createSummaryWorker() {
    await repository.expireExhausted();
    const job=await repository.claim();
    if(job) await processSummaryJob(job);
-  })().catch(()=>console.error('Summary worker could not process its queue.')).finally(()=>{active=null;});
+  })().catch(error=>console.error('Summary worker could not process its queue:', error.code || 'SUMMARY_QUEUE_ERROR')).finally(()=>{active=null;});
   await active;
  };
  return {

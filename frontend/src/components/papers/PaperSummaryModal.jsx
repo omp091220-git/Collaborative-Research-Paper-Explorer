@@ -40,9 +40,11 @@ function SummaryModalContent({ isOpen, onClose, paper }) {
         PDF_HAS_NO_TEXT: 'This PDF has no readable text. Scanned PDFs need OCR first.',
         SOURCE_DOWNLOAD_FAILED: 'Could not retrieve the original paper from arXiv. Please retry later.',
         AI_NOT_CONFIGURED: 'AI summaries are not configured on this server.',
+        DATABASE_BUSY: 'The database is busy or timed out. Please retry later.',
+        DATABASE_CONNECTION_LOST: 'The database connection was interrupted. Please retry once it is available again.',
         AI_RATE_LIMITED: 'The AI provider is busy. Please retry later.',
       };
-      setError(messages[current.error_code] || 'Summary generation failed. Please retry.');
+      setError(messages[current.error_code] || `Summary generation failed (${current.error_code || 'UNKNOWN_ERROR'}). Please retry.`);
     }
   }, []);
 

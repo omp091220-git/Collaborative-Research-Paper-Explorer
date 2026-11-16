@@ -100,3 +100,28 @@ recipient_id conflict on fresh databases. This feature does not change or skip
 those historical migrations. The new migration is validated independently; the
 existing chain must be corrected separately for a reproducible fresh install.
 Repository-wide existing lint/test failures are detailed in the delivery report.
+
+## Connection reset recovery
+
+The pool observes checked-out clients as well as idle pool errors, preventing
+transport errors such as ECONNRESET from becoming unhandled Node events. Broken
+summary clients are discarded; transient database errors retry within the job's
+existing attempt limit. Source/model output is not marked successful on a lost
+connection. The socket reset itself may still require network/provider diagnosis.
+
+Content deduplication uses a transaction-scoped advisory lock, compatible with
+Neon's transaction-mode pooled connections. Lock waits and SQL statements have
+bounded timeouts. The same transaction owns cache reads and summary completion;
+no inner commit releases the caller's lock early. A new lock-key namespace avoids
+waiting on any legacy session-scoped locks left by an interrupted older worker.
+There is no schema migration for this recovery change.
+
+Connection regression tests deliberately terminate a local PostgreSQL connection
+while it is checked out, verify the process survives and a fresh query succeeds,
+and check healthy transaction cleanup, lock serialization, timeouts, safe socket
+discard and retryable job errors. Never run this fault-injection suite against a
+shared database.
+
+Recovery validation: 20 focused tests pass. Full backend: 841 tests, 808 pass,
+the same 33 baseline failures, zero skipped/cancelled. Frontend build, changed-
+component lint, and the desktop/mobile browser smoke checks pass.

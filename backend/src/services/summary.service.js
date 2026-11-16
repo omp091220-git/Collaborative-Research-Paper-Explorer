@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import * as repository from '../repositories/summary.repository.js';
 import { recordUsage } from './genaiUsage.service.js';
+import { isPgConnectionError } from '../utils/pgClientErrors.js';
 
 export const SUMMARY_TYPES = ['comprehensive','brief','technical','layperson'];
 export const HEADINGS = ['Background','Methodology','Results','Limitations'];
@@ -141,6 +142,6 @@ export async function processSummaryJob(job,deps={}) {
    }
    await repo.complete(client,job,hash,sections);
   });
- } catch(e) { await repo.fail(job,e.code && /^[A-Z_]+$/.test(e.code)?e.code:'SUMMARY_FAILED',
-   Boolean(e.retryable || e.name==='TimeoutError' || e.name==='TypeError')); }
+ } catch(e) { await repo.fail(job,isPgConnectionError(e)?'DATABASE_CONNECTION_LOST':['55P03','57014'].includes(e.code)?'DATABASE_BUSY':e.code && /^[A-Z_]+$/.test(e.code)?e.code:'SUMMARY_FAILED',
+   Boolean(isPgConnectionError(e) || e.retryable || e.name==='TimeoutError' || e.name==='TypeError')); }
 }
