@@ -142,3 +142,23 @@ the current runner does not newly register or execute that obsolete migration.
 No SQL is executed as part of conflict resolution, and no existing database
 objects or user data are removed. The PR also carries main updates absent from
 the older target branch, so reviewers should review the full branch comparison.
+
+
+### Shared development databases
+
+Summary requests now reserve their job lease atomically on the receiving backend
+and start there immediately. Other backends using the same Neon database cannot
+steal that lease while it is active. Duplicate requests reuse the existing job.
+Up to two requested summaries run per backend at once; additional requests receive
+a clear busy response. Graceful shutdown waits for requested jobs as well.
+
+Unconfigured background workers no longer claim or expire shared jobs. Configured
+workers drain jobs for their configured model only. Retryable failures still use
+the existing durable queue, cache and fenced lease contract. Update other team
+backends too so their background workers follow these safeguards.
+
+Gemini HTTP 400/401/403/404/429 and provider/network failures now have distinct,
+actionable UI messages. Logs include only the classified error, HTTP status and
+model; raw provider responses, API keys and paper text are not logged or persisted.
+The summary extractor supplies PDF.js's installed standard-font directory, avoiding
+its missing `standardFontDataUrl` warning. No migration or new key is required.

@@ -67,6 +67,21 @@ test('FR-08 migration preserves data; durable queue, fencing, retries, cache and
   assert.equal((await repo.findJob(paper.id,one.summary_type,'model')).attempts,0);
   await db.query(`UPDATE structured_summary_jobs SET lease_until=now()-interval '1 second',attempts=3 WHERE id=$1`,[two.id]);
   await repo.expireExhausted();assert.equal((await repo.findJob(paper.id,two.summary_type,'model')).status,'failed');
+  // A local request reserves the shared row in one statement. Other workers
+  // cannot pick it up, and concurrent duplicate requests do not create two leases.
+  const [reserved,duplicate]=await Promise.all([
+   repo.reserveForRequest(paper.id,'layperson','reserved-model'),
+   repo.reserveForRequest(paper.id,'layperson','reserved-model'),
+  ]);
+  const lease=reserved || duplicate;
+  assert.ok(lease.lease_token);assert.equal(lease.status,'processing');
+  assert.equal([reserved,duplicate].filter(Boolean).length,1);
+  assert.equal(await repo.claim('reserved-model'),undefined,'foreign workers cannot steal a reserved request');
+  assert.equal(await repo.claim('unrelated-model'),undefined,'configured model filter isolates queued work');
+  await repo.fail(lease,'AI_NOT_CONFIGURED',false);
+  const retried=await repo.reserveForRequest(paper.id,'layperson','reserved-model');
+  assert.equal(retried.status,'processing');assert.equal(retried.attempts,1);
+  assert.notEqual(retried.lease_token,lease.lease_token);
   console.log('FR-08 migration twice: 1 user, 1 paper and 1 existing summary preserved with identical values.');
  } finally {if(db)await db.end();await admin.end();}
 });

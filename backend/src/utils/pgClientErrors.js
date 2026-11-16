@@ -2,7 +2,7 @@
 // listener while they wait on non-database work (for example an AI response).
 const observedClients = new WeakMap();
 const connectionCodes = new Set([
-  'ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EPIPE', 'ENETUNREACH',
+  'ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EPIPE', 'ENETUNREACH', 'ENOTFOUND', 'EAI_AGAIN',
   '08000', '08001', '08003', '08004', '08006', '08007', '08P01',
   '57P01', '57P02', '57P03', '53300',
 ]);

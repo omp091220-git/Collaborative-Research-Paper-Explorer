@@ -39,10 +39,17 @@ function SummaryModalContent({ isOpen, onClose, paper }) {
         PDF_UNAVAILABLE: 'The original PDF is missing on this server.',
         PDF_HAS_NO_TEXT: 'This PDF has no readable text. Scanned PDFs need OCR first.',
         SOURCE_DOWNLOAD_FAILED: 'Could not retrieve the original paper from arXiv. Please retry later.',
-        AI_NOT_CONFIGURED: 'AI summaries are not configured on this server.',
+        AI_NOT_CONFIGURED: 'The worker that ran the previous attempt had no Gemini key. Retry from your configured backend.',
         DATABASE_BUSY: 'The database is busy or timed out. Please retry later.',
         DATABASE_CONNECTION_LOST: 'The database connection was interrupted. Please retry once it is available again.',
-        AI_RATE_LIMITED: 'The AI provider is busy. Please retry later.',
+        AI_RATE_LIMITED: 'Gemini rate limit or quota reached (HTTP 429). Check your project quota before retrying.',
+        AI_AUTH_FAILED: 'Gemini rejected this server’s API key. Check GEMINI_API_KEY on the running backend.',
+        AI_ACCESS_DENIED: 'Gemini denied this key or project access (HTTP 403). Check model access and project restrictions.',
+        AI_MODEL_UNAVAILABLE: 'This Gemini model is unavailable for the configured key (HTTP 404). Check GEMINI_SUMMARY_MODEL.',
+        AI_INVALID_REQUEST: 'Gemini rejected the summary request (HTTP 400). The backend logs show its diagnostic code.',
+        AI_PROVIDER_UNAVAILABLE: 'Gemini is temporarily unavailable. The job retries automatically up to three attempts.',
+        AI_TIMEOUT: 'Gemini did not respond in time. Please retry later.',
+        AI_CONNECTION_FAILED: 'The backend could not connect to Gemini. Check its internet and DNS connection.',
       };
       setError(messages[current.error_code] || `Summary generation failed (${current.error_code || 'UNKNOWN_ERROR'}). Please retry.`);
     }
@@ -102,7 +109,7 @@ function SummaryModalContent({ isOpen, onClose, paper }) {
       <div className="space-y-5">
         {/* Summary Type Selector */}
         <div>
-          <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">
+          <label className="block text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider mb-2">
             Select Summary Perspective
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -112,17 +119,17 @@ function SummaryModalContent({ isOpen, onClose, paper }) {
                 onClick={() => { if (isGenerating) return; setSelectedType(type.id); setSummary(null); setJob(null); setError(''); setCopied(false); }}
                 className={`p-3 rounded-xl border transition cursor-pointer ${
                   selectedType === type.id
-                    ? 'border-indigo-600 bg-indigo-50/50 shadow-xs'
-                    : 'border-slate-300 hover:border-slate-400 bg-white'
+                    ? 'border-indigo-600 bg-indigo-50 shadow-xs dark:border-indigo-400 dark:bg-indigo-950/60'
+                    : 'border-slate-300 hover:border-slate-400 bg-white dark:border-slate-600 dark:bg-slate-900'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-900">{type.label}</span>
+                  <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">{type.label}</span>
                   {selectedType === type.id && (
                     <span className="w-2 h-2 rounded-full bg-indigo-600" />
                   )}
                 </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-snug font-medium">
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-snug font-medium">
                   {type.description}
                 </p>
               </div>
