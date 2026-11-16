@@ -1,8 +1,17 @@
-import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react';
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+  Suspense,
+} from 'react';
+
 import { Document, Page, pdfjs } from 'react-pdf';
+
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
-import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+
 import {
   FileText,
   AlertCircle,
@@ -11,10 +20,14 @@ import {
   Tag,
   MessageSquare,
 } from 'lucide-react';
+
 import FloatingSelectionToolbar from './FloatingSelectionToolbar';
 
-// Configure PDF.js worker using local Vite asset URL
-pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
+// Configure PDF.js worker
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url
+).toString();
 
 function PdfSkeletonFallback() {
   return (
@@ -60,14 +73,28 @@ export default function PdfReader({
   const containerRef = useRef(null);
   const pageRefs = useRef({});
   const pdfDocumentRef = useRef(null);
+  const activeExtractionIdRef = useRef(0);
+  const textExtractionCacheRef = useRef(new Map());
+  const isMountedRef = useRef(true);
+
   const [floatingToolbar, setFloatingToolbar] = useState(null);
   const [selectedTextData, setSelectedTextData] = useState(null);
   const [pageTextMap, setPageTextMap] = useState({});
   const [renderedPages, setRenderedPages] = useState({});
   const [documentLoadError, setDocumentLoadError] = useState(null);
 
-  // Reset document load error when blob URL changes
+  // Component mount & unmount lifecycle tracking
   useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      activeExtractionIdRef.current++;
+    };
+  }, []);
+
+  // Reset document load error and cancel any active extraction when blob URL changes
+  useEffect(() => {
+    activeExtractionIdRef.current++;
     setDocumentLoadError(null);
   }, [blobUrl]);
 
@@ -99,26 +126,114 @@ export default function PdfReader({
     };
   }, []);
 
-  // ── 1. Document Load Handler (Extract text across all pages) ──────────────
+  // ── 1. Document Load Handler (Extract text across all pages with worker cancellation) ──
   const handleDocumentLoadSuccess = useCallback(async (pdfDoc) => {
+    if (!pdfDoc || !isMountedRef.current) return;
     pdfDocumentRef.current = pdfDoc;
+
     if (setNumPages) {
       setNumPages((prev) => (prev !== pdfDoc.numPages ? pdfDoc.numPages : prev));
     }
 
-    try {
-      const textMap = {};
-      for (let i = 1; i <= pdfDoc.numPages; i++) {
-        const page = await pdfDoc.getPage(i);
-        const textContent = await page.getTextContent();
-        const fullPageText = textContent.items.map((item) => item.str).join(' ');
-        textMap[i] = fullPageText;
+    const currentExtractionId = ++activeExtractionIdRef.current;
+    const cacheKey = blobUrl || paperTitle || `doc_${pdfDoc.fingerprints?.[0] || 'default'}`;
+
+    // Check if we already have fully extracted text for this document in cache
+    if (textExtractionCacheRef.current.has(cacheKey)) {
+      const cachedMap = textExtractionCacheRef.current.get(cacheKey);
+      if (cachedMap && Object.keys(cachedMap).length >= pdfDoc.numPages) {
+        setPageTextMap(cachedMap);
+        return;
       }
-      setPageTextMap(textMap);
-    } catch (e) {
-      console.warn('PDF text extraction error:', e);
     }
-  }, [setNumPages]);
+
+    const textMap = textExtractionCacheRef.current.get(cacheKey) || {};
+
+    // Helper to detect if task was cancelled or worker destroyed
+    const isCancelled = () =>
+      activeExtractionIdRef.current !== currentExtractionId ||
+      !isMountedRef.current ||
+      pdfDocumentRef.current !== pdfDoc;
+
+    try {
+      for (let i = 1; i <= pdfDoc.numPages; i++) {
+        if (isCancelled()) break;
+
+        // Skip page if already extracted in cache
+        if (textMap[i] && typeof textMap[i] === 'string' && textMap[i].length > 0) {
+          continue;
+        }
+
+        let page = null;
+        try {
+          page = await pdfDoc.getPage(i);
+          if (isCancelled()) {
+            if (page?.cleanup) page.cleanup();
+            break;
+          }
+
+          const textContent = await page.getTextContent();
+          if (isCancelled()) {
+            if (page?.cleanup) page.cleanup();
+            break;
+          }
+
+          const fullPageText = (textContent?.items || [])
+            .map((item) => ('str' in item ? item.str : ''))
+            .join(' ');
+
+          textMap[i] = fullPageText;
+
+          // Clean up individual page resources in PDF.js worker
+          if (page?.cleanup) {
+            page.cleanup();
+          }
+        } catch (pageErr) {
+          const isTerminated =
+            pageErr?.name === 'RenderingCancelledException' ||
+            pageErr?.name === 'AbortException' ||
+            pageErr?.message?.includes('terminated') ||
+            pageErr?.message?.includes('destroyed') ||
+            pageErr?.message?.includes('cancelled');
+
+          if (isTerminated || isCancelled()) {
+            break;
+          }
+          // Gracefully record empty string for an unextractable page and continue
+          textMap[i] = '';
+        }
+
+        // Progressively commit extracted pages every 4 pages or at document end
+        if (i % 4 === 0 || i === pdfDoc.numPages) {
+          if (!isCancelled()) {
+            textExtractionCacheRef.current.set(cacheKey, { ...textMap });
+            setPageTextMap((prev) => ({ ...prev, ...textMap }));
+          }
+        }
+
+        // Small cooperative yield to browser event loop so canvas rendering takes priority
+        if (i % 2 === 0) {
+          await new Promise((resolve) => setTimeout(resolve, 15));
+        }
+      }
+
+      if (!isCancelled()) {
+        textExtractionCacheRef.current.set(cacheKey, { ...textMap });
+        setPageTextMap({ ...textMap });
+      }
+    } catch (e) {
+      const isTerminated =
+        e?.name === 'RenderingCancelledException' ||
+        e?.name === 'AbortException' ||
+        e?.message?.includes('terminated') ||
+        e?.message?.includes('destroyed') ||
+        e?.message?.includes('cancelled');
+
+      if (!isTerminated && !isCancelled()) {
+        console.warn('PDF text extraction error:', e);
+      }
+    }
+  }, [blobUrl, paperTitle, setNumPages]);
 
   const handleDocumentLoadError = useCallback((err) => {
     console.error('react-pdf document load error:', err);
@@ -283,69 +398,131 @@ export default function PdfReader({
     }
   }, [activeAnnotationId, annotations, setProgrammaticScroll]);
 
-  // ── 6. Text Selection Handler ─────────────────────────────────────────────
+  // ── 6. Text Selection & Floating Toolbar Positioning ─────────────────────
+  const recalculateSelectionToolbar = useCallback(() => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) {
+      setFloatingToolbar(null);
+      setSelectedTextData(null);
+      return;
+    }
+
+    const text = selection.toString().trim();
+    if (!text || text.length < 2) {
+      setFloatingToolbar(null);
+      setSelectedTextData(null);
+      return;
+    }
+
+    // Ensure selection is inside the PDF viewer container
+    if (containerRef.current && !containerRef.current.contains(selection.anchorNode)) {
+      setFloatingToolbar(null);
+      return;
+    }
+
+    // Identify the PDF page container
+    const anchor = selection.anchorNode;
+    const pageContainer = anchor?.parentElement?.closest('[data-page-number]');
+    if (!pageContainer) {
+      setFloatingToolbar(null);
+      return;
+    }
+
+    const pageNumber = parseInt(pageContainer.getAttribute('data-page-number'), 10);
+    if (!pageNumber || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    const pageRect = pageContainer.getBoundingClientRect();
+
+    if (rect.width <= 0 || rect.height <= 0) {
+      setFloatingToolbar(null);
+      return;
+    }
+
+    // Calculate normalized coordinates relative to page (0 to 1, 5 decimal precision)
+    const position_x = parseFloat(
+      Math.max(0, Math.min(1, (rect.left - pageRect.left) / pageRect.width)).toFixed(5)
+    );
+    const position_y = parseFloat(
+      Math.max(0, Math.min(1, (rect.top - pageRect.top) / pageRect.height)).toFixed(5)
+    );
+    const region_width = parseFloat(
+      Math.max(0.01, Math.min(1, rect.width / pageRect.width)).toFixed(5)
+    );
+    const region_height = parseFloat(
+      Math.max(0.01, Math.min(1, rect.height / pageRect.height)).toFixed(5)
+    );
+
+    const selectionPayload = {
+      text,
+      pageNumber,
+      position_x,
+      position_y,
+      region_width,
+      region_height,
+    };
+
+    setSelectedTextData(selectionPayload);
+
+    // Toolbar dimensions and viewport clamping
+    const toolbarWidth = 390;
+    const toolbarHeight = 44;
+    const padding = 12;
+    const gap = 8;
+
+    // Horizontal centering relative to selection rect
+    let left = rect.left + rect.width / 2 - toolbarWidth / 2;
+    if (left < padding) left = padding;
+    if (left + toolbarWidth > window.innerWidth - padding) {
+      left = window.innerWidth - toolbarWidth - padding;
+    }
+
+    // Vertical positioning: immediately above if sufficient space; otherwise below
+    let top;
+    if (rect.top >= toolbarHeight + gap + padding) {
+      top = rect.top - toolbarHeight - gap;
+    } else {
+      top = rect.bottom + gap;
+    }
+
+    // Ensure toolbar stays within vertical viewport boundaries
+    if (top < padding) top = padding;
+    if (top + toolbarHeight > window.innerHeight - padding) {
+      top = window.innerHeight - toolbarHeight - padding;
+    }
+
+    setFloatingToolbar({ top, left });
+  }, []);
+
   const handleMouseUp = useCallback(() => {
     setTimeout(() => {
-      const selection = window.getSelection();
-      if (!selection || selection.isCollapsed) {
-        setFloatingToolbar(null);
-        setSelectedTextData(null);
-        return;
-      }
-
-      const text = selection.toString().trim();
-      if (!text || text.length < 2) {
-        setFloatingToolbar(null);
-        setSelectedTextData(null);
-        return;
-      }
-
-      // Identify the PDF page container
-      const anchor = selection.anchorNode;
-      const pageContainer = anchor?.parentElement?.closest('[data-page-number]');
-      if (!pageContainer) {
-        setFloatingToolbar(null);
-        return;
-      }
-
-      const pageNumber = parseInt(pageContainer.getAttribute('data-page-number'), 10);
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      const pageRect = pageContainer.getBoundingClientRect();
-
-      if (rect.width <= 0 || rect.height <= 0) return;
-
-      // Calculate normalized coordinates relative to page (0 to 1, 5 decimal precision)
-      const position_x = parseFloat(
-        Math.max(0, Math.min(1, (rect.left - pageRect.left) / pageRect.width)).toFixed(5)
-      );
-      const position_y = parseFloat(
-        Math.max(0, Math.min(1, (rect.top - pageRect.top) / pageRect.height)).toFixed(5)
-      );
-      const region_width = parseFloat(
-        Math.max(0.01, Math.min(1, rect.width / pageRect.width)).toFixed(5)
-      );
-      const region_height = parseFloat(
-        Math.max(0.01, Math.min(1, rect.height / pageRect.height)).toFixed(5)
-      );
-
-      const selectionPayload = {
-        text,
-        pageNumber,
-        position_x,
-        position_y,
-        region_width,
-        region_height,
-      };
-
-      setSelectedTextData(selectionPayload);
-      setFloatingToolbar({
-        top: rect.top,
-        left: rect.left + rect.width / 2,
-        bottom: rect.bottom,
-      });
+      recalculateSelectionToolbar();
     }, 20);
-  }, []);
+  }, [recalculateSelectionToolbar]);
+
+  // Recalculate position on scroll (container and window) and window resize
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleReposition = () => {
+      const sel = window.getSelection();
+      if (sel && !sel.isCollapsed && sel.toString().trim()) {
+        recalculateSelectionToolbar();
+      }
+    };
+
+    container.addEventListener('scroll', handleReposition, { passive: true });
+    window.addEventListener('scroll', handleReposition, { passive: true });
+    window.addEventListener('resize', handleReposition, { passive: true });
+
+    return () => {
+      container.removeEventListener('scroll', handleReposition);
+      window.removeEventListener('scroll', handleReposition);
+      window.removeEventListener('resize', handleReposition);
+    };
+  }, [recalculateSelectionToolbar]);
 
   const handleDismissSelection = useCallback(() => {
     setFloatingToolbar(null);
@@ -487,6 +664,9 @@ export default function PdfReader({
         <FloatingSelectionToolbar
           position={floatingToolbar}
           selectionData={selectedTextData}
+          onAddAnnotation={handleQuickHighlight}
+          onAssignTags={handleAssignTag}
+          onCreateNote={handleAnnotate}
           onHighlight={handleQuickHighlight}
           onAnnotate={handleAnnotate}
           onAssignTag={handleAssignTag}

@@ -199,6 +199,44 @@ export default function PaperDetailsPage() {
     { id: 'citations', label: 'Citation Graph', icon: GitBranch },
   ];
 
+  // Dedicated Full-Screen Research Workspace when on the PDF tab
+  if (activeTab === 'pdf') {
+    return (
+      <div className="h-screen w-screen overflow-hidden flex flex-col bg-slate-950">
+        <PaperPdfViewer
+          paperId={paper.id}
+          paper={paper}
+          pdfUrl={paper.pdf_url || `/papers/${paper.id}/pdf`}
+          className="h-full w-full rounded-none border-none"
+          onOpenDetails={() => handleTabChange('overview')}
+          onOpenDiscussions={() => handleTabChange('discussions')}
+          onOpenSummaries={() => setSummaryModalOpen(true)}
+          onOpenCollaborators={() => setCollaboratorsOpen(true)}
+          isBookmarked={bookmarked}
+          onToggleBookmark={handleToggleBookmark}
+        />
+
+        {/* Global Modals accessible from workspace */}
+        {summaryModalOpen && (
+          <PaperSummaryModal
+            isOpen={summaryModalOpen}
+            onClose={() => setSummaryModalOpen(false)}
+            paperId={paper.id}
+            paperTitle={paper.title}
+          />
+        )}
+
+        {collaboratorsOpen && (
+          <CollaboratorsModal
+            isOpen={collaboratorsOpen}
+            onClose={() => setCollaboratorsOpen(false)}
+            paperId={paper.id}
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-fadeIn">
       {/* Back navigation & Quick actions */}
