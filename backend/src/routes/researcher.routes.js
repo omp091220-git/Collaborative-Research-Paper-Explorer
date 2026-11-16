@@ -3,6 +3,7 @@ import { authenticateToken } from '../middleware/authenticate.js';
 import { authorizeRoles } from '../middleware/authorize.js';
 import { ROLES } from '../utils/roles.js';
 import * as controller from '../controllers/publicationDiscovery.controller.js';
+import * as profileController from '../controllers/researcherProfile.controller.js';
 
 const router = express.Router();
 
@@ -12,8 +13,24 @@ const ALL_ROLES = [
   ROLES.STUDENT,
 ];
 
-// All researcher publication routes require authentication
+// All researcher routes require authentication
 router.use(authenticateToken);
+
+// FR-37 — Search researchers by name
+// GET /api/researchers/search?q=<name>&limit=20
+router.get(
+  '/search',
+  authorizeRoles(...ALL_ROLES),
+  profileController.searchResearchers
+);
+
+// FR-38 — Get a researcher's public profile
+// GET /api/researchers/:id/profile
+router.get(
+  '/:id/profile',
+  authorizeRoles(...ALL_ROLES),
+  profileController.getResearcherProfile
+);
 
 // Trigger external discovery across arXiv & CrossRef (FR-39)
 router.post(

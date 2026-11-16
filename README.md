@@ -1,54 +1,60 @@
 # 📚 Collaborative Research Paper Explorer
 
-> **A collaborative platform for discovering, organizing, managing, and exploring academic research papers with intelligent AI-powered assistance.**
+### Discover. Organize. Collaborate. Research Smarter.
 
-Collaborative Research Paper Explorer is a full-stack web application designed to simplify academic research and improve collaboration among students, researchers, and academic communities.
-
-The platform provides a centralized environment where users can manage research papers, organize collections, interact with other researchers, annotate papers, generate AI-assisted insights, and collaborate through shared research spaces.
+A collaborative platform that brings students, researchers, and academic communities together in one place to discover research papers, manage academic resources, share knowledge, and collaborate on research activities.
 
 ---
 
 ## 📌 Table of Contents
 
-- [Overview](#-overview)
-- [Key Features](#-key-features)
-- [User Roles](#-user-roles)
-- [Technology Stack](#-technology-stack)
-- [System Architecture](#-system-architecture)
-- [Project Structure](#-project-structure)
-- [Prerequisites](#-prerequisites)
-- [Installation and Setup](#-installation-and-setup)
-- [Environment Configuration](#-environment-configuration)
-- [Running the Application](#-running-the-application)
-- [API Overview](#-api-overview)
-- [Security](#-security)
-- [Database](#-database)
-- [Testing](#-testing)
-- [Git Workflow](#-git-workflow)
-- [Troubleshooting](#-troubleshooting)
-- [Future Enhancements](#-future-enhancements)
-- [Contributing](#-contributing)
-- [License](#-license)
+1. [About the Project](#-about-the-project)
+2. [Why This Project?](#-why-this-project)
+3. [Key Features](#-key-features)
+4. [User Roles](#-user-roles)
+5. [Technology Stack](#-technology-stack)
+6. [How the Application Works](#-how-the-application-works)
+7. [Project Structure](#-project-structure)
+8. [Getting Started](#-getting-started)
+9. [Environment Configuration](#-environment-configuration)
+10. [Running the Application](#-running-the-application)
+11. [API Overview](#-api-overview)
+12. [Database](#-database)
+13. [Security](#-security)
+14. [Running Tests](#-running-tests)
+15. [Git Workflow](#-git-workflow)
+16. [Troubleshooting](#-troubleshooting)
+17. [Future Enhancements](#-future-enhancements)
+18. [Contributing](#-contributing)
 
 ---
 
-## 🔍 Overview
+## 🔍 About the Project
 
-Academic researchers often rely on multiple disconnected tools to discover papers, organize references, manage research materials, and communicate with collaborators.
+**Collaborative Research Paper Explorer** is a full-stack web application designed to make academic research more organized, accessible, and collaborative.
 
-Collaborative Research Paper Explorer aims to bring these activities together in one platform.
+Students and researchers often use multiple platforms to find research papers, manage references, communicate with other researchers, and organize their academic work.
 
-The application provides:
+Our platform aims to bring these activities together into a single environment.
 
-- Centralized research paper management.
-- Researcher profiles and discovery.
-- Collaborative paper annotations.
-- AI-assisted paper understanding and organization.
-- Social interaction and research communities.
-- Secure user authentication and authorization.
-- Administrative monitoring and management.
+Users can discover research papers, maintain personal research collections, write collaborative annotations, explore researcher profiles, participate in research groups, and use AI-powered tools to better understand and organize academic content.
 
-The system follows a modular full-stack architecture consisting of a React frontend, Node.js/Express backend, and PostgreSQL database.
+The application follows a modular client-server architecture, with a React frontend, Node.js and Express backend, and PostgreSQL database.
+
+## 💡 Why This Project?
+
+Research is not just about finding academic papers. It also involves understanding their content, organizing information, sharing ideas, and collaborating with others.
+
+This project addresses these challenges by providing:
+
+- A centralized platform for managing academic research.
+- Tools for organizing and understanding research papers.
+- Collaborative annotations and research groups.
+- Researcher discovery and community interaction.
+- AI-assisted summaries and content organization.
+- Secure user accounts with role-based access.
+
+The overall goal is to make the research process more efficient and encourage knowledge sharing within academic communities.
 
 ---
 
@@ -56,29 +62,31 @@ The system follows a modular full-stack architecture consisting of a React front
 
 ### 1. 🔐 Authentication and Account Management
 
-- Secure user registration and login.
+Provides a secure account management system.
+
+- User registration and login.
 - Email verification.
 - Forgot-password and password-reset functionality.
 - JWT-based authentication.
 - Secure cookie handling.
-- User logout and session invalidation.
-- Automatic session expiration after inactivity.
+- Logout and session invalidation.
+- Automatic session expiration.
 - Institutional Single Sign-On (SSO).
-- Account and profile management.
+- User profile management.
 
 ### 2. 👥 Role-Based Access Control
 
-The platform supports three primary user roles:
+The application supports three main user roles.
 
-| Role | Responsibilities |
-|---|---|
-| SYSTEM_ADMIN | Platform administration, monitoring, and system management. |
-| RESEARCHER | Research paper management, collaboration, and researcher activities. |
-| STUDENT | Research paper discovery, learning, and collaboration. |
+- **System Admin:** Manages the platform and monitors system resources.
+- **Researcher:** Manages research activities, papers, collections, and collaborations.
+- **Student:** Discovers academic resources and participates in research activities.
 
-Access to protected resources and operations is controlled through backend authorization mechanisms.
+Permissions are checked on the backend to prevent unauthorized access to protected functionality.
 
 ### 3. 📄 Research Paper Management
+
+Provides a centralized space for managing academic papers.
 
 - Upload and manage research papers.
 - Browse available research papers.
@@ -89,155 +97,205 @@ Access to protected resources and operations is controlled through backend autho
 
 ### 4. 📝 Collaborative Annotations
 
-- Create annotations on research papers.
-- Retrieve existing annotations.
-- Update annotations.
+Allows users to share their thoughts and observations about research papers.
+
+- Create annotations.
+- View existing annotations.
+- Edit annotations.
 - Delete annotations.
-- Support collaborative research workflows.
+- Support collaborative research activities.
+
+This makes it easier for researchers to discuss important findings and exchange ideas.
 
 ### 5. 🤖 AI-Powered Research Assistance
 
-- AI-assisted research paper understanding.
+AI integration helps users understand and organize research content.
+
 - Generate summaries of research papers.
-- Suggest relevant tags based on uploaded paper content.
+- Suggest relevant tags based on paper content.
 - Recommend existing tags.
 - Suggest new tags when appropriate.
 - Improve paper organization and discoverability.
 
 ### 6. 📑 Research Summary Export
 
+Users can generate and export research summaries.
+
 - Generate summaries of research papers.
-- Export generated summaries as PDF documents.
-- Include paper title and author information.
+- Export summaries as PDF documents.
+- Include paper titles and author information.
 - Include citations and source information in exported summaries.
 
 ### 7. 🌐 Researcher Discovery and Social Features
+
+Encourages interaction between members of the research community.
 
 - Search for researcher profiles.
 - View researcher information.
 - Discover researchers and their published paper counts.
 - Create and share posts.
 - Support public and private account visibility.
-- Allow public accounts to control individual post visibility.
-- Enforce private-post visibility for private accounts.
+- Control individual post visibility.
 
 ### 8. 💬 Collaborative Messaging and Groups
+
+Provides tools for group-based academic collaboration.
 
 - Create research groups.
 - Join existing groups.
 - Collaborate with group members.
-- Support group-based communication.
-- Facilitate academic discussions and knowledge sharing.
+- Communicate within research groups.
+- Participate in academic discussions.
 
-### 9. 🛡️ System Administrator Monitoring
+### 9. 🛡️ Administrator Monitoring
 
-The administrator monitoring functionality is designed to provide visibility into important system resources, including:
+Provides system administrators with visibility into important application resources.
 
-- Storage utilization and storage quotas.
+- Storage utilization and quotas.
 - Redis queue monitoring.
-- GenAI API token consumption.
+- AI API token consumption.
 - AI API usage and associated costs.
 - Resource utilization and monitoring alerts.
 
-Availability of individual monitoring integrations depends on the corresponding environment configuration.
+Some monitoring capabilities require additional environment configuration.
 
 ---
 
 ## 👤 User Roles
 
-### SYSTEM_ADMIN
-Responsible for maintaining the platform and monitoring system-level resources.
+| Role | Description |
+|---|---|
+| SYSTEM_ADMIN | Responsible for platform administration, monitoring, and system management. |
+| RESEARCHER | Can manage papers, research collections, and collaborative activities. |
+| STUDENT | Can discover research papers, explore academic resources, and participate in collaboration. |
 
-### RESEARCHER
-Can manage research activities, explore papers, organize collections, collaborate with other users, and use available research tools.
-
-### STUDENT
-Can discover research papers, explore academic resources, participate in collaborative activities, and interact with the research community.
-
-**Important:** Role-based restrictions are enforced by the backend rather than relying exclusively on frontend visibility.
+Each role has different permissions depending on its responsibilities.
 
 ---
 
 ## 🛠️ Technology Stack
 
-| Component | Technologies |
-|---|---|
-| Frontend | React.js |
-| Build Tool | Vite |
-| Routing | React Router |
-| Styling | Tailwind CSS |
-| Backend | Node.js |
-| Backend Framework | Express.js |
-| Database | PostgreSQL |
-| Authentication | JWT |
-| Password Security | bcryptjs |
-| Email Services | Nodemailer |
-| Authentication Integration | OAuth / OIDC |
-| API Architecture | REST APIs |
-| Testing | Node.js Test Runner, Supertest |
-| Version Control | Git and GitHub |
-| AI Integration | Configurable GenAI services |
-| Queue Monitoring | Redis (optional) |
+The project uses the following technologies:
+
+| Component | Technology | Purpose |
+|---|---|---|
+| Frontend | React.js | Building the user interface |
+| Build Tool | Vite | Frontend development and bundling |
+| Routing | React Router | Managing application navigation |
+| Styling | Tailwind CSS | Designing the interface |
+| Backend | Node.js | Server-side runtime |
+| Backend Framework | Express.js | Building backend APIs |
+| Database | PostgreSQL | Storing application data |
+| Authentication | JWT | Managing authenticated requests |
+| Password Security | bcryptjs | Password hashing |
+| Email Services | Nodemailer | Email communication |
+| Authentication Integration | OAuth / OIDC | Institutional authentication |
+| API Architecture | REST APIs | Frontend-backend communication |
+| Testing | Node.js Test Runner, Supertest | Backend testing |
+| Version Control | Git and GitHub | Collaborative development |
+| AI Integration | Configurable GenAI services | AI-powered research assistance |
+| Queue Monitoring | Redis (optional) | Queue and resource monitoring |
 
 ---
 
-## 🏗️ System Architecture
+## 🏗️ How the Application Works
 
-The application follows a modular client-server architecture.
+The application follows a **client-server architecture**.
+
+This means that the frontend, backend, and database have separate responsibilities.
+
+### System Architecture
 
 ```text
-              ┌─────────────────────────┐
-              │       Users             │
-              │                         │
-              │ SYSTEM_ADMIN            │
-              │ RESEARCHER               │
-              │ STUDENT                  │
-              └────────────┬────────────┘
-                           │
-                           ▼
-              ┌─────────────────────────┐
-              │     React Frontend      │
-              │                         │
-              │    Vite + React         │
-              │    React Router         │
-              │    Tailwind CSS         │
-              └────────────┬────────────┘
-                           │
-                      REST APIs
-                           │
-                           ▼
-              ┌─────────────────────────┐
-              │    Node.js Backend      │
-              │                         │
-              │    Express.js           │
-              │    Authentication       │
-              │    Authorization        │
-              │    Controllers          │
-              │    Services             │
-              │    Middleware           │
-              └────────────┬────────────┘
-                           │
-              ┌────────────┼─────────────┐
-              │            │             │
-              ▼            ▼             ▼
-        ┌──────────┐ ┌───────────┐ ┌───────────┐
-        │PostgreSQL│ │ AI Services│ │   Redis   │
-        │ Database │ │ (Optional) │ │ (Optional)│
-        └──────────┘ └───────────┘ └───────────┘
+                 USERS
+                    |
+                    |
+          +---------v---------+
+          |   React Frontend  |
+          |                   |
+          | React + Vite      |
+          | React Router      |
+          | Tailwind CSS      |
+          +---------+---------+
+                    |
+                    |
+                REST APIs
+                    |
+                    |
+          +---------v---------+
+          |   Node.js Backend |
+          |                   |
+          | Express.js        |
+          | Authentication    |
+          | Authorization     |
+          | Controllers       |
+          | Services          |
+          | Middleware        |
+          +---------+---------+
+                    |
+          +---------+----------+
+          |                    |
+          v                    v
+    +-----------+       +--------------+
+    | PostgreSQL|       | AI Services  |
+    | Database  |       |              |
+    +-----------+       +--------------+
+                             
+                    +--------------+
+                    | Redis        |
+                    | (Optional)   |
+                    +--------------+
 ```
 
-### Architecture Highlights
+### Understanding the Architecture
 
-- Separation of frontend and backend responsibilities.
-- Modular backend structure.
-- REST-based communication.
-- Centralized database persistence.
-- Middleware-based authentication and authorization.
-- Configurable external service integrations.
+**1. Frontend (React)**
+
+The frontend is the part of the application users interact with.
+
+It handles:
+- Displaying pages and components.
+- User interactions.
+- Navigation between different sections.
+- Sending requests to the backend.
+- Displaying information received from the server.
+
+**2. Backend (Node.js + Express.js)**
+
+The backend handles the application's main logic.
+
+It is responsible for:
+- Processing incoming requests.
+- Authenticating users.
+- Checking user permissions.
+- Communicating with the database.
+- Managing application functionality.
+- Integrating external services.
+
+**3. Database (PostgreSQL)**
+
+The database stores the application's persistent information, such as user accounts, research paper metadata, annotations, collections, and sessions.
+
+**4. External Services**
+
+Optional external services provide additional capabilities, such as AI-powered assistance, email delivery, institutional authentication, and Redis-based monitoring.
+
+### Example: User Login Flow
+
+1. A user enters their login credentials on the frontend.
+2. The frontend sends the credentials to the backend.
+3. The backend validates the credentials.
+4. The backend checks the stored user information in PostgreSQL.
+5. If the credentials are valid, the authentication process creates the appropriate session.
+6. The frontend receives the authentication response and updates the user's application state.
+
+This separation makes the application easier to maintain, extend, and scale.
 
 ---
 
 ## 📁 Project Structure
+
+The repository follows a modular directory structure.
 
 ```text
 Collaborative-Research-Paper-Explorer/
@@ -274,7 +332,6 @@ Collaborative-Research-Paper-Explorer/
 │   └── *.sql
 │
 ├── docs/
-│
 ├── uploads/
 │
 ├── .env.example
@@ -282,45 +339,52 @@ Collaborative-Research-Paper-Explorer/
 └── README.md
 ```
 
-### Directory Description
+### What Does Each Folder Do?
 
-| Directory | Purpose |
+| Folder | Responsibility |
 |---|---|
-| `backend/src/config` | Application and environment configuration. |
-| `backend/src/controllers` | Handles incoming API requests. |
-| `backend/src/middleware` | Authentication, authorization, and request processing. |
-| `backend/src/modules` | Modular application functionality. |
-| `backend/src/repositories` | Database access and data operations. |
-| `backend/src/routes` | REST API route definitions. |
-| `backend/src/services` | Business logic and external integrations. |
-| `backend/src/test` | Backend automated tests. |
-| `frontend/src` | React application source code. |
-| `database` | SQL schema and database scripts. |
-| `docs` | Project documentation. |
-| `uploads` | Application upload storage. |
+| `backend/src/config` | Application and environment configuration |
+| `backend/src/controllers` | Handles incoming API requests |
+| `backend/src/middleware` | Authentication, authorization, and request processing |
+| `backend/src/modules` | Contains modular application functionality |
+| `backend/src/repositories` | Handles database operations |
+| `backend/src/routes` | Defines API endpoints |
+| `backend/src/services` | Contains business logic and external integrations |
+| `backend/src/scripts` | Backend utility scripts |
+| `backend/src/test` | Automated backend tests |
+| `backend/src/utils` | Shared utility functions |
+| `frontend/src` | React application source code |
+| `frontend/public` | Public frontend assets |
+| `database` | Database schema and SQL scripts |
+| `docs` | Additional project documentation |
+| `uploads` | Application upload storage |
 
 ---
 
-## ⚙️ Prerequisites
+## ⚙️ Getting Started
 
-Install the following tools before setting up the project:
+Follow these instructions to set up the project on your local machine.
+
+### Prerequisites
+
+Make sure you have installed the following software:
 
 | Software | Requirement |
 |---|---|
 | Node.js | Version 18 or newer |
-| npm | Installed with Node.js |
+| npm | Comes with Node.js |
 | PostgreSQL | Version 15 or compatible |
 | Git | Latest stable version |
 | Code Editor | VS Code recommended |
 
 Optional services:
 
-- Redis, if queue monitoring is enabled.
-- SMTP credentials, if email delivery is enabled.
-- Google OAuth credentials, if institutional SSO is enabled.
-- External AI service credentials, if AI functionality requires them.
+- Redis for queue monitoring.
+- SMTP credentials for email delivery.
+- Google OAuth credentials for institutional SSO.
+- External AI service credentials where required.
 
-Check your installations:
+Verify your installations:
 
 ```bash
 node --version
@@ -329,25 +393,25 @@ git --version
 psql --version
 ```
 
----
-
-## 🚀 Installation and Setup
-
-Follow the steps below to run the project locally.
-
 ### Step 1: Clone the Repository
+
+Open your terminal and execute:
 
 ```bash
 git clone https://github.com/omp091220-git/Collaborative-Research-Paper-Explorer.git
+```
 
+Navigate into the project directory:
+
+```bash
 cd Collaborative-Research-Paper-Explorer
 ```
 
-### Step 2: Configure PostgreSQL
+### Step 2: Set Up PostgreSQL
 
-Make sure PostgreSQL is running.
+Make sure your PostgreSQL server is running.
 
-Open PostgreSQL Shell or your terminal and connect to PostgreSQL:
+Connect to PostgreSQL:
 
 ```bash
 psql -U postgres -h localhost
@@ -373,13 +437,13 @@ psql -U postgres -h localhost -d research_explorer -f database/schema.sql
 
 Enter your PostgreSQL password when prompted.
 
-**Note:** If your repository contains additional SQL migrations required by the current version, apply them in the documented order.
+If additional database migrations are required by the current version, execute them in the appropriate order.
 
 ### Step 3: Configure Environment Variables
 
-The repository includes an environment configuration template.
+The repository contains an `.env.example` file.
 
-Create your local environment file.
+Create your local backend environment file.
 
 **Windows PowerShell:**
 
@@ -393,47 +457,37 @@ Copy-Item .env.example backend/.env
 cp .env.example backend/.env
 ```
 
-Open `backend/.env` and update the configuration according to your local environment.
+Open `backend/.env` and configure the required values.
 
-See the [Environment Configuration](#-environment-configuration) section.
+Refer to the Environment Configuration section below.
 
 ### Step 4: Install Backend Dependencies
 
-Open a terminal at the project root:
+Open a terminal in the project root:
 
 ```bash
 cd backend
 npm install
 ```
 
-For Windows PowerShell, if script execution restrictions prevent npm from running, use:
-
-```powershell
-npm.cmd install
-```
-
 ### Step 5: Install Frontend Dependencies
 
-Open another terminal at the project root:
+Open another terminal in the project root:
 
 ```bash
 cd frontend
 npm install
 ```
 
-For Windows PowerShell:
-
-```powershell
-npm.cmd install
-```
+The frontend and backend dependencies are installed separately because they are maintained as separate parts of the application.
 
 ---
 
 ## 🔑 Environment Configuration
 
-The backend requires environment variables to connect to the database and initialize application services.
+Environment variables allow the application to securely access configuration values without hardcoding them into the source code.
 
-Example configuration:
+Example backend configuration:
 
 ```env
 # Server Configuration
@@ -492,16 +546,16 @@ REDIS_URL=
 EXPOSE_DEV_RESET_TOKEN=false
 ```
 
-### Important Configuration Notes
+### Important Notes
 
 - Replace `YOUR_PASSWORD` with your actual PostgreSQL password.
-- Generate a strong JWT secret of at least 32 characters.
+- Use a strong, randomly generated JWT secret.
 - Configure SMTP credentials if email delivery is required.
 - Configure OAuth credentials if institutional SSO is required.
-- Redis configuration is optional when Redis monitoring is not enabled.
-- Additional service-specific environment variables may be required depending on the enabled modules.
+- Redis configuration is optional unless Redis monitoring is enabled.
+- Additional configuration may be necessary for specific external integrations.
 
-**Security Warning:** Never commit `.env` files, passwords, API keys, JWT secrets, or other confidential credentials to GitHub.
+**Security Warning:** Never upload your `.env` file, passwords, API keys, or other confidential credentials to GitHub.
 
 ---
 
@@ -509,22 +563,29 @@ EXPOSE_DEV_RESET_TOKEN=false
 
 The frontend and backend must run simultaneously.
 
+You will need two separate terminal windows.
+
 ### Terminal 1: Start the Backend
 
-From the project root:
+Navigate to the backend directory:
 
 ```bash
 cd backend
+```
+
+Start the development server:
+
+```bash
 npm run dev
 ```
 
-Alternatively:
+Alternatively, use:
 
 ```bash
 npm start
 ```
 
-Expected backend address:
+The backend should be accessible at:
 
 ```text
 http://localhost:5000
@@ -532,16 +593,19 @@ http://localhost:5000
 
 ### Terminal 2: Start the Frontend
 
-From the project root:
+Navigate to the frontend directory:
 
 ```bash
 cd frontend
+```
+
+Start the Vite development server:
+
+```bash
 npm run dev
 ```
 
-Vite will display the frontend development URL.
-
-Default frontend address:
+The frontend should be accessible at:
 
 ```text
 http://localhost:5173
@@ -551,9 +615,7 @@ http://localhost:5173
 
 Open your browser and visit:
 
-```text
-http://localhost:5173
-```
+**http://localhost:5173**
 
 Keep both terminal windows running while using the application.
 
@@ -561,7 +623,9 @@ Keep both terminal windows running while using the application.
 
 ## 🔌 API Overview
 
-The backend exposes REST APIs for authentication, research paper management, annotations, and other application modules.
+The backend exposes REST APIs that allow the frontend to communicate with the server.
+
+These APIs handle authentication, research paper retrieval, annotations, and other application operations.
 
 ### Authentication APIs
 
@@ -569,17 +633,17 @@ Base route: `/api/auth`
 
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/register` | Register a new user. |
-| POST | `/login` | Authenticate a user. |
-| POST | `/logout` | Log out and invalidate the applicable session. |
-| GET | `/me` | Retrieve authenticated user information. |
-| POST | `/verify-email` | Verify registered email. |
-| POST | `/resend-verification` | Resend verification email. |
-| POST | `/forgot-password` | Initiate password recovery. |
-| POST | `/reset-password` | Reset account password. |
-| GET | `/sso/config` | Retrieve SSO configuration. |
-| GET | `/sso/login` | Initiate institutional authentication. |
-| GET | `/sso/callback` | Handle SSO callback. |
+| POST | `/register` | Register a new user |
+| POST | `/login` | Authenticate a user |
+| POST | `/logout` | Log out a user |
+| GET | `/me` | Retrieve authenticated user information |
+| POST | `/verify-email` | Verify registered email |
+| POST | `/resend-verification` | Resend verification email |
+| POST | `/forgot-password` | Initiate password recovery |
+| POST | `/reset-password` | Reset account password |
+| GET | `/sso/config` | Retrieve SSO configuration |
+| GET | `/sso/login` | Initiate institutional authentication |
+| GET | `/sso/callback` | Handle SSO callback |
 
 ### Research Paper APIs
 
@@ -587,7 +651,7 @@ Base route: `/api/papers`
 
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/` | Retrieve available research papers. |
+| GET | `/` | Retrieve available research papers |
 
 ### Annotation APIs
 
@@ -595,78 +659,71 @@ Base route: `/api/annotations`
 
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/` | Retrieve annotations. |
-| POST | `/` | Create an annotation. |
-| PATCH | `/:id` | Update an annotation. |
-| DELETE | `/:id` | Delete an annotation. |
+| GET | `/` | Retrieve annotations |
+| POST | `/` | Create an annotation |
+| PATCH | `/:id` | Update an annotation |
+| DELETE | `/:id` | Delete an annotation |
 
-**Note:** The above endpoints represent the documented API routes. Other modules may expose additional endpoints. Refer to the backend route definitions for the complete and current API implementation.
-
----
-
-## 🔒 Security
-
-Security is an important part of the application architecture.
-
-The platform incorporates:
-
-- JWT-based authentication.
-- Password hashing using bcryptjs.
-- Secure cookie handling.
-- Role-Based Access Control (RBAC).
-- Backend authorization middleware.
-- Session expiration and revocation.
-- Login and password-recovery rate limiting.
-- Email verification.
-- Protected API endpoints.
-- Environment-based secret management.
-- Access restrictions for private content.
-
-### Session Management
-
-The application supports configurable session management.
-
-Default inactivity timeout:
-
-```text
-30 minutes
-```
-
-Default maximum session lifetime:
-
-```text
-8 hours
-```
-
-Session-related settings can be configured using environment variables.
+**Note:** This is an overview of the documented endpoints, not necessarily the complete API reference. Refer to the backend route definitions for additional endpoints and implementation details.
 
 ---
 
 ## 🗄️ Database
 
-PostgreSQL is used as the primary relational database.
+The application uses **PostgreSQL** as its primary relational database.
 
-The database stores information required for user authentication, research management, and collaboration.
+A relational database stores information in structured tables that can be connected through relationships.
 
-Core data areas include:
+The database maintains information related to:
 
 - User accounts and profiles.
 - Research paper metadata.
 - Paper summaries.
 - Research collections.
-- Annotations.
+- Collaborative annotations.
 - Authentication sessions.
-- Related application records.
+- Other application records.
 
-The database schema and SQL scripts are maintained inside the `database/` directory.
+The database schema and SQL scripts are maintained in the `database/` directory.
 
 ---
 
-## 🧪 Testing
+## 🔒 Security
+
+Security is an important part of the application's architecture.
+
+The platform incorporates several security mechanisms:
+
+| Mechanism | Purpose |
+|---|---|
+| JWT Authentication | Identifies authenticated users |
+| bcryptjs | Hashes passwords before storage |
+| Secure Cookies | Protects authentication cookies |
+| Role-Based Access Control | Restricts functionality according to user roles |
+| Authorization Middleware | Checks permissions for protected operations |
+| Session Management | Controls session lifetime and expiration |
+| Rate Limiting | Restricts repeated login and recovery attempts |
+| Email Verification | Helps verify registered email addresses |
+| Environment Variables | Keeps sensitive configuration outside source code |
+
+### Session Management
+
+The application supports configurable session management.
+
+Default configuration:
+
+- Inactivity timeout: 30 minutes.
+- Maximum session lifetime: 8 hours.
+
+These values can be modified through environment variables.
+
+---
+
+## 🧪 Running Tests
 
 The backend uses the Node.js built-in test runner and Supertest for automated testing.
 
-To run the backend test suite:
+To execute the backend test suite:
 
 ```bash
 cd backend
@@ -681,7 +738,7 @@ Tests are intended to validate important application functionality, including:
 - API behavior.
 - Core backend operations.
 
-Refer to the backend `package.json` for the currently configured test scripts.
+Refer to `backend/package.json` for the available test scripts.
 
 ---
 
@@ -689,24 +746,16 @@ Refer to the backend `package.json` for the currently configured test scripts.
 
 This project uses Git and GitHub for collaborative development.
 
-Contributors should work on separate feature branches instead of pushing directly to the `main` branch.
+Contributors should work on separate feature branches instead of directly modifying the `main` branch.
 
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/omp091220-git/Collaborative-Research-Paper-Explorer.git
-
-cd Collaborative-Research-Paper-Explorer
-```
-
-### 2. Get the Latest Changes
+### 1. Get the Latest Changes
 
 ```bash
 git checkout main
 git pull origin main
 ```
 
-### 3. Create a Feature Branch
+### 2. Create a Feature Branch
 
 ```bash
 git checkout -b feature/your-feature-name
@@ -718,84 +767,85 @@ Example:
 git checkout -b feature/researcher-profile
 ```
 
-### 4. Make Changes and Commit
+### 3. Make Changes and Commit
 
 ```bash
 git add .
 git commit -m "Add researcher profile functionality"
 ```
 
-### 5. Push Your Branch
+### 4. Push Your Branch
 
 ```bash
 git push -u origin feature/your-feature-name
 ```
 
-### 6. Create a Pull Request
+### 5. Create a Pull Request
 
 1. Open the repository on GitHub.
-2. Select the Pull Requests tab.
+2. Navigate to the Pull Requests section.
 3. Create a new pull request.
 4. Select your feature branch as the source.
 5. Select `main` as the target branch.
-6. Describe your changes.
-7. Request a review from teammates.
-8. Resolve conflicts if necessary.
-9. Merge after approval.
+6. Describe the changes you have made.
+7. Request a review from your teammates.
+8. Resolve any requested changes.
+9. Merge the pull request after approval.
 
-**Important:** Do not push unfinished or unreviewed changes directly to `main`.
+This workflow keeps the main branch organized and makes collaboration easier.
 
 ---
 
 ## 🛠️ Troubleshooting
 
+Here are some common problems you might encounter while setting up the application.
+
 ### 1. Missing JWT_SECRET
 
-Error:
+**Possible error:**
 
 ```text
 Missing required environment variable: JWT_SECRET
 ```
 
-Solution:
+**Solution:**
 
 - Make sure `backend/.env` exists.
 - Add a valid `JWT_SECRET`.
 - Restart the backend server.
 
-### 2. PostgreSQL Password Authentication Failed
+### 2. PostgreSQL Connection Error
 
-Error:
+**Possible error:**
 
 ```text
 password authentication failed for user "postgres"
 ```
 
-Solution:
+**Solution:**
 
-- Verify your PostgreSQL username.
-- Verify your PostgreSQL password.
+- Verify your PostgreSQL username and password.
 - Make sure PostgreSQL is running.
-- Check the `DATABASE_URL` inside `backend/.env`.
-- Ensure the database `research_explorer` exists.
+- Check the `DATABASE_URL` in `backend/.env`.
+- Ensure that the `research_explorer` database exists.
 
 ### 3. npm Execution Policy Error on Windows
 
-Error:
+**Possible error:**
 
 ```text
 npm.ps1 cannot be loaded because running scripts is disabled
 ```
 
-Solution:
+**Solution:**
 
-Use:
+Use the Windows command wrapper:
 
 ```powershell
 npm.cmd install
 ```
 
-And start development scripts using:
+To run development scripts:
 
 ```powershell
 npm.cmd run dev
@@ -806,46 +856,48 @@ npm.cmd run dev
 If the backend or frontend port is already occupied:
 
 - Stop the process using that port.
-- Alternatively, configure another available port.
+- Alternatively, configure a different available port.
 - Restart the application.
 
 ### 5. Frontend Cannot Connect to Backend
 
-Check:
+Check the following:
 
-- Backend server is running.
-- API base URL is correctly configured.
-- Frontend and backend ports are correct.
-- CORS configuration allows the frontend origin.
+- The backend server is running.
+- The API base URL is correct.
+- The configured frontend and backend ports are correct.
+- The backend CORS configuration allows the frontend origin.
 
 ---
 
 ## 🚀 Future Enhancements
 
-Potential areas for further improvement include:
+Some potential areas for future development include:
 
 - More advanced AI-powered research recommendations.
-- Enhanced research analytics and insights.
-- Improved collaborative research workflows.
+- Improved research analytics and insights.
+- Enhanced collaborative research workflows.
 - Additional institutional integrations.
 - Advanced research paper discovery.
-- Improved scalability and performance.
+- Improved application scalability and performance.
 - Expanded monitoring and reporting capabilities.
+
+These enhancements can further improve the platform and its usefulness to academic communities.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions from team members and developers are welcome.
+Contributions from developers, students, and researchers are welcome.
 
-To contribute:
+If you want to contribute:
 
 1. Fork or clone the repository.
 2. Create a dedicated feature branch.
 3. Implement your changes.
 4. Test your implementation.
 5. Commit your changes with meaningful messages.
-6. Push your branch.
+6. Push your branch to GitHub.
 7. Open a Pull Request for review.
 
 Please maintain readable code, follow the existing project structure, and avoid committing confidential information.
@@ -854,16 +906,20 @@ Please maintain readable code, follow the existing project structure, and avoid 
 
 ## 📜 License
 
-This project is developed as an academic software engineering project.
+This project is developed as a collaborative academic software engineering project.
 
-A specific open-source license should be added to the repository before redistribution under an open-source license.
+A specific open-source license should be added to the repository before distributing the project under an open-source license.
 
 ---
 
 ## 👨‍💻 Project Repository
 
-**GitHub:** [Collaborative Research Paper Explorer](https://github.com/omp091220-git/Collaborative-Research-Paper-Explorer)
+**GitHub:** https://github.com/omp091220-git/Collaborative-Research-Paper-Explorer
 
-**Developed as a collaborative academic software engineering project.**
+Developed as a collaborative academic project with the goal of making research more accessible, organized, and collaborative.
 
 ⭐ If you find this project interesting, consider giving the repository a star!
+
+---
+
+**Collaborative Research Paper Explorer — Making Academic Research Smarter and More Connected.**
