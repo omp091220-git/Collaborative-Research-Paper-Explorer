@@ -19,13 +19,14 @@ A collaborative platform that brings students, researchers, and academic communi
 9. [Environment Configuration](#-environment-configuration)
 10. [Running the Application](#-running-the-application)
 11. [API Overview](#-api-overview)
-12. [Database](#-database)
-13. [Security](#-security)
-14. [Running Tests](#-running-tests)
-15. [Git Workflow](#-git-workflow)
-16. [Troubleshooting](#-troubleshooting)
-17. [Future Enhancements](#-future-enhancements)
-18. [Contributing](#-contributing)
+12. [Completed Functional Requirements (FR Matrix)](#-completed-functional-requirements-fr-matrix)
+13. [Database](#-database)
+14. [Security](#-security)
+15. [Running Tests](#-running-tests)
+16. [Git Workflow](#-git-workflow)
+17. [Troubleshooting](#-troubleshooting)
+18. [Future Enhancements](#-future-enhancements)
+19. [Contributing](#-contributing)
 
 ---
 
@@ -664,7 +665,83 @@ Base route: `/api/annotations`
 | PATCH | `/:id` | Update an annotation |
 | DELETE | `/:id` | Delete an annotation |
 
-**Note:** This is an overview of the documented endpoints, not necessarily the complete API reference. Refer to the backend route definitions for additional endpoints and implementation details.
+### Community Posts & Post Visibility APIs (FR-25)
+
+Base route: `/api/posts` & `/api/users`
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| POST | `/api/posts` | Authenticated | Create a research post (Strict FR-25: Private accounts can only publish private posts) |
+| GET | `/api/posts` | Public | Retrieve public feed posts (Private posts strictly excluded at SQL level) |
+| GET | `/api/posts/:id` | Hybrid | View post by ID (Public posts viewable by all; Private posts strictly restricted to author/admin) |
+| GET | `/api/posts/author/:authorId` | Hybrid | View posts by author (Public viewable by all; Private viewable only by author or admin) |
+| PATCH | `/api/posts/:id` | Authenticated | Update post content or visibility (Author or System Admin only) |
+| DELETE | `/api/posts/:id` | Authenticated | Delete post (Author or System Admin only) |
+| GET | `/api/users/me/account-type` | Authenticated | Retrieve authenticated user's current account type (`PUBLIC` or `PRIVATE`) |
+| PATCH | `/api/users/me/account-type` | Authenticated | Update user account privacy type (`PUBLIC` $\leftrightarrow$ `PRIVATE`) |
+
+### Research Summary PDF Export APIs (FR-36)
+
+Base route: `/api/papers`
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| GET | `/api/papers/:paperId/export/summary-pdf` | Authenticated | Generate and stream a high-fidelity formatted PDF synthesis report with preserved academic citations and graceful failure reporting |
+
+### External Publications Discovery APIs (FR-39)
+
+Base route: `/api/researchers`
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| POST | `/api/researchers/:id/publications/discover` | Authenticated | Discover external publications via arXiv and CrossRef REST APIs with automated title normalization and SHA deduplication |
+| GET | `/api/researchers/:id/publications` | Public | Retrieve merged researcher publication history combining platform uploads and verified external records |
+
+### Tag Intelligence & Deduplication APIs (FR-12)
+
+Base route: `/api/tags/intelligence`
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| POST | `/evaluate-duplicate` | Authenticated | Agentic AI semantic duplicate evaluation comparing new candidate tag against taxonomy |
+| POST | `/consolidate` | Authenticated | Consolidate and merge redundant synonym tags across all paper associations |
+| GET | `/synonyms` | Authenticated | Fetch AI-suggested synonym clusters and canonical tag mappings |
+
+### Hierarchical Topic Search APIs (FR-13)
+
+Base route: `/api/paper-tags/search`
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| GET | `/hierarchical` | Public | Sub-300ms multi-tag hierarchical paper search with recursive ancestor/descendant taxonomy CTE resolution |
+
+### System Administrator Live Telemetry & Monitoring APIs (FR-21)
+
+Base route: `/api/admin/monitoring`
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| GET | `/overview` | System Admin | System-wide health metrics, active connection pools, and core service telemetry |
+| GET | `/storage` | System Admin | Disk capacity tracking, percentage quotas, threshold warnings, and linear capacity forecasting |
+| GET | `/redis` | System Admin | Redis worker queue depth, latency probes, and socket connectivity telemetry |
+| GET | `/genai` | System Admin | Token consumption metrics, per-model inference expenditure, and budget tracking |
+| GET | `/audit-report` | System Admin | Generates structured administrative compliance and system audit reports |
+| GET | `/diagnostics` | System Admin | Live subsystem diagnostics, failure event frequencies, and response time percentiles |
+
+---
+
+## 🎯 Completed Functional Requirements (FR Matrix)
+
+The following matrix documents the **6 Core Functional Requirements (FRs)** engineered and delivered, complete with architectural boundary enforcement, database migrations, and verified automated test coverage:
+
+| FR ID | Feature Domain | Key Specification & Business Rules | Primary Endpoints | Database Migration | Test Suite & Coverage |
+|---|---|---|---|---|---|
+| **FR-12** | **Agentic AI Tag Deduplication** | Detects semantic equivalents, duplicates, and synonyms when creating tags (e.g. `deep_learning` vs `deep-learning`), proposing automated canonical consolidation. | `POST /api/tags/intelligence/evaluate-duplicate`<br>`POST /api/tags/intelligence/consolidate` | `20261026_paper_tags_and_search.sql` | `backend/src/test/tagIntelligence.test.js`<br>**(27 Tests Passed)** |
+| **FR-13** | **Hierarchical Topic Tag Search** | Multi-tier taxonomic paper discovery supporting sub-300ms queries across nested namespaces (`ai::nlp::transformers`) using recursive PostgreSQL CTEs. | `GET /api/paper-tags/search/hierarchical` | `20261024_topic_tags.sql` | `backend/src/test/topicTags.test.js`<br>**(32 Tests Passed)** |
+| **FR-21** | **Administrator Live Monitoring** | Admin dashboard monitoring system storage quotas, linear forecasting, Redis background queue health, and GenAI LLM token expenditures/budgets. | `GET /api/admin/monitoring/storage`<br>`GET /api/admin/monitoring/redis`<br>`GET /api/admin/monitoring/genai` | `20261026_genai_usage_tracking.sql` | `backend/src/test/adminMonitoring.test.js`<br>**(38 Tests Passed)** |
+| **FR-25** | **Account Type & Post Visibility** | Enforces that private-account users can only create private posts (server-side `403 Forbidden` guard). Public accounts can choose `PUBLIC` or `PRIVATE`. Private posts strictly filtered from public feeds. | `POST /api/posts`<br>`GET /api/posts`<br>`PATCH /api/users/me/account-type` | `20261118_account_type_and_posts.sql` | `backend/src/test/fr25_post_visibility.test.js`<br>**(22 Tests Passed)** |
+| **FR-36** | **Summary PDF Export** | Formats and streams multi-part paper synthesis (Background, Methodology, Results, Limitations) into PDF documents with formatted citations and graceful error recovery. | `GET /api/papers/:paperId/export/summary-pdf` | `20261116_structured_summaries.sql` | `backend/src/test/fr36_fr39.test.js`<br>**(13 Tests Passed)** |
+| **FR-39** | **External Publication Discovery** | Connects to external scholarly repositories (arXiv OAI-PMH & CrossRef) to discover researcher publications, perform title-normalized deduplication, and compute publication statistics. | `POST /api/researchers/:id/publications/discover`<br>`GET /api/researchers/:id/publications` | `20261113_external_publications.sql` | `backend/src/test/fr36_fr39.test.js`<br>**(13 Tests Passed)** |
 
 ---
 
@@ -721,24 +798,32 @@ These values can be modified through environment variables.
 
 ## 🧪 Running Tests
 
-The backend uses the Node.js built-in test runner and Supertest for automated testing.
+The backend uses the Node.js built-in test runner (`node:test`) and Supertest for automated unit and integration testing.
 
-To execute the backend test suite:
+To execute the entire backend test suite:
 
 ```bash
 cd backend
 npm test
 ```
 
-Tests are intended to validate important application functionality, including:
+### Running Specific Functional Requirement (FR) Test Suites
 
-- Authentication.
-- Authorization.
-- Request validation.
-- API behavior.
-- Core backend operations.
+Each implemented functional module contains isolated, zero-dependency unit and HTTP integration tests:
 
-Refer to `backend/package.json` for the available test scripts.
+```bash
+# FR-25: Account Type & Post Visibility Enforcement (22 tests)
+node --import ./src/test/setup.js --test src/test/fr25_post_visibility.test.js
+
+# FR-36 & FR-39: Summary PDF Export & External Publications Discovery (13 tests)
+node --import ./src/test/setup.js --test src/test/fr36_fr39.test.js
+
+# FR-21: System Administrator Live Monitoring & Forecasting (38 tests)
+node --import ./src/test/setup.js --test src/test/adminMonitoring.test.js
+
+# FR-12 & FR-13: Topic Tag Deduplication & Hierarchical Search (27 tests)
+node --import ./src/test/setup.js --test src/test/tagIntelligence.test.js
+```
 
 ---
 
