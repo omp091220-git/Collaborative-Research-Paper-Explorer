@@ -149,9 +149,9 @@ export const getStorageMetrics = async () => {
 
   // 6. Quota resolution
   let quotaBytes = null;
-  if (process.env.STORAGE_QUOTA_BYTES) {
+  if (process.env.STORAGE_QUOTA_BYTES && !isNaN(parseInt(process.env.STORAGE_QUOTA_BYTES, 10))) {
     quotaBytes = parseInt(process.env.STORAGE_QUOTA_BYTES, 10);
-  } else if (process.env.STORAGE_QUOTA_MB) {
+  } else if (process.env.STORAGE_QUOTA_MB && !isNaN(parseInt(process.env.STORAGE_QUOTA_MB, 10))) {
     quotaBytes = parseInt(process.env.STORAGE_QUOTA_MB, 10) * 1024 * 1024;
   }
 

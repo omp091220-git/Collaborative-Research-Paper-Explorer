@@ -4,6 +4,7 @@ import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import MobileNavigation from './MobileNavigation';
 import PaperUploadModal from '../papers/PaperUploadModal';
+import ErrorBoundary from '../common/ErrorBoundary';
 import { useToast } from '../../context/ToastContext';
 import { Loader2 } from 'lucide-react';
 
@@ -39,6 +40,26 @@ export default function AppLayout() {
     window.dispatchEvent(new CustomEvent('paper:created', { detail: paper }));
   };
 
+  // Dedicated full-screen reading workspace mode when viewing paper PDF
+  const searchParams = new URLSearchParams(location.search);
+  const isReadingWorkspace =
+    location.pathname.startsWith('/papers/') &&
+    (!searchParams.get('tab') || searchParams.get('tab') === 'pdf');
+
+  if (isReadingWorkspace) {
+    return (
+      <div className="h-screen w-screen overflow-hidden bg-slate-950 text-slate-100 antialiased flex flex-col">
+        <main className="flex-1 flex flex-col min-w-0 h-full w-full overflow-hidden p-0 m-0">
+          <ErrorBoundary title="ScholarSphere Research Workspace Error">
+            <Suspense fallback={<ContentLoader />}>
+              <Outlet />
+            </Suspense>
+          </ErrorBoundary>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-100/60 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased flex flex-col">
       {/* Top Navbar */}
@@ -58,9 +79,11 @@ export default function AppLayout() {
         {/* Content Area */}
         <main className="flex-1 md:pl-64 flex flex-col min-w-0 pb-16 md:pb-6 transition-all">
           <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
-            <Suspense fallback={<ContentLoader />}>
-              <Outlet />
-            </Suspense>
+            <ErrorBoundary title="ScholarSphere View Error">
+              <Suspense fallback={<ContentLoader />}>
+                <Outlet />
+              </Suspense>
+            </ErrorBoundary>
           </div>
         </main>
       </div>
