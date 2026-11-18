@@ -3,38 +3,36 @@ import api from '../api.js';
 /**
  * Fetch suggestions for a paper.
  */
-export const getTagSuggestions = async (paperId) => {
-  const res = await api.get(`/api/papers/${paperId}/tag-suggestions`);
+export const getTagSuggestions = async (paperId, status = 'PENDING') => {
+  const params = status ? { status } : {};
+  const res = await api.get(`/api/papers/${paperId}/tag-suggestions`, { params });
   return res.data;
 };
 
 /**
- * Generate suggestions (POST) – expects title and createdBy.
+ * Generate suggestions (POST) – optionally passes title.
  */
-export const generateTagSuggestions = async (paperId, title, createdBy) => {
-  const res = await api.post(`/api/papers/${paperId}/tag-suggestions/generate`, {
-    title,
-    createdBy,
-  });
+export const generateTagSuggestions = async (paperId, title = '') => {
+  const payload = title ? { title } : {};
+  const res = await api.post(`/api/papers/${paperId}/tag-suggestions/generate`, payload);
   return res.data;
 };
 
 /**
  * Accept a suggestion.
  */
-export const acceptSuggestion = async (suggestionId, reviewerId, visibility) => {
-  await api.post(`/api/tag-suggestions/${suggestionId}/accept`, {
-    reviewerId,
+export const acceptSuggestion = async (suggestionId, visibility = 'PRIVATE') => {
+  const res = await api.post(`/api/papers/tag-suggestions/${suggestionId}/accept`, {
     visibility,
   });
+  return res.data;
 };
 
 /**
  * Reject a suggestion.
  */
-export const rejectSuggestion = async (suggestionId, reviewerId, reason) => {
-  await api.post(`/api/tag-suggestions/${suggestionId}/reject`, {
-    reviewerId,
+export const rejectSuggestion = async (suggestionId, reason = 'Not needed') => {
+  await api.post(`/api/papers/tag-suggestions/${suggestionId}/reject`, {
     reason,
   });
 };

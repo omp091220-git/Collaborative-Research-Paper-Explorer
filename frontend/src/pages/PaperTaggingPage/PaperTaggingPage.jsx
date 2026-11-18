@@ -22,6 +22,7 @@ import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
 import ErrorState from '../../components/common/ErrorState';
 import PaperTagSection from '../../components/tagging/PaperTagSection';
+import TagSuggestionReview from '../../components/tagging/TagSuggestionReview';
 import AnnotationTagSection from '../../components/tagging/AnnotationTagSection';
 import { formatDate } from '../../utils/formatters';
 
@@ -356,6 +357,14 @@ export default function PaperTaggingPage() {
                 onRefresh={handleRefreshCurrentPaper}
                 canAssign={canAssign}
                 loading={loadingAssignments}
+              />
+
+              {/* AI Tag Suggestions (FR-23 & FR-24) */}
+              <TagSuggestionReview
+                paperId={selectedPaper.id}
+                paperTitle={selectedPaper.title}
+                canReview={canAssign}
+                onTagAccepted={handleRefreshCurrentPaper}
               />
 
               {/* Section 2: Annotation-Level Tag Assignments */}
