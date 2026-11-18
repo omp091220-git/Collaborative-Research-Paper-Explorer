@@ -1,10 +1,11 @@
 import defaultPool from '../config/database.js';
 import { observePgClient, isPgConnectionError } from '../utils/pgClientErrors.js';
+import { summaryRetryDelay } from '../utils/summaryRetry.js';
 
 export function createSummaryRepository(pool = defaultPool) {
 
 const findJob = async (paperId, type, model) => (await pool.query(
-  `SELECT id, paper_id, summary_type, model_name, status, attempts, sections, error_code, updated_at
+  `SELECT id, paper_id, summary_type, model_name, status, attempts, sections, error_code, updated_at, available_at
    FROM structured_summary_jobs WHERE paper_id=$1 AND summary_type=$2 AND model_name=$3`, [paperId,type,model])).rows[0] || null;
 
 const enqueue = async (paperId,type,model) => {
@@ -13,13 +14,26 @@ const enqueue = async (paperId,type,model) => {
   return findJob(paperId,type,model);
 };
 
-const claim = async () => (await pool.query(`WITH candidate AS (
+// Reserve requests on the receiving server before another development server can
+// claim them from the shared Neon queue. The lease/fencing contract is unchanged.
+const reserveForRequest = async (paperId,type,model) => (await pool.query(`
+ INSERT INTO structured_summary_jobs(paper_id,summary_type,model_name,status,attempts,lease_token,lease_until)
+ VALUES($1,$2,$3,'processing',1,gen_random_uuid(),now()+interval '5 minutes')
+ ON CONFLICT(paper_id,summary_type,model_name) DO UPDATE SET
+ status='processing',attempts=CASE WHEN structured_summary_jobs.status='failed' THEN 1 ELSE structured_summary_jobs.attempts+1 END,
+ lease_token=gen_random_uuid(),lease_until=now()+interval '5 minutes',error_code=NULL,updated_at=now()
+ WHERE structured_summary_jobs.status='failed' OR
+ (structured_summary_jobs.status='pending' AND structured_summary_jobs.available_at<=now()) OR
+ (structured_summary_jobs.status='processing' AND structured_summary_jobs.lease_until<now() AND structured_summary_jobs.attempts<3)
+ RETURNING *`,[paperId,type,model])).rows[0];
+
+const claim = async (model = null) => (await pool.query(`WITH candidate AS (
  SELECT id FROM structured_summary_jobs
- WHERE attempts < 3 AND ((status='pending' AND available_at <= now()) OR (status='processing' AND lease_until < now()))
+ WHERE ($1::text IS NULL OR model_name=$1) AND attempts < 3 AND ((status='pending' AND available_at <= now()) OR (status='processing' AND lease_until < now()))
  ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 1
  ) UPDATE structured_summary_jobs j SET status='processing',attempts=attempts+1,
  lease_token=gen_random_uuid(),lease_until=now()+interval '5 minutes',updated_at=now()
- FROM candidate c WHERE j.id=c.id RETURNING j.*`)).rows[0];
+ FROM candidate c WHERE j.id=c.id RETURNING j.*`,[model])).rows[0];
 const expireExhausted = async () => pool.query(`UPDATE structured_summary_jobs
  SET status='failed',error_code='WORKER_INTERRUPTED',updated_at=now()
  WHERE status='processing' AND lease_until < now() AND attempts >= 3`);
@@ -78,10 +92,10 @@ async function complete(client,job,hash,sections) {
    DO UPDATE SET summary_text=EXCLUDED.summary_text`,[job.paper_id,job.model_name,job.summary_type,text]);
 }
 
-const fail = async (job,code,retryable) => pool.query(`UPDATE structured_summary_jobs
+const fail = async (job,code,retryable,retryAfterMs=0) => pool.query(`UPDATE structured_summary_jobs
  SET status=CASE WHEN $3 AND attempts < 3 THEN 'pending' ELSE 'failed' END,
- error_code=$4,available_at=now()+ attempts * interval '10 seconds',lease_until=NULL,updated_at=now()
- WHERE id=$1 AND lease_token=$2 AND status='processing'`,[job.id,job.lease_token,retryable,code]);
+ error_code=$4,available_at=now()+ ($5::double precision * interval '1 millisecond'),lease_until=NULL,updated_at=now()
+ WHERE id=$1 AND lease_token=$2 AND status='processing'`,[job.id,job.lease_token,retryable,code,summaryRetryDelay(job.attempts,retryAfterMs)]);
 
 const retry = async (paperId,type,model) => {
  await pool.query(`UPDATE structured_summary_jobs SET status='pending',attempts=0,error_code=NULL,
@@ -89,6 +103,6 @@ const retry = async (paperId,type,model) => {
  return findJob(paperId,type,model);
 };
 
-return {findJob, enqueue, paperExists, claim, expireExhausted, paperFile, withContentLock, readCache, complete, fail, retry};
+return {findJob, enqueue, reserveForRequest, paperExists, claim, expireExhausted, paperFile, withContentLock, readCache, complete, fail, retry};
 }
-export const {findJob, enqueue, paperExists, claim, expireExhausted, paperFile, withContentLock, readCache, complete, fail, retry} = createSummaryRepository();
+export const {findJob, enqueue, reserveForRequest, paperExists, claim, expireExhausted, paperFile, withContentLock, readCache, complete, fail, retry} = createSummaryRepository();

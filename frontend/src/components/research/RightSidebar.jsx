@@ -52,6 +52,7 @@ export default function RightSidebar({
   paperAssignments = [],
   canManageTaxonomy = true,
   isAdmin = false,
+  currentUser = null,
   width = 384,
   onSetSplitRatio,
 }) {
@@ -66,7 +67,7 @@ export default function RightSidebar({
   const [expandedMap, setExpandedMap] = useState({});
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
-  const [deleteType, setDeleteType] = useState('annotation'); // 'annotation' | 'topic'
+  const [deleteType, setDeleteType] = useState('annotation'); // 'annotation' | 'paragraph' | 'topic'
 
   // Map tag assignments by annotation_id for fast lookup
   const assignmentsByAnnotation = useMemo(() => {
@@ -128,14 +129,20 @@ export default function RightSidebar({
     );
   }, [annotations, annotationSearch, assignmentsByAnnotation]);
 
-  // List of tagged paragraphs (annotations with at least one tag assignment)
+  // List of tagged/saved paragraphs (annotations with topic tags, or created from paragraph selections)
   const taggedParagraphs = useMemo(() => {
     const list = (annotations || []).filter(
-      (a) => assignmentsByAnnotation[a.id] && assignmentsByAnnotation[a.id].length > 0
+      (a) =>
+        (assignmentsByAnnotation[a.id] && assignmentsByAnnotation[a.id].length > 0) ||
+        a.position_x !== null ||
+        a.content?.toLowerCase().startsWith('highlight:') ||
+        a.content?.includes('> "')
     );
-    if (!paragraphSearch.trim()) return list;
+    const sourceList = list.length > 0 ? list : (annotations || []);
+
+    if (!paragraphSearch.trim()) return sourceList;
     const q = paragraphSearch.toLowerCase().trim();
-    return list.filter(
+    return sourceList.filter(
       (a) =>
         a.content?.toLowerCase().includes(q) ||
         String(a.page_number).includes(q) ||
@@ -149,9 +156,17 @@ export default function RightSidebar({
     );
   }, [annotations, assignmentsByAnnotation, paragraphSearch]);
 
+  const savedParagraphs = taggedParagraphs;
+
   const requestDeleteAnnotation = (ann) => {
     setItemToDelete(ann);
     setDeleteType('annotation');
+    setDeleteConfirmOpen(true);
+  };
+
+  const requestDeleteParagraph = (ann) => {
+    setItemToDelete(ann);
+    setDeleteType('paragraph');
     setDeleteConfirmOpen(true);
   };
 
@@ -164,7 +179,7 @@ export default function RightSidebar({
   const handleConfirmDelete = async () => {
     if (!itemToDelete) return;
     try {
-      if (deleteType === 'annotation') {
+      if (deleteType === 'annotation' || deleteType === 'paragraph') {
         await onDeleteAnnotation(itemToDelete.id);
       } else if (deleteType === 'topic') {
         await onDeleteTopic(itemToDelete.id);
@@ -430,22 +445,20 @@ export default function RightSidebar({
                             type="button"
                             onClick={() => onEditAnnotation(ann)}
                             className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
-                            title="Edit comment"
+                            title="Edit note"
                           >
                             <Edit2 className="w-3 h-3" />
                           </button>
                         )}
 
-                        {isAdmin && (
-                          <button
-                            type="button"
-                            onClick={() => requestDeleteAnnotation(ann)}
-                            className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition cursor-pointer"
-                            title="Delete annotation"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => requestDeleteAnnotation(ann)}
+                          className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition cursor-pointer"
+                          title="Delete note"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
                       </div>
                     </div>
 
@@ -500,11 +513,17 @@ export default function RightSidebar({
                       </div>
                     </div>
 
-                    {/* Timestamp */}
-                    <div className="flex items-center justify-between text-[10px] text-slate-500 pt-0.5">
-                      <span>{formatDate(ann.created_at, { shortMonth: true })}</span>
+                    {/* Creator metadata & Timestamp */}
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
+                      <div className="flex items-center gap-1 truncate max-w-[200px]">
+                        <span className="font-semibold text-slate-300 truncate">
+                          {ann.author_name || (currentUser?.id === ann.created_by ? currentUser?.full_name || 'You' : 'Researcher')}
+                        </span>
+                        <span>•</span>
+                        <span>{formatDate(ann.created_at, { shortMonth: true })}</span>
+                      </div>
                       {isSelected && (
-                        <span className="text-[10px] text-indigo-400 font-semibold flex items-center gap-1">
+                        <span className="text-[10px] text-indigo-400 font-semibold flex items-center gap-1 shrink-0">
                           <Check className="w-3 h-3" /> Selected
                         </span>
                       )}
@@ -649,7 +668,7 @@ export default function RightSidebar({
                 <Quote className="w-8 h-8 mx-auto text-emerald-600/60 stroke-1" />
                 <p className="text-xs font-bold text-slate-300">No Tagged Paragraphs Yet</p>
                 <p className="text-[11px] text-slate-500 max-w-xs mx-auto leading-relaxed">
-                  Select any sentence or paragraph in the PDF viewer, then click <strong className="text-purple-400 font-semibold">"Assign Tag"</strong> in the floating toolbar to attach hierarchical topics directly to text passages.
+                  Select any sentence or paragraph in the PDF viewer, then click <strong className="text-purple-400 font-semibold">"Assign Tag"</strong> or <strong className="text-indigo-400 font-semibold">"Add Annotation"</strong> in the floating toolbar to save and tag passages.
                 </p>
               </div>
             ) : (
@@ -685,11 +704,31 @@ export default function RightSidebar({
                         <button
                           type="button"
                           onClick={() => onSelectAnnotation && onSelectAnnotation(ann)}
-                          className="p-1 rounded text-slate-400 hover:text-emerald-300 hover:bg-slate-800 transition cursor-pointer flex items-center gap-1 text-[11px] font-semibold"
-                          title="Jump to highlight in PDF"
+                          className="px-2 py-0.5 rounded text-emerald-300 bg-emerald-950/60 border border-emerald-800 hover:bg-emerald-900 transition cursor-pointer flex items-center gap-1 text-[11px] font-semibold"
+                          title="Jump directly to page and highlight paragraph in PDF"
                         >
                           <MapPin className="w-3 h-3 text-emerald-400" />
-                          <span className="text-[10px]">Jump</span>
+                          <span className="text-[10px]">Jump to PDF</span>
+                        </button>
+
+                        {onEditAnnotation && (
+                          <button
+                            type="button"
+                            onClick={() => onEditAnnotation(ann)}
+                            className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                            title="Edit paragraph annotation text"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => requestDeleteParagraph(ann)}
+                          className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition cursor-pointer"
+                          title="Delete paragraph annotation"
+                        >
+                          <Trash2 className="w-3 h-3" />
                         </button>
                       </div>
                     </div>
@@ -761,16 +800,23 @@ export default function RightSidebar({
       {/* Confirmation Dialog for Deletions */}
       <ConfirmationDialog
         isOpen={deleteConfirmOpen}
-        onClose={() => setDeleteConfirmOpen(false)}
+        onClose={() => {
+          setDeleteConfirmOpen(false);
+          setItemToDelete(null);
+        }}
         onConfirm={handleConfirmDelete}
         title={
           deleteType === 'annotation'
-            ? 'Delete Research Annotation?'
+            ? 'Delete Research Note?'
+            : deleteType === 'paragraph'
+            ? 'Delete Saved Paragraph?'
             : 'Delete Topic Tag?'
         }
         message={
           deleteType === 'annotation'
-            ? 'Are you sure you want to delete this annotation and all its linked topic tags? This action cannot be undone.'
+            ? 'Are you sure you want to delete this note record from the database? (Safety note: The original PDF document will remain untouched).'
+            : deleteType === 'paragraph'
+            ? 'Are you sure you want to delete this saved paragraph annotation from the database? (Safety note: The original PDF document will remain completely untouched).'
             : `Are you sure you want to permanently delete the topic tag "${itemToDelete?.name}"?`
         }
         confirmText="Delete"

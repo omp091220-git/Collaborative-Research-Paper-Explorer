@@ -23,6 +23,7 @@ import Badge from '../../components/common/Badge';
 import PaperMetadata from '../../components/papers/PaperMetadata';
 import PaperPdfViewer from '../../components/papers/PaperPdfViewer';
 import PaperSummaryModal from '../../components/papers/PaperSummaryModal';
+import PaperExportModal from '../../components/papers/PaperExportModal';
 import AnnotationList from '../../components/annotations/AnnotationList';
 import AddAnnotationModal from '../../components/annotations/AddAnnotationModal';
 import DiscussionPanel from '../../components/DiscussionPanel';
@@ -99,6 +100,7 @@ export default function PaperDetailsPage() {
 
   // Modals state
   const [summaryModalOpen, setSummaryModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const [annotationModalOpen, setAnnotationModalOpen] = useState(false);
   const [discussionOpen, setDiscussionOpen] = useState(false);
   const [collaboratorsOpen, setCollaboratorsOpen] = useState(false);
@@ -113,6 +115,7 @@ export default function PaperDetailsPage() {
     setPaperAssignments([]);
     setError(null);
     setSummaryModalOpen(false);
+    setExportModalOpen(false);
     setAnnotationModalOpen(false);
     setDiscussionOpen(false);
     setCollaboratorsOpen(false);
@@ -199,6 +202,44 @@ export default function PaperDetailsPage() {
     { id: 'citations', label: 'Citation Graph', icon: GitBranch },
   ];
 
+  // Dedicated Full-Screen Research Workspace when on the PDF tab
+  if (activeTab === 'pdf') {
+    return (
+      <div className="h-screen w-screen overflow-hidden flex flex-col bg-slate-950">
+        <PaperPdfViewer
+          paperId={paper.id}
+          paper={paper}
+          pdfUrl={paper.pdf_url || `/papers/${paper.id}/pdf`}
+          className="h-full w-full rounded-none border-none"
+          onOpenDetails={() => handleTabChange('overview')}
+          onOpenDiscussions={() => handleTabChange('discussions')}
+          onOpenSummaries={() => setSummaryModalOpen(true)}
+          onOpenCollaborators={() => setCollaboratorsOpen(true)}
+          isBookmarked={bookmarked}
+          onToggleBookmark={handleToggleBookmark}
+        />
+
+        {/* Global Modals accessible from workspace */}
+        {summaryModalOpen && (
+          <PaperSummaryModal
+            isOpen={summaryModalOpen}
+            onClose={() => setSummaryModalOpen(false)}
+            paperId={paper.id}
+            paperTitle={paper.title}
+          />
+        )}
+
+        {collaboratorsOpen && (
+          <CollaboratorsModal
+            isOpen={collaboratorsOpen}
+            onClose={() => setCollaboratorsOpen(false)}
+            paperId={paper.id}
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-fadeIn">
       {/* Back navigation & Quick actions */}
@@ -241,6 +282,10 @@ export default function PaperDetailsPage() {
           >
             <Users2 className="w-4 h-4" />
             <span>Collaborators</span>
+          </Button>
+
+          <Button variant="outline" size="sm" onClick={() => setExportModalOpen(true)} iconLeft={FileDown} className="h-9 min-w-24 px-4 whitespace-nowrap">
+            Export
           </Button>
 
           <Button
@@ -532,6 +577,8 @@ export default function PaperDetailsPage() {
         )}
         </ErrorBoundary>
       </div>
+
+      <PaperExportModal key={paper.id} paper={paper} isOpen={exportModalOpen} onClose={() => setExportModalOpen(false)} />
 
       {/* AI Perspectives Summary Modal */}
       <PaperSummaryModal

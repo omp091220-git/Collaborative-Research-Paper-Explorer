@@ -23,11 +23,21 @@ export default function ResearchWorkspace({
   pdfUrl,
   className = '',
   onSelectPaper: onSelectPaperProp,
+  onOpenDetails,
+  onOpenDiscussions,
+  onOpenSummaries,
+  onOpenCollaborators,
+  isBookmarked,
+  onToggleBookmark,
 }) {
   const { user, isAdmin, isResearcher } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  const handleBackToPapers = useCallback(() => {
+    navigate('/explore');
+  }, [navigate]);
 
   const urlPageParam = parseInt(searchParams.get('page'), 10);
   const urlAnnotationIdParam = searchParams.get('annotationId');
@@ -112,7 +122,7 @@ export default function ResearchWorkspace({
   const [loadingAnnotations, setLoadingAnnotations] = useState(false);
   const [activeAnnotationId, setActiveAnnotationId] = useState(urlAnnotationIdParam || null);
 
-  // Sync state when URL params change (e.g. clicking a paragraph in Paragraph Explorer)
+  // Sync state when URL params change (e.g. page or annotationId)
   useEffect(() => {
     if (urlAnnotationIdParam) {
       setActiveAnnotationId(urlAnnotationIdParam);
@@ -129,7 +139,7 @@ export default function ResearchWorkspace({
   const [selectedTagId, setSelectedTagId] = useState(null);
 
   // ── 5. Sidebar Layout & Collapsible State ──────────────────────────────────
-  const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
+  const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(true);
   const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(false);
   const [rightSidebarTab, setRightSidebarTab] = useState('paragraphs'); // 'annotations' | 'topics' | 'paragraphs'
 
@@ -519,14 +529,29 @@ export default function ResearchWorkspace({
     setTagSelectorOpen(true);
   }, []);
 
-  // Assign Tags selected from Picker (supports multi-tag array or single tag)
+  // Assign Tags selected from Picker (supports multi-tag array or single tag with duplicate prevention)
   const handleSelectTagFromPicker = useCallback(async (selectedTagsInput) => {
     try {
       const tags = Array.isArray(selectedTagsInput) ? selectedTagsInput : [selectedTagsInput];
       if (tags.length === 0) return;
 
       if (tagSelectorTarget?.type === 'paper') {
-        for (const tag of tags) {
+        const existingPaperTagIds = new Set(
+          paperAssignments.filter((a) => !a.annotation_id).map((a) => a.tag_id)
+        );
+        const tagsToAssign = tags.filter((t) => !existingPaperTagIds.has(t.id));
+        if (tagsToAssign.length === 0) {
+          addToast({
+            type: 'info',
+            title: 'Already Assigned',
+            message: 'All selected topic tag(s) are already assigned to this paper.',
+          });
+          setTagSelectorOpen(false);
+          setTagSelectorTarget(null);
+          return;
+        }
+
+        for (const tag of tagsToAssign) {
           await paperTagsService.createAssignment({
             paper_id: currentPaperId,
             tag_id: tag.id,
@@ -536,12 +561,27 @@ export default function ResearchWorkspace({
         addToast({
           type: 'success',
           title: 'Topic Tags Assigned',
-          message: `Assigned ${tags.length} topic tag(s) to paper.`,
+          message: `Assigned ${tagsToAssign.length} topic tag(s) to paper.`,
         });
         setRightSidebarTab('topics');
       } else if (tagSelectorTarget?.type === 'annotation') {
         const ann = tagSelectorTarget.item;
-        for (const tag of tags) {
+        const existingAnnTagIds = new Set(
+          paperAssignments.filter((a) => a.annotation_id === ann.id).map((a) => a.tag_id)
+        );
+        const tagsToAssign = tags.filter((t) => !existingAnnTagIds.has(t.id));
+        if (tagsToAssign.length === 0) {
+          addToast({
+            type: 'info',
+            title: 'Already Assigned',
+            message: 'All selected topic tag(s) are already assigned to this paragraph.',
+          });
+          setTagSelectorOpen(false);
+          setTagSelectorTarget(null);
+          return;
+        }
+
+        for (const tag of tagsToAssign) {
           await paperTagsService.createAssignment({
             paper_id: currentPaperId,
             tag_id: tag.id,
@@ -551,7 +591,7 @@ export default function ResearchWorkspace({
         addToast({
           type: 'success',
           title: 'Paragraph Tags Assigned',
-          message: `Assigned ${tags.length} topic tag(s) to paragraph on page ${ann.page_number}.`,
+          message: `Assigned ${tagsToAssign.length} topic tag(s) to paragraph on page ${ann.page_number}.`,
         });
         setRightSidebarTab('paragraphs');
       } else if (tagSelectorTarget?.type === 'selection') {
@@ -601,7 +641,7 @@ export default function ResearchWorkspace({
         message: getApiErrorMessage(err, 'Failed to assign topic tags.'),
       });
     }
-  }, [tagSelectorTarget, currentPaperId, addToast, fetchAnnotations, fetchTaxonomyAndAssignments]);
+  }, [tagSelectorTarget, currentPaperId, paperAssignments, addToast, fetchAnnotations, fetchTaxonomyAndAssignments]);
 
   // Remove Tag Assignment
   const handleRemoveAssignment = useCallback(async (assignmentId) => {
@@ -661,17 +701,56 @@ export default function ResearchWorkspace({
   }, [fetchTaxonomyAndAssignments]);
 
   // ── 14. PDF Viewer Controls ───────────────────────────────────────────────
+  const workspaceContainerRef = useRef(null);
+
   const handleZoomIn = () => setZoom((prev) => Math.min(250, prev + 15));
   const handleZoomOut = () => setZoom((prev) => Math.max(50, prev - 15));
-  const handleResetZoom = () => setZoom(100);
-  const handleFitWidth = () => setZoom(130);
-  const handleFitPage = () => setZoom(90);
+  const handleResetZoom = useCallback(() => setZoom(100), []);
+  const handleFitWidth = useCallback(() => setZoom(135), []);
+  const handleFitPage = useCallback(() => setZoom(90), []);
 
-  const handleToggleFullscreen = () => {
-    setIsFullscreen((prev) => !prev);
-  };
+  const handleToggleFullscreen = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) {
+        if (workspaceContainerRef.current?.requestFullscreen) {
+          await workspaceContainerRef.current.requestFullscreen();
+        } else {
+          setIsFullscreen(true);
+        }
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        }
+      }
+    } catch (err) {
+      console.warn('Fullscreen request failed, using CSS fallback:', err);
+      setIsFullscreen((prev) => !prev);
+    }
+  }, []);
 
-  const handleDownload = () => {
+  // Sync state on native Fullscreen API changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  // Escape key fallback when CSS fullscreen is active
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isFullscreen && !document.fullscreenElement) {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
+
+  const handleDownload = useCallback(() => {
     if (blobUrl) {
       const a = document.createElement('a');
       a.href = blobUrl;
@@ -680,7 +759,33 @@ export default function ResearchWorkspace({
       a.click();
       document.body.removeChild(a);
     }
-  };
+  }, [blobUrl, currentPaper]);
+
+  const handlePrint = useCallback(() => {
+    if (!blobUrl) return;
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.src = blobUrl;
+    document.body.appendChild(iframe);
+    iframe.onload = () => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (_) {
+        window.open(blobUrl, '_blank')?.print();
+      }
+      setTimeout(() => {
+        try {
+          document.body.removeChild(iframe);
+        } catch (_) {}
+      }, 60000);
+    };
+  }, [blobUrl]);
 
   // ── 15. In-PDF Text Search Navigation ─────────────────────────────────────
   const handleSetSearchResults = useCallback((results) => {
@@ -722,15 +827,50 @@ export default function ResearchWorkspace({
 
   return (
     <div
-      className={`flex flex-col bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl transition-all duration-200 ${
+      ref={workspaceContainerRef}
+      className={`flex flex-col bg-slate-950 overflow-hidden select-none h-full w-full ${
         isFullscreen
           ? 'fixed inset-0 z-50 rounded-none border-none h-screen w-screen'
-          : 'h-[850px] w-full'
+          : 'h-full w-full'
       } ${className}`}
     >
+      {/* ── TOP HEADER: Back to Papers | Paper Title & Badges | PDF Toolbar Controls ── */}
+      <PdfToolbar
+        onBack={handleBackToPapers}
+        paper={currentPaper}
+        title={currentPaper?.title}
+        leftSidebarCollapsed={leftSidebarCollapsed}
+        onToggleLeftSidebar={() => setLeftSidebarCollapsed((prev) => !prev)}
+        rightSidebarCollapsed={rightSidebarCollapsed}
+        onToggleRightSidebar={() => setRightSidebarCollapsed((prev) => !prev)}
+        activePage={activePage}
+        numPages={numPages}
+        onPageChange={setActivePage}
+        zoom={zoom}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onResetZoom={handleResetZoom}
+        onFitWidth={handleFitWidth}
+        onFitPage={handleFitPage}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchResults={searchResults}
+        currentMatchIndex={currentMatchIndex}
+        onNextMatch={handleNextSearchMatch}
+        onPrevMatch={handlePrevSearchMatch}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={handleToggleFullscreen}
+        onDownload={handleDownload}
+        onPrint={handlePrint}
+        continuousMode={continuousMode}
+        onToggleContinuousMode={() => setContinuousMode(!continuousMode)}
+        onOpenDetails={onOpenDetails}
+        onOpenDiscussions={onOpenDiscussions}
+      />
+
       {/* Three-Panel Body Container */}
-      <div className="flex-1 flex overflow-hidden min-h-0">
-        {/* LEFT PANEL: PAPER LIBRARY & NAVIGATION */}
+      <div className="flex-1 flex overflow-hidden min-h-0 relative">
+        {/* LEFT PANEL: PAPER LIBRARY & NAVIGATION (Collapsed by default) */}
         <ErrorBoundary compact title="Library Sidebar Error">
           <LeftSidebar
             paper={currentPaper || {}}
@@ -750,35 +890,8 @@ export default function ResearchWorkspace({
           />
         </ErrorBoundary>
 
-        {/* CENTER PANEL: PDF READER (Toolbar + Viewer) */}
+        {/* CENTER PANEL: PDF PAGES VIEWER */}
         <div className="flex-1 flex flex-col min-w-0 bg-slate-950 relative overflow-hidden">
-          {/* PDF Toolbar */}
-          <PdfToolbar
-            leftSidebarCollapsed={leftSidebarCollapsed}
-            onToggleLeftSidebar={() => setLeftSidebarCollapsed((prev) => !prev)}
-            activePage={activePage}
-            numPages={numPages}
-            onPageChange={setActivePage}
-            zoom={zoom}
-            onZoomIn={handleZoomIn}
-            onZoomOut={handleZoomOut}
-            onResetZoom={handleResetZoom}
-            onFitWidth={handleFitWidth}
-            onFitPage={handleFitPage}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            searchResults={searchResults}
-            currentMatchIndex={currentMatchIndex}
-            onNextMatch={handleNextSearchMatch}
-            onPrevMatch={handlePrevSearchMatch}
-            isFullscreen={isFullscreen}
-            onToggleFullscreen={handleToggleFullscreen}
-            onDownload={handleDownload}
-            continuousMode={continuousMode}
-            onToggleContinuousMode={() => setContinuousMode(!continuousMode)}
-            title={currentPaper?.title}
-          />
-
           {/* PDF Pages Viewer */}
           <ErrorBoundary
             title="PDF Document Viewer Error"
@@ -871,6 +984,7 @@ export default function ResearchWorkspace({
             paperAssignments={paperAssignments}
             canManageTaxonomy={canManageTaxonomy}
             isAdmin={isAdmin}
+            currentUser={user}
           />
         </ErrorBoundary>
       </div>
@@ -889,6 +1003,7 @@ export default function ResearchWorkspace({
           onSave={handleSaveAnnotation}
           tagTree={tagTree}
           allTags={allTags}
+          activePage={activePage}
         />
       )}
 

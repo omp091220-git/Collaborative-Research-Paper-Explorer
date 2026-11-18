@@ -25,10 +25,12 @@ export default function CreateAnnotationModal({
   onSave,
   tagTree = [],
   allTags = [],
+  activePage = 1,
   loading = false,
 }) {
   const [content, setContent] = useState('');
-  const [pageNumber, setPageNumber] = useState(1);
+  const [pageNumber, setPageNumber] = useState(activePage || 1);
+  const [attachToEntirePaper, setAttachToEntirePaper] = useState(false);
   const [selectedTagId, setSelectedTagId] = useState('');
   const [error, setError] = useState(null);
   const [editorTab, setEditorTab] = useState('write'); // 'write' | 'preview'
@@ -45,18 +47,21 @@ export default function CreateAnnotationModal({
     if (annotationToEdit) {
       setContent(annotationToEdit.content || '');
       setPageNumber(annotationToEdit.page_number || 1);
+      setAttachToEntirePaper(annotationToEdit.position_x === null && (!annotationToEdit.page_number || annotationToEdit.page_number === 1));
       setSelectedTagId('');
     } else if (selectionData) {
       // New annotation from selected text
       setContent('');
-      setPageNumber(selectionData.pageNumber || 1);
+      setPageNumber(selectionData.pageNumber || activePage || 1);
+      setAttachToEntirePaper(false);
       setSelectedTagId('');
     } else {
       setContent('');
-      setPageNumber(1);
+      setPageNumber(activePage || 1);
+      setAttachToEntirePaper(false);
       setSelectedTagId('');
     }
-  }, [isOpen, selectionData, annotationToEdit]);
+  }, [isOpen, selectionData, annotationToEdit, activePage]);
 
   // Insert formatting snippet at cursor
   const handleInsertSnippet = (before, after = '', placeholder = '') => {
@@ -336,17 +341,49 @@ export default function CreateAnnotationModal({
 
         {/* Optional Page number if manual entry */}
         {!selectionData && (
-          <div>
-            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
-              Page Number
+          <div className="space-y-2">
+            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">
+              Attachment Scope
             </label>
-            <input
-              type="number"
-              min="1"
-              value={pageNumber}
-              onChange={(e) => setPageNumber(parseInt(e.target.value, 10) || 1)}
-              className="w-24 px-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 font-mono"
-            />
+            <div className="flex items-center gap-4 text-xs">
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="radio"
+                  name="attachmentScope"
+                  checked={!attachToEntirePaper}
+                  onChange={() => setAttachToEntirePaper(false)}
+                  className="text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-slate-700 dark:text-slate-300 font-medium">Specific Page</span>
+              </label>
+
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="radio"
+                  name="attachmentScope"
+                  checked={attachToEntirePaper}
+                  onChange={() => {
+                    setAttachToEntirePaper(true);
+                    setPageNumber(1);
+                  }}
+                  className="text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-slate-700 dark:text-slate-300 font-medium">Entire Paper (General Note)</span>
+              </label>
+            </div>
+
+            {!attachToEntirePaper && (
+              <div className="pt-1 flex items-center gap-2">
+                <span className="text-xs text-slate-500">Page:</span>
+                <input
+                  type="number"
+                  min="1"
+                  value={pageNumber}
+                  onChange={(e) => setPageNumber(parseInt(e.target.value, 10) || 1)}
+                  className="w-20 px-2.5 py-1 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 font-mono"
+                />
+              </div>
+            )}
           </div>
         )}
 

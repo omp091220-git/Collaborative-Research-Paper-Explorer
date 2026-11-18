@@ -142,3 +142,50 @@ the current runner does not newly register or execute that obsolete migration.
 No SQL is executed as part of conflict resolution, and no existing database
 objects or user data are removed. The PR also carries main updates absent from
 the older target branch, so reviewers should review the full branch comparison.
+
+
+### Shared development databases
+
+Summary requests now reserve their job lease atomically on the receiving backend
+and start there immediately. Other backends using the same Neon database cannot
+steal that lease while it is active. Duplicate requests reuse the existing job.
+Up to two requested summaries run per backend at once; additional requests receive
+a clear busy response. Graceful shutdown waits for requested jobs as well.
+
+Unconfigured background workers no longer claim or expire shared jobs. Configured
+workers drain jobs for their configured model only. Retryable failures still use
+the existing durable queue, cache and fenced lease contract. Update other team
+backends too so their background workers follow these safeguards.
+
+Gemini HTTP 400/401/403/404/429 and provider/network failures now have distinct,
+actionable UI messages. Logs include only the classified error, HTTP status and
+model; raw provider responses, API keys and paper text are not logged or persisted.
+The summary extractor supplies PDF.js's installed standard-font directory, avoiding
+its missing `standardFontDataUrl` warning. No migration or new key is required.
+
+
+Temporary provider failures now retry with exponential queue delays (30 seconds,
+then 60 seconds, plus jitter), respecting `Retry-After` hints up to five minutes.
+No sleeps occur inside a database transaction. The UI shows the pending retry
+countdown and clearly identifies exhausted retries. HTTP 503 remains a provider
+availability failure; rotating a key is not a reliable remedy. No code change can
+guarantee a successful response during a provider outage.
+
+Completing a new summary perspective preserves existing perspectives. FR-20
+exports include every saved perspective/model for the same paper, including the
+new Technical summary and older Brief/Comprehensive summaries. Regenerating the
+same model/perspective updates that one entry; revision history is not stored.
+
+
+### Longer papers
+
+Extraction now accepts up to 500,000 text characters and 50,000 source passages
+(previously 100,000 and 20,000). Every extracted passage and its original page/
+coordinates is retained. The existing 150-page and 32 MiB original-file limits
+still apply. The serialized text/ID payload is separately capped at 1,500,000
+characters before calling the provider, bounding requests with many tiny passages
+or heavily escaped text. These are application budgets, not provider token limits.
+Oversized documents are rejected with a clear instruction to split the PDF; they
+are never silently truncated. Changing an API key or retrying the same oversized
+file does not change those limits. No migration or new environment setting is
+required.
