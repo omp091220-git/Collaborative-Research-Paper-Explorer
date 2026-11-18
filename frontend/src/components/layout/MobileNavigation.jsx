@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Compass, Bookmark, FolderKanban, User } from 'lucide-react';
+import { LayoutDashboard, Compass, Bookmark, FolderKanban, User, Globe } from 'lucide-react';
 
 export default function MobileNavigation() {
   const tabs = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Explore', href: '/explore', icon: Compass },
+    { name: 'Feed', href: '/feed', icon: Globe },
     { name: 'Library', href: '/library', icon: Bookmark },
     { name: 'Collections', href: '/collections', icon: FolderKanban },
     { name: 'Profile', href: '/profile', icon: User },
@@ -20,7 +21,7 @@ export default function MobileNavigation() {
               key={tab.name}
               to={tab.href}
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center py-1.5 px-3 min-w-[56px] text-[11px] font-medium transition-colors ${
+                `flex flex-col items-center justify-center min-h-12 py-1.5 px-1 flex-1 min-w-0 text-[10px] sm:text-[11px] font-medium transition-colors ${
                   isActive
                     ? 'text-indigo-600 dark:text-indigo-400 font-bold'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -28,7 +29,7 @@ export default function MobileNavigation() {
               }
             >
               <Icon className="w-5 h-5 mb-0.5" />
-              <span>{tab.name}</span>
+              <span className="max-w-full truncate">{tab.name}</span>
             </NavLink>
           );
         })}

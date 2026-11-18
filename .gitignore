@@ -11,3 +11,7 @@ uploads/*
 !uploads/.gitkeep
 
 .DS_Store
+
+# FR-26 browser test artifacts
+frontend/test-results-fr26/
+frontend/playwright-report-fr26/

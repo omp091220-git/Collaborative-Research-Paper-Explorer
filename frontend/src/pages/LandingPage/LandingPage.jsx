@@ -71,6 +71,7 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <Link to="/feed" className="hidden sm:inline-flex text-sm font-semibold text-slate-200 hover:text-white">Public feed</Link>
             {user ? (
               <Link to="/dashboard">
                 <Button variant="primary" size="sm">
@@ -130,6 +131,9 @@ export default function LandingPage() {
                 <Button variant="secondary" size="lg" className="w-full sm:w-auto border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700">
                   <Search className="w-4 h-4 mr-2" /> Explore Sample Papers
                 </Button>
+              </Link>
+              <Link to="/feed">
+                <Button variant="secondary" size="lg" iconLeft={Users2} className="w-full sm:w-auto border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700">Browse public posts</Button>
               </Link>
             </div>
 

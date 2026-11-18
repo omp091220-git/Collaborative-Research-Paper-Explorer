@@ -5,6 +5,7 @@ import { getValidatedJwtSecret } from "../utils/jwt.js";
 import {
   createPost,
   getPostById,
+  getPublicPost,
   listPublicPosts,
   listPostsByAuthor,
   updatePost,
@@ -50,6 +51,8 @@ router.post("/", authenticateToken, createPost);
 
 // 2. Public Feed / Discovery (Open - FR-26)
 router.get("/", optionalAuthenticate, listPublicPosts);
+
+router.get("/public/:id", getPublicPost);
 
 // 3. Posts by Author (Hybrid: author/admin sees private posts, others see public only)
 router.get("/author/:authorId", optionalAuthenticate, listPostsByAuthor);

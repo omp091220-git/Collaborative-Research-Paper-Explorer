@@ -15,6 +15,10 @@ const ForgotPasswordPage = lazy(() => import('../pages/ForgotPasswordPage/Forgot
 const ResetPasswordPage = lazy(() => import('../pages/ResetPasswordPage/ResetPasswordPage'));
 const VerifyEmailPage = lazy(() => import('../pages/VerifyEmailPage/VerifyEmailPage'));
 
+const PublicFeedLayout = lazy(() => import('../pages/PublicFeedPage/PublicFeedLayout'));
+const PublicFeedPage = lazy(() => import('../pages/PublicFeedPage/PublicFeedPage'));
+const PublicPostPage = lazy(() => import('../pages/PublicFeedPage/PublicPostPage'));
+
 const DashboardPage = lazy(() => import('../pages/DashboardPage/DashboardPage'));
 const ExplorePapersPage = lazy(() => import('../pages/ExplorePapersPage/ExplorePapersPage'));
 const PaperDetailsPage = lazy(() => import('../pages/PaperDetailsPage/PaperDetailsPage'));
@@ -57,6 +61,11 @@ export default function AppRoutes() {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/verify-email" element={<VerifyEmailPage />} />
+
+            <Route element={<PublicFeedLayout />}>
+              <Route path="/feed" element={<PublicFeedPage />} />
+              <Route path="/feed/:postId" element={<PublicPostPage />} />
+            </Route>
 
             {/* Authenticated Workspace Routes */}
             <Route
