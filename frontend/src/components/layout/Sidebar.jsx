@@ -21,23 +21,32 @@ import { useAuth } from '../../context/AuthContext';
 import { useLibrary } from '../../context/LibraryContext';
 import Badge from '../common/Badge';
 
-export default function Sidebar({ isOpen, onClose }) {
+export default function Sidebar({ isOpen, onClose, collapsed, onCollapsedChange }) {
   const { user, isAdmin } = useAuth();
   const { bookmarks, collections } = useLibrary();
 
   const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof collapsed === 'boolean') return collapsed;
     try {
       return localStorage.getItem('crpe_sidebar_collapsed') === 'true';
-    } catch (_) {}
-    return false;
+    } catch {
+      return false;
+    }
   });
+
+  useEffect(() => {
+    if (typeof collapsed === 'boolean') setIsCollapsed(collapsed);
+  }, [collapsed]);
 
   const toggleCollapse = () => {
     setIsCollapsed((prev) => {
       const next = !prev;
       try {
         localStorage.setItem('crpe_sidebar_collapsed', String(next));
-      } catch (_) {}
+      } catch {
+        // storage disabled or quota reached
+      }
+      onCollapsedChange?.(next);
       return next;
     });
   };
@@ -75,18 +84,18 @@ export default function Sidebar({ isOpen, onClose }) {
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-40 bg-[#161827] border-r border-white/[0.08] flex flex-col transition-all duration-300 ease-in-out md:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 z-40 bg-theme-secondary border-r border-theme-subtle flex flex-col transition-all duration-300 ease-in-out md:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } ${isCollapsed ? 'md:w-20' : 'md:w-64'} w-64`}
       >
         {/* Top Header */}
-        <div className="h-16 flex items-center justify-between px-4 sm:px-5 border-b border-white/[0.08]">
-          <div className="flex items-center gap-2.5 font-bold text-[#F8FAFC]">
+        <div className="h-16 flex items-center justify-between px-4 sm:px-5 border-b border-theme-subtle">
+          <div className="flex items-center gap-2.5 font-bold text-theme-main">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-white shrink-0 shadow-sm shadow-violet-600/30">
               <FileText className="w-4 h-4" />
             </div>
             {!isCollapsed && (
-              <span className="font-extrabold text-sm tracking-tight truncate text-[#F8FAFC]">
+              <span className="font-extrabold text-sm tracking-tight truncate text-theme-main">
                 Scholar<span className="text-violet-400">Sphere</span>
               </span>
             )}
@@ -97,7 +106,7 @@ export default function Sidebar({ isOpen, onClose }) {
             <button
               type="button"
               onClick={toggleCollapse}
-              className="hidden md:flex p-1.5 text-[#71758B] hover:text-[#F8FAFC] rounded-lg hover:bg-white/5 transition cursor-pointer"
+              className="hidden md:flex p-1.5 text-theme-muted hover:text-theme-main rounded-lg hover:bg-white/5 transition cursor-pointer"
               title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
@@ -112,7 +121,7 @@ export default function Sidebar({ isOpen, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="md:hidden p-1.5 text-[#71758B] hover:text-[#F8FAFC] rounded-lg hover:bg-white/5 transition cursor-pointer"
+              className="md:hidden p-1.5 text-theme-muted hover:text-theme-main rounded-lg hover:bg-white/5 transition cursor-pointer"
               aria-label="Close menu"
             >
               <X className="w-5 h-5" />
@@ -125,7 +134,7 @@ export default function Sidebar({ isOpen, onClose }) {
           {/* Main Workspace Section */}
           <div>
             {!isCollapsed && (
-              <div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-[#71758B]">
+              <div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-theme-muted">
                 Workspace
               </div>
             )}
@@ -139,10 +148,10 @@ export default function Sidebar({ isOpen, onClose }) {
                     onClick={onClose}
                     title={isCollapsed ? item.name : undefined}
                     className={({ isActive }) =>
-                      `flex items-center justify-between px-3 py-2.5 text-xs font-semibold rounded-xl transition-all group ${
+                      `relative flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group ${
                         isActive
-                          ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm shadow-violet-600/30 font-bold'
-                          : 'text-[#A1A1B5] hover:text-[#F8FAFC] hover:bg-white/[0.06]'
+                          ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm shadow-violet-600/30'
+                          : 'text-theme-secondary hover:text-theme-main hover:bg-white/[0.06]'
                       }`
                     }
                   >
@@ -153,19 +162,24 @@ export default function Sidebar({ isOpen, onClose }) {
                             className={`w-4 h-4 shrink-0 transition-colors ${
                               isActive
                                 ? 'text-white'
-                                : 'text-[#71758B] group-hover:text-violet-400'
+                                : 'text-theme-muted group-hover:text-violet-400'
                             }`}
                           />
                           {!isCollapsed && (
                             <span className="truncate">{item.name}</span>
                           )}
                         </div>
+                        {isCollapsed && (
+                          <span className="pointer-events-none hidden md:block absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-lg border border-theme-subtle bg-theme-elevated px-2.5 py-1 text-xs font-medium text-theme-main opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100">
+                            {item.name}
+                          </span>
+                        )}
                         {!isCollapsed && item.count !== undefined && item.count > 0 && (
                           <span
                             className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                               isActive
                                 ? 'bg-white/20 text-white'
-                                : 'bg-[#23263A] text-[#A1A1B5] border border-white/10'
+                                : 'bg-theme-elevated text-theme-secondary border border-white/10'
                             }`}
                           >
                             {item.count}
@@ -209,12 +223,12 @@ export default function Sidebar({ isOpen, onClose }) {
 
           {/* AI Features Notice (Expanded mode only) */}
           {!isCollapsed && (
-            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-violet-950/40 to-indigo-950/30 border border-violet-500/20 text-[#F8FAFC]">
+            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-violet-950/40 to-indigo-950/30 border border-violet-500/20 text-theme-main">
               <div className="flex items-center gap-2 text-violet-300 text-xs font-bold mb-1">
                 <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                 <span>AI Multi-Perspective</span>
               </div>
-              <p className="text-[11px] text-[#A1A1B5] leading-relaxed">
+              <p className="text-[11px] text-theme-secondary leading-relaxed">
                 Synthesize Layman, Executive, or Deep Technical breakdowns for any paper.
               </p>
             </div>
@@ -222,14 +236,14 @@ export default function Sidebar({ isOpen, onClose }) {
         </div>
 
         {/* User Footer */}
-        <div className="p-3.5 border-t border-white/[0.08]">
+        <div className="p-3.5 border-t border-theme-subtle">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-cyan-400 flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm">
               {user?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
             </div>
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-[#F8FAFC] truncate">
+                <p className="text-xs font-bold text-theme-main truncate">
                   {user?.full_name || 'Scholar'}
                 </p>
                 <div className="flex items-center gap-1.5 mt-0.5">
@@ -243,7 +257,7 @@ export default function Sidebar({ isOpen, onClose }) {
               <NavLink
                 to="/settings"
                 onClick={onClose}
-                className="p-1.5 text-[#71758B] hover:text-[#F8FAFC] rounded-lg hover:bg-white/5 transition"
+                className="p-1.5 text-theme-muted hover:text-theme-main rounded-lg hover:bg-white/5 transition"
                 title="Settings"
               >
                 <Settings className="w-4 h-4" />

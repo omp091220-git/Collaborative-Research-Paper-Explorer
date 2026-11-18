@@ -51,8 +51,8 @@ export default function TagTreeItem({
         onClick={() => onSelectTag && onSelectTag(node)}
         className={`group flex items-center justify-between py-2.5 px-3.5 rounded-2xl transition-all cursor-pointer border ${
           isSelected
-            ? 'bg-violet-600/15 border-violet-500/50 shadow-sm shadow-violet-950/20 text-[#F8FAFC]'
-            : 'border-transparent hover:bg-white/[0.05] text-[#F8FAFC]'
+            ? 'bg-violet-600/15 border-violet-500/50 shadow-sm shadow-violet-950/20 text-theme-main'
+            : 'border-transparent hover:bg-white/[0.05] text-theme-main'
         }`}
         style={{ paddingLeft: `${Math.max(0.75, (node.depth || 0) * 1.5 + 0.75)}rem` }}
       >
@@ -65,13 +65,13 @@ export default function TagTreeItem({
                 e.stopPropagation();
                 onToggleExpand && onToggleExpand(node.id);
               }}
-              className="p-1 rounded-lg text-[#71758B] hover:text-[#F8FAFC] hover:bg-white/10 transition cursor-pointer"
+              className="p-1 rounded-lg text-theme-muted hover:text-theme-main hover:bg-white/10 transition cursor-pointer"
               aria-label={isExpanded ? 'Collapse' : 'Expand'}
             >
               {isExpanded ? (
                 <ChevronDown className="w-4 h-4 text-violet-400" />
               ) : (
-                <ChevronRight className="w-4 h-4 text-[#A1A1B5]" />
+                <ChevronRight className="w-4 h-4 text-theme-secondary" />
               )}
             </button>
           ) : (
@@ -94,15 +94,15 @@ export default function TagTreeItem({
           {/* Tag Label and Slug */}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-bold text-[#F8FAFC] truncate">
+              <span className="text-sm font-bold text-theme-main truncate">
                 {renderHighlightedName(node.name, searchQuery)}
               </span>
-              <span className="text-[11px] font-mono text-[#71758B]">
+              <span className="text-[11px] font-mono text-theme-muted">
                 ({node.slug})
               </span>
               {node.canonicalPath && (
                 <span
-                  className="hidden sm:inline-block text-[10px] font-mono px-2 py-0.5 rounded-md bg-[#23263A] text-[#A1A1B5] border border-white/10 max-w-[200px] truncate"
+                  className="hidden sm:inline-block text-[10px] font-mono px-2 py-0.5 rounded-md bg-theme-elevated text-theme-secondary border border-white/10 max-w-[200px] truncate"
                   title={node.canonicalPath}
                 >
                   {node.canonicalPath}
@@ -110,7 +110,7 @@ export default function TagTreeItem({
               )}
             </div>
             {node.description && (
-              <p className="text-xs text-[#A1A1B5] truncate mt-0.5 font-normal">
+              <p className="text-xs text-theme-secondary truncate mt-0.5 font-normal">
                 {node.description}
               </p>
             )}
@@ -134,7 +134,7 @@ export default function TagTreeItem({
                   e.stopPropagation();
                   onAddChild && onAddChild(node);
                 }}
-                className="p-1.5 rounded-lg text-[#A1A1B5] hover:text-[#F8FAFC] hover:bg-violet-500/20 transition cursor-pointer"
+                className="p-1.5 rounded-lg text-theme-secondary hover:text-theme-main hover:bg-violet-500/20 transition cursor-pointer"
                 title={`Add child tag beneath "${node.name}"`}
                 aria-label="Add child tag"
               >
@@ -149,7 +149,7 @@ export default function TagTreeItem({
                   e.stopPropagation();
                   onEditTag && onEditTag(node);
                 }}
-                className="p-1.5 rounded-lg text-[#A1A1B5] hover:text-[#F8FAFC] hover:bg-white/10 transition cursor-pointer"
+                className="p-1.5 rounded-lg text-theme-secondary hover:text-theme-main hover:bg-white/10 transition cursor-pointer"
                 title={`Edit tag "${node.name}"`}
                 aria-label="Edit tag"
               >
@@ -164,7 +164,7 @@ export default function TagTreeItem({
                   e.stopPropagation();
                   onDeleteTag && onDeleteTag(node);
                 }}
-                className="p-1.5 rounded-lg text-[#71758B] hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+                className="p-1.5 rounded-lg text-theme-muted hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
                 title={`Delete tag "${node.name}" (Admin only)`}
                 aria-label="Delete tag"
               >
@@ -177,7 +177,7 @@ export default function TagTreeItem({
 
       {/* Render Children Recursively */}
       {hasChildren && isExpanded && (
-        <div className="space-y-1 mt-1 border-l border-white/[0.08] ml-4 pl-1">
+        <div className="tree-children space-y-1 mt-1 border-l border-theme-subtle ml-4 pl-1">
           {node.children.map((child) => (
             <TagTreeItem
               key={child.id}

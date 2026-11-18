@@ -53,6 +53,7 @@ export default function RightSidebar({
   canManageTaxonomy = true,
   isAdmin = false,
   currentUser = null,
+  paperUploaderId = null,
   width = 384,
   onSetSplitRatio,
 }) {
@@ -70,8 +71,28 @@ export default function RightSidebar({
   const [deleteType, setDeleteType] = useState('annotation'); // 'annotation' | 'paragraph' | 'topic'
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const isStudent = currentUser?.role === 'STUDENT';
   const canDeleteAnnotationItem = (ann) => {
-    return Boolean(isAdmin || (currentUser?.id && ann?.created_by && ann.created_by === currentUser.id));
+    if (isStudent) return false;
+    const isAuthor = Boolean(currentUser?.id && ann?.created_by && ann.created_by === currentUser.id);
+    const isPaperOwner = Boolean(currentUser?.id && paperUploaderId && paperUploaderId === currentUser.id);
+    return Boolean(isAdmin || isAuthor || isPaperOwner);
+  };
+
+  const canEditAnnotationItem = (ann) => {
+    if (isStudent) return false;
+    const isAuthor = Boolean(currentUser?.id && ann?.created_by && ann.created_by === currentUser.id);
+    return Boolean(isAdmin || isAuthor);
+  };
+
+  const canRemoveTagAssignment = (assignment, ann) => {
+    if (isStudent) return false;
+    if (isAdmin) return true;
+    if (!currentUser?.id) return false;
+    const isPaperOwner = Boolean(paperUploaderId && paperUploaderId === currentUser.id);
+    const isAssigner = Boolean(assignment?.assigned_by && assignment.assigned_by === currentUser.id);
+    const isAnnotationAuthor = Boolean(ann?.created_by && ann.created_by === currentUser.id);
+    return isPaperOwner || isAssigner || isAnnotationAuthor;
   };
 
   // Map tag assignments by annotation_id for fast lookup
@@ -448,7 +469,7 @@ export default function RightSidebar({
                           <MapPin className="w-3 h-3 text-indigo-400" />
                         </button>
 
-                        {onEditAnnotation && (
+                        {onEditAnnotation && canEditAnnotationItem(ann) && (
                           <button
                             type="button"
                             onClick={() => onEditAnnotation(ann)}
@@ -494,32 +515,36 @@ export default function RightSidebar({
                           >
                             <Tag className="w-2.5 h-2.5 text-purple-400" />
                             <span>{assignment.tag_name || assignment.name}</span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onRemoveAnnotationTag(assignment.id);
-                              }}
-                              className="hover:text-rose-400 ml-0.5 cursor-pointer"
-                              title="Remove tag"
-                            >
-                              <X className="w-2.5 h-2.5" />
-                            </button>
+                            {canRemoveTagAssignment(assignment, ann) && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onRemoveAnnotationTag(assignment.id);
+                                }}
+                                className="hover:text-rose-400 ml-0.5 cursor-pointer"
+                                title="Remove tag"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            )}
                           </span>
                         ))}
 
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onOpenTagPickerForAnnotation(ann);
-                          }}
-                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[10px] font-semibold transition cursor-pointer"
-                          title="Assign topic tag to this annotation (FR-11)"
-                        >
-                          <Plus className="w-2.5 h-2.5" />
-                          <span>Tag</span>
-                        </button>
+                        {!isStudent && canManageTaxonomy && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpenTagPickerForAnnotation(ann);
+                            }}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[10px] font-semibold transition cursor-pointer"
+                            title="Assign topic tag to this annotation (FR-11)"
+                          >
+                            <Plus className="w-2.5 h-2.5" />
+                            <span>Tag</span>
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -721,7 +746,7 @@ export default function RightSidebar({
                           <span className="text-[10px]">Jump to PDF</span>
                         </button>
 
-                        {onEditAnnotation && (
+                        {onEditAnnotation && canEditAnnotationItem(ann) && (
                           <button
                             type="button"
                             onClick={() => onEditAnnotation(ann)}
@@ -754,17 +779,19 @@ export default function RightSidebar({
                     <div className="space-y-1.5 pt-1">
                       <div className="text-[10px] font-semibold text-slate-400 flex items-center justify-between">
                         <span>Assigned Topic Tags:</span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onOpenTagPickerForAnnotation(ann);
-                          }}
-                          className="inline-flex items-center gap-1 text-purple-400 hover:text-purple-300 transition"
-                        >
-                          <Plus className="w-3 h-3" />
-                          <span>Add Tag</span>
-                        </button>
+                        {!isStudent && canManageTaxonomy && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpenTagPickerForAnnotation(ann);
+                            }}
+                            className="inline-flex items-center gap-1 text-purple-400 hover:text-purple-300 transition"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Add Tag</span>
+                          </button>
+                        )}
                       </div>
 
                       <div className="flex flex-wrap items-center gap-1.5">
@@ -776,17 +803,19 @@ export default function RightSidebar({
                           >
                             <Tag className="w-2.5 h-2.5 text-purple-400" />
                             <span>{assignment.tag_name || assignment.name}</span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onRemoveAnnotationTag(assignment.id);
-                              }}
-                              className="hover:text-rose-400 ml-0.5 cursor-pointer"
-                              title="Remove tag from this paragraph"
-                            >
-                              <X className="w-2.5 h-2.5" />
-                            </button>
+                            {canRemoveTagAssignment(assignment, ann) && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onRemoveAnnotationTag(assignment.id);
+                                }}
+                                className="hover:text-rose-400 ml-0.5 cursor-pointer"
+                                title="Remove tag from this paragraph"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            )}
                           </span>
                         ))}
                       </div>

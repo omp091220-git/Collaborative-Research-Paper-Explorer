@@ -1,34 +1,50 @@
+
 import { createContext, useContext, useEffect, useState } from 'react';
+
 
 const ThemeContext = createContext({
   theme: 'dark',
   toggleTheme: () => {},
   setTheme: () => {},
+  isDark: true,
 });
+
 
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => {
     try {
       const saved = localStorage.getItem('crpe_theme');
-      if (saved === 'light' || saved === 'dark') return saved;
-    } catch (_) {}
-    return 'dark'; // Dark-first default
+
+      if (saved === 'light' || saved === 'dark') {
+        return saved;
+      }
+    } catch {
+      // Storage unavailable
+    }
+
+    return 'dark';
   });
 
   useEffect(() => {
     const root = document.documentElement;
+
     if (theme === 'dark') {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');
     }
+
     try {
       localStorage.setItem('crpe_theme', theme);
-    } catch (_) {}
+    } catch {
+      // Storage unavailable
+    }
   }, [theme]);
 
   const toggleTheme = () => {
-    setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    setThemeState((prev) =>
+      prev === 'dark' ? 'light' : 'dark'
+    );
   };
 
   const setTheme = (newTheme) => {
@@ -38,7 +54,14 @@ export function ThemeProvider({ children }) {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme, isDark: theme === 'dark' }}>
+    <ThemeContext.Provider
+      value={{
+        theme,
+        toggleTheme,
+        setTheme,
+        isDark: theme === 'dark',
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );
@@ -48,4 +71,4 @@ export function useTheme() {
   return useContext(ThemeContext);
 }
 
-export default ThemeContext;
+export default ThemeProvider;

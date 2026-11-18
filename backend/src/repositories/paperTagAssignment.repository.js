@@ -45,9 +45,11 @@ export const findAssignmentById = async (id, client = pool) => {
        pta.created_at,
        tt.name        AS tag_name,
        tt.slug        AS tag_slug,
-       tt.parent_id   AS tag_parent_id
+       tt.parent_id   AS tag_parent_id,
+       p.uploader_id  AS paper_uploader_id
      FROM paper_tag_assignments pta
      JOIN topic_tags tt ON tt.id = pta.tag_id
+     LEFT JOIN papers p ON p.id = pta.paper_id
      WHERE pta.id = $1`,
     [id]
   );

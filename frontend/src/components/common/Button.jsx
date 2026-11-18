@@ -6,13 +6,13 @@ const variants = {
     'bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:via-purple-500 hover:to-indigo-500 text-white shadow-md shadow-violet-600/25 active:scale-[0.98] border border-violet-400/30 font-semibold focus-visible:ring-violet-500',
 
   secondary:
-    'bg-[#23263A] hover:bg-[#2B2F46] active:bg-[#1C1E2F] text-[#F8FAFC] border border-white/10 shadow-sm active:scale-[0.98] font-semibold focus-visible:ring-slate-400',
+    'bg-theme-elevated hover:brightness-110 active:brightness-95 text-theme-main border border-theme-strong shadow-sm active:scale-[0.98] font-semibold focus-visible:ring-violet-500',
 
   outline:
-    'bg-transparent hover:bg-white/5 active:bg-white/10 text-[#F8FAFC] border border-white/12 hover:border-white/25 active:scale-[0.98] font-semibold focus-visible:ring-violet-500',
+    'bg-transparent hover:bg-white/5 active:bg-white/10 text-theme-main border border-theme-strong hover:border-white/25 active:scale-[0.98] font-semibold focus-visible:ring-violet-500',
 
   ghost:
-    'bg-transparent hover:bg-white/5 active:bg-white/10 text-[#A1A1B5] hover:text-[#F8FAFC] active:scale-[0.98] font-semibold focus-visible:ring-violet-500 border border-transparent',
+    'bg-transparent hover:bg-white/5 active:bg-white/10 text-theme-secondary hover:text-theme-main active:scale-[0.98] font-semibold focus-visible:ring-violet-500 border border-transparent',
 
   subtle:
     'bg-violet-500/10 hover:bg-violet-500/20 text-violet-300 hover:text-white border border-violet-500/25 active:scale-[0.98] font-semibold focus-visible:ring-violet-500',
@@ -74,7 +74,7 @@ const Button = forwardRef(function Button(
         inline-flex items-center justify-center
         font-sans tracking-tight transition-all duration-150
         select-none focus:outline-none focus-visible:ring-2
-        focus-visible:ring-offset-2 focus-visible:ring-offset-[#10111B]
+        focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-main)]
         disabled:opacity-40 disabled:pointer-events-none
         disabled:cursor-not-allowed cursor-pointer
         ${variantClass}

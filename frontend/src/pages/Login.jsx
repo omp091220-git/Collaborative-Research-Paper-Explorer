@@ -90,14 +90,14 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-slate-50 to-purple-100 font-sans p-4">
+    <div className="auth-shell">
       {/* Decorative background blobs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="hidden">
         <div className="absolute -top-24 -left-24 w-72 h-72 bg-indigo-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" />
         <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" />
       </div>
 
-      <div className="relative bg-white/90 backdrop-blur-sm p-8 md:p-10 rounded-2xl shadow-2xl w-full max-w-md border border-white/50">
+      <div className="auth-card">
         {/* Brand/Logo */}
         <div className="flex justify-center mb-4">
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
@@ -105,16 +105,16 @@ export default function Login() {
           </div>
         </div>
 
-        <h1 className="text-2xl md:text-3xl font-extrabold text-center text-slate-900 mb-1">
+        <h1 className="auth-title mb-1">
           Welcome Back
         </h1>
-        <p className="text-center text-slate-600 text-sm mb-6 font-medium">
+        <p className="auth-subtitle mb-6">
           Sign in to continue to <span className="font-bold text-indigo-700">ScholarSphere</span>
         </p>
 
         {/* Error Alert */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg mb-5 text-sm">
+          <div className="auth-error mb-5">
             <div className="flex items-start gap-2">
               <span className="text-base leading-none mt-0.5">⚠️</span>
               <div className="flex-1">
@@ -140,7 +140,7 @@ export default function Login() {
             <button
               type="button"
               onClick={handleSsoClick}
-              className="w-full py-2.5 px-4 bg-white border border-slate-300 text-slate-700 rounded-lg font-semibold shadow-sm hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 transition flex items-center justify-center gap-3"
+              className="auth-secondary"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -164,9 +164,9 @@ export default function Login() {
             </button>
 
             <div className="flex items-center my-5">
-              <div className="flex-1 h-px bg-slate-200" />
-              <span className="px-3 text-xs text-slate-400 font-medium">OR WITH PASSWORD</span>
-              <div className="flex-1 h-px bg-slate-200" />
+              <div className="flex-1 h-px bg-[var(--border-strong)]" />
+              <span className="px-3 text-xs text-theme-muted font-medium">OR WITH PASSWORD</span>
+              <div className="flex-1 h-px bg-[var(--border-strong)]" />
             </div>
           </div>
         )}
@@ -176,12 +176,12 @@ export default function Login() {
           <div className="mb-5">
             <label
               htmlFor="email"
-              className="block mb-2 text-sm font-semibold text-slate-700"
+              className="auth-label"
             >
               Email Address
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-muted text-base">
                 ✉️
               </span>
               <input
@@ -192,7 +192,7 @@ export default function Login() {
                 placeholder="you@example.com"
                 autoComplete="email"
                 required
-                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
+                className="auth-input pl-10"
               />
             </div>
           </div>
@@ -202,19 +202,19 @@ export default function Login() {
             <div className="flex items-center justify-between mb-2">
               <label
                 htmlFor="password"
-                className="text-sm font-semibold text-slate-700"
+                className="auth-label inline"
               >
                 Password
               </label>
               <Link
                 to="/forgot-password"
-                className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline font-medium transition"
+                className="auth-link text-xs"
               >
                 Forgot password?
               </Link>
             </div>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-muted text-base">
                 🔒
               </span>
               <input
@@ -225,13 +225,13 @@ export default function Login() {
                 placeholder="••••••••"
                 autoComplete="current-password"
                 required
-                className="w-full pl-10 pr-11 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
+                className="auth-input pl-10 pr-11"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm focus:outline-none"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-muted hover:text-theme-secondary text-sm focus:outline-none"
               >
                 {showPassword ? '🙈' : '👁️'}
               </button>
@@ -242,7 +242,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-semibold shadow-md hover:from-indigo-700 hover:to-purple-700 hover:shadow-lg active:scale-[0.99] transition duration-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="auth-submit"
           >
             {loading && (
               <svg
@@ -272,28 +272,28 @@ export default function Login() {
 
         {/* Divider */}
         <div className="flex items-center my-6">
-          <div className="flex-1 h-px bg-slate-200" />
-          <span className="px-3 text-xs text-slate-400 font-medium">OR</span>
-          <div className="flex-1 h-px bg-slate-200" />
+          <div className="flex-1 h-px bg-[var(--border-strong)]" />
+          <span className="px-3 text-xs text-theme-muted font-medium">OR</span>
+          <div className="flex-1 h-px bg-[var(--border-strong)]" />
         </div>
 
         {/* Register CTA */}
-        <p className="text-center text-sm text-slate-600">
+        <p className="text-center text-sm text-theme-secondary">
           Don't have an account?{' '}
           <Link
             to="/register"
-            className="text-indigo-600 font-semibold hover:text-indigo-800 hover:underline transition"
+            className="auth-link"
           >
             Create one
           </Link>
         </p>
 
         {/* Verify Email link */}
-        <p className="text-center text-xs text-slate-400 mt-3">
+        <p className="text-center auth-muted mt-3">
           Need to verify your email?{' '}
           <Link
             to="/verify-email"
-            className="text-slate-600 hover:text-indigo-600 underline transition"
+            className="text-theme-secondary hover:text-indigo-600 underline transition"
           >
             Verify here
           </Link>

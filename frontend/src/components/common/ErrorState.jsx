@@ -9,7 +9,7 @@ export default function ErrorState({
 }) {
   return (
     <div
-      className={`p-6 rounded-2xl border border-rose-500/20 bg-[#1B1D2B] shadow-sm text-[#F8FAFC] ${className}`}
+      className={`p-6 rounded-2xl border border-rose-500/20 bg-theme-card shadow-sm text-theme-main ${className}`}
     >
       <div className="flex items-start gap-3.5">
         <div className="p-2.5 rounded-xl bg-rose-500/15 text-rose-400 border border-rose-500/25 shrink-0">
@@ -17,7 +17,7 @@ export default function ErrorState({
         </div>
         <div className="flex-1 min-w-0">
           <h4 className="text-sm font-bold text-rose-300 tracking-tight">{title}</h4>
-          <p className="text-xs text-[#A1A1B5] font-normal mt-1 leading-relaxed">
+          <p className="text-xs text-theme-secondary font-normal mt-1 leading-relaxed">
             {message}
           </p>
           {onRetry && (

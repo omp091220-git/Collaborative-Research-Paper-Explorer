@@ -33,8 +33,8 @@ const NotFoundPage = lazy(() => import('../pages/NotFoundPage/NotFoundPage'));
 function PageLoader() {
   return (
     <div className="min-h-[50vh] flex flex-col items-center justify-center">
-      <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-      <span className="mt-3 text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+      <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+      <span className="mt-3 text-sm font-medium text-theme-secondary">
         Loading view...
       </span>
     </div>

@@ -29,9 +29,11 @@ export default function PaperTagSection({
   const paperAssignments = assignments.filter((a) => !a.annotation_id);
   const assignedTagIds = paperAssignments.map((a) => a.tag_id);
 
-  // Authorization check: User can remove if they are SYSTEM_ADMIN or the assigner
+  // Authorization check: User can remove if they are SYSTEM_ADMIN, the paper owner, or the assigner. Students cannot remove.
+  const isStudent = user?.role === 'STUDENT';
+  const isPaperOwner = Boolean(user?.id && paper?.uploader_id && paper.uploader_id === user.id);
   const canRemoveAssignment = (a) =>
-    Boolean(isAdmin || (user?.id && a.assigned_by && a.assigned_by === user.id));
+    !isStudent && Boolean(isAdmin || isPaperOwner || (user?.id && a.assigned_by && a.assigned_by === user.id));
 
   const handleAssignTag = async (selectedTag) => {
     setActionError(null);
@@ -90,18 +92,18 @@ export default function PaperTagSection({
   };
 
   return (
-    <div className="bg-[#1B1D2B] rounded-2xl border border-white/[0.08] p-5 sm:p-6 shadow-sm space-y-4 text-[#F8FAFC]">
+    <div className="bg-theme-card rounded-2xl border border-theme-subtle p-5 sm:p-6 shadow-sm space-y-4 text-theme-main">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-white/[0.07]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-theme-subtle">
         <div>
-          <h3 className="text-sm sm:text-base font-bold text-[#F8FAFC] flex items-center gap-2">
+          <h3 className="text-sm sm:text-base font-bold text-theme-main flex items-center gap-2">
             <Tag className="w-4 h-4 text-violet-400" />
             <span>Paper-Level Topic Tags</span>
             <Badge variant="primary" size="xs">
               {paperAssignments.length}
             </Badge>
           </h3>
-          <p className="text-xs text-[#A1A1B5] mt-1">
+          <p className="text-xs text-theme-secondary mt-1">
             Hierarchical research taxonomy topics assigned to this entire publication
           </p>
         </div>
@@ -157,21 +159,21 @@ export default function PaperTagSection({
 
       {/* Assigned Tags Badges */}
       {loading ? (
-        <div className="flex items-center gap-2.5 py-4 text-xs text-[#71758B]">
+        <div className="flex items-center gap-2.5 py-4 text-xs text-theme-muted">
           <RefreshCw className="w-4 h-4 animate-spin text-violet-400" />
           <span>Loading tag assignments...</span>
         </div>
       ) : paperAssignments.length === 0 ? (
-        <div className="p-6 text-center rounded-2xl border border-dashed border-white/10 bg-[#161827]/50 text-xs text-[#A1A1B5]">
-          <p className="font-semibold text-[#F8FAFC]">
+        <div className="p-6 text-center rounded-2xl border border-dashed border-white/10 bg-theme-secondary/50 text-xs text-theme-secondary">
+          <p className="font-semibold text-theme-main">
             No topic tags assigned to this paper yet.
           </p>
           {canAssign ? (
-            <p className="mt-1 text-[#71758B]">
+            <p className="mt-1 text-theme-muted">
               Click <strong>Assign Tag</strong> above to categorize this paper in the research taxonomy.
             </p>
           ) : (
-            <p className="mt-1 text-[#71758B]">
+            <p className="mt-1 text-theme-muted">
               Researchers and administrators can assign taxonomy tags to this paper.
             </p>
           )}
@@ -183,13 +185,13 @@ export default function PaperTagSection({
             return (
               <div
                 key={assignment.id}
-                className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#23263A] border border-white/10 text-xs font-semibold text-[#F8FAFC] hover:border-violet-500/40 transition shadow-xs"
+                className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-theme-elevated border border-white/10 text-xs font-semibold text-theme-main hover:border-violet-500/40 transition shadow-xs"
               >
                 <Tag className="w-3.5 h-3.5 text-violet-400" />
                 <span>{assignment.tag_name}</span>
                 {assignment.canonical_path && (
                   <span
-                    className="text-[10px] font-mono text-[#A1A1B5] bg-[#161827] px-2 py-0.5 rounded-md border border-white/10 max-w-[200px] truncate"
+                    className="text-[10px] font-mono text-theme-secondary bg-theme-secondary px-2 py-0.5 rounded-md border border-white/10 max-w-[200px] truncate"
                     title={assignment.canonical_path}
                   >
                     {assignment.canonical_path}
@@ -200,7 +202,7 @@ export default function PaperTagSection({
                     type="button"
                     disabled={deleting}
                     onClick={() => setAssignmentToDelete(assignment)}
-                    className="ml-1 p-0.5 rounded-md hover:bg-rose-500/20 text-[#71758B] hover:text-rose-400 transition cursor-pointer disabled:opacity-40"
+                    className="ml-1 p-0.5 rounded-md hover:bg-rose-500/20 text-theme-muted hover:text-rose-400 transition cursor-pointer disabled:opacity-40"
                     title={
                       isAdmin && assignment.assigned_by !== user?.id
                         ? `Remove "${assignment.tag_name}" (Admin override)`
@@ -212,10 +214,10 @@ export default function PaperTagSection({
                   </button>
                 ) : (
                   <span
-                    className="ml-1 text-[#71758B]"
+                    className="ml-1 text-theme-muted"
                     title="Assigned by another collaborator. Only the assigner or an admin can remove this tag."
                   >
-                    <Lock className="w-3 h-3 text-[#71758B]" />
+                    <Lock className="w-3 h-3 text-theme-muted" />
                   </span>
                 )}
               </div>

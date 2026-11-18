@@ -10,13 +10,17 @@ import {
   Layers,
   GitBranch,
   CheckCircle2,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
 
 export default function LandingPage() {
   const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const features = [
     {
@@ -57,20 +61,28 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-theme-main text-theme-main flex flex-col selection:bg-violet-500/40 selection:text-theme-main">
       {/* Top Navigation */}
-      <header className="sticky top-0 z-40 bg-slate-900/80 backdrop-blur-md border-b border-slate-800">
+      <header className="sticky top-0 z-40 glass-nav">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
               <BookOpen className="w-5 h-5" />
             </div>
-            <span className="font-extrabold text-lg tracking-tight text-white">
-              Scholar<span className="text-indigo-400">Sphere</span>
+            <span className="font-extrabold text-lg tracking-tight text-theme-main">
+              Scholar<span className="text-violet-400">Sphere</span>
             </span>
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="p-2 rounded-xl text-theme-secondary hover:text-theme-main hover:bg-white/5 transition cursor-pointer"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-violet-500" />}
+            </button>
             {user ? (
               <Link to="/dashboard">
                 <Button variant="primary" size="sm">
@@ -107,14 +119,14 @@ export default function LandingPage() {
               <span>Next-Generation Research Collaboration Platform</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white leading-tight sm:leading-none mb-6">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-theme-main leading-tight sm:leading-none mb-6">
               Read, Analyze & Collaborate on{' '}
-              <span className="bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">
+              <span className="text-gradient-premium">
                 Research Papers Faster
               </span>
             </h1>
 
-            <p className="text-lg sm:text-xl text-slate-400 max-w-3xl mx-auto mb-10 leading-relaxed">
+            <p className="text-lg sm:text-xl text-theme-secondary max-w-3xl mx-auto mb-10 leading-relaxed">
               Explore scientific literature with AI-generated multi-perspective summaries,
               synchronized inline annotations, ArXiv preprints, and real-time lab collaboration.
             </p>
@@ -134,11 +146,11 @@ export default function LandingPage() {
             </div>
 
             {/* Metrics */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-16 pt-12 border-t border-slate-800/80">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-16 pt-12 border-t border-theme-subtle">
               {metrics.map((m) => (
-                <div key={m.label} className="p-4 rounded-xl bg-slate-800/40 border border-slate-800">
-                  <div className="text-2xl font-bold text-white mb-1">{m.value}</div>
-                  <div className="text-xs text-slate-400">{m.label}</div>
+                <div key={m.label} className="p-4 rounded-xl bg-theme-card border border-theme-subtle">
+                  <div className="text-2xl font-bold text-theme-main mb-1">{m.value}</div>
+                  <div className="text-xs text-theme-secondary">{m.label}</div>
                 </div>
               ))}
             </div>
@@ -146,14 +158,14 @@ export default function LandingPage() {
         </section>
 
         {/* Feature Cards Grid */}
-        <section className="py-20 bg-slate-950/60 border-t border-slate-800">
+        <section className="py-20 bg-theme-secondary border-t border-theme-subtle">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-2xl mx-auto mb-16">
               <Badge variant="indigo" size="md">Core Capabilities</Badge>
-              <h2 className="text-3xl font-bold text-white mt-3">
+              <h2 className="text-3xl font-bold text-theme-main mt-3">
                 Built for Students, Academics & Lab Directors
               </h2>
-              <p className="text-slate-400 mt-2 text-sm">
+              <p className="text-theme-secondary mt-2 text-sm">
                 Everything you need to digest literature, track citations, and conduct peer review collaboratively.
               </p>
             </div>
@@ -164,15 +176,15 @@ export default function LandingPage() {
                 return (
                   <div
                     key={f.title}
-                    className="p-8 rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-all hover:shadow-xl hover:shadow-indigo-500/5 group"
+                    className="p-8 rounded-2xl bg-theme-card border border-theme-subtle hover:border-violet-500/40 hover:-translate-y-0.5 transition-all duration-200 hover:shadow-xl group"
                   >
                     <div
                       className={`w-12 h-12 rounded-xl bg-gradient-to-tr ${f.color} flex items-center justify-center text-white mb-6 shadow-md group-hover:scale-105 transition-transform`}
                     >
                       <Icon className="w-6 h-6" />
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-2">{f.title}</h3>
-                    <p className="text-slate-400 text-sm leading-relaxed">{f.description}</p>
+                    <h3 className="text-xl font-bold text-theme-main mb-2">{f.title}</h3>
+                    <p className="text-theme-secondary text-sm leading-relaxed">{f.description}</p>
                   </div>
                 );
               })}
@@ -181,16 +193,16 @@ export default function LandingPage() {
         </section>
 
         {/* Summary Showcase Section */}
-        <section className="py-20 bg-slate-900">
+        <section className="py-20 bg-theme-main">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="p-8 sm:p-12 rounded-3xl bg-gradient-to-br from-indigo-950/40 to-slate-900 border border-indigo-900/40">
+            <div className="p-8 sm:p-12 rounded-3xl bg-theme-card border border-violet-500/25">
               <div className="flex flex-col md:flex-row items-center justify-between gap-8">
                 <div>
                   <Badge variant="indigo">Perspective Engine</Badge>
-                  <h3 className="text-2xl sm:text-3xl font-extrabold text-white mt-3 mb-4">
+                  <h3 className="text-2xl sm:text-3xl font-extrabold text-theme-main mt-3 mb-4">
                     Three Lenses on Every Breakthrough
                   </h3>
-                  <div className="space-y-3 text-slate-300 text-sm">
+                  <div className="space-y-3 text-theme-secondary text-sm">
                     <div className="flex items-start gap-2.5">
                       <CheckCircle2 className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
                       <span><strong>Layman Summary:</strong> Plain language analogies for newcomers & interdisciplinary readers.</span>
@@ -206,12 +218,12 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                <div className="w-full md:w-80 shrink-0 p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-2xl">
+                <div className="w-full md:w-80 shrink-0 p-5 rounded-2xl bg-theme-card border border-theme-subtle shadow-2xl">
                   <div className="flex items-center gap-2 mb-3">
                     <Cpu className="w-4 h-4 text-indigo-400" />
-                    <span className="text-xs font-bold text-slate-200">Gemini 2.5 Flash Engine</span>
+                    <span className="text-xs font-bold text-theme-main">Gemini 2.5 Flash Engine</span>
                   </div>
-                  <div className="text-[12px] text-slate-400 font-mono bg-slate-950 p-3 rounded-lg border border-slate-800">
+                  <div className="text-[12px] text-theme-secondary font-mono bg-theme-main p-3 rounded-lg border border-theme-subtle">
                     &quot;Attention Is All You Need&quot;<br />
                     <span className="text-indigo-400">Target:</span> Technical<br />
                     <span className="text-emerald-400">Tokens:</span> 842 parsed<br />
@@ -225,15 +237,15 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800 bg-slate-950 py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+      <footer className="border-t border-theme-subtle bg-theme-secondary py-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-theme-muted">
           <div className="flex items-center gap-2">
             <Layers className="w-4 h-4 text-indigo-400" />
             <span>ScholarSphere Collaborative Research Paper Explorer</span>
           </div>
           <div className="flex items-center gap-6">
             <span>Built with React 19 & Tailwind CSS</span>
-            <div className="flex items-center gap-1.5 text-slate-400">
+            <div className="flex items-center gap-1.5 text-theme-secondary">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
               <span>RBAC Protected</span>
             </div>

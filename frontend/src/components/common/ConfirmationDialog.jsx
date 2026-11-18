@@ -61,10 +61,10 @@ export default function ConfirmationDialog({
           )}
         </div>
         <div className="flex-1">
-          <h4 className="text-base font-bold text-[#F8FAFC] tracking-tight">
+          <h4 className="text-base font-bold text-theme-main tracking-tight">
             {title}
           </h4>
-          <p className="text-xs sm:text-sm text-[#A1A1B5] mt-1.5 leading-relaxed font-normal">
+          <p className="text-xs sm:text-sm text-theme-secondary mt-1.5 leading-relaxed font-normal">
             {message}
           </p>
         </div>

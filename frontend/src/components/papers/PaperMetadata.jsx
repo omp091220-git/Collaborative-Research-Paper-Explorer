@@ -57,9 +57,9 @@ export default function PaperMetadata({ paper }) {
   };
 
   return (
-    <div className="bg-[#1B1D2B] rounded-2xl border border-white/[0.08] p-5 sm:p-6 space-y-5 text-[#F8FAFC]">
-      <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.07]">
-        <h4 className="text-xs font-bold text-[#A1A1B5] uppercase tracking-wider">
+    <div className="bg-theme-card rounded-2xl border border-theme-subtle p-5 sm:p-6 space-y-5 text-theme-main">
+      <div className="flex items-center justify-between pb-3.5 border-b border-theme-subtle">
+        <h4 className="text-xs font-bold text-theme-secondary uppercase tracking-wider">
           Paper Metadata
         </h4>
         <div className="flex items-center gap-1.5">
@@ -85,12 +85,12 @@ export default function PaperMetadata({ paper }) {
       <div className="space-y-4 text-xs">
         {/* Authors */}
         <div>
-          <span className="text-[#A1A1B5] font-semibold block mb-1.5">Authors</span>
+          <span className="text-theme-secondary font-semibold block mb-1.5">Authors</span>
           <div className="flex flex-wrap gap-1.5">
             {paper.authors?.map((author, idx) => (
               <span
                 key={idx}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#23263A] text-[#F8FAFC] font-medium border border-white/[0.08]"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-theme-elevated text-theme-main font-medium border border-theme-subtle"
               >
                 <User className="w-3 h-3 text-violet-400" />
                 {author}
@@ -102,7 +102,7 @@ export default function PaperMetadata({ paper }) {
         {/* arXiv ID */}
         {paper.arxiv_id && (
           <div>
-            <span className="text-[#A1A1B5] font-semibold block mb-1">arXiv Identifier</span>
+            <span className="text-theme-secondary font-semibold block mb-1">arXiv Identifier</span>
             <a
               href={`https://arxiv.org/abs/${paper.arxiv_id}`}
               target="_blank"
@@ -117,32 +117,32 @@ export default function PaperMetadata({ paper }) {
 
         {/* Ingest Date */}
         <div>
-          <span className="text-[#A1A1B5] font-semibold block mb-0.5">Uploaded On</span>
-          <span className="text-[#F8FAFC] font-medium flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-[#71758B]" />
+          <span className="text-theme-secondary font-semibold block mb-0.5">Uploaded On</span>
+          <span className="text-theme-main font-medium flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5 text-theme-muted" />
             {formatDate(paper.uploaded_at)}
           </span>
         </div>
 
         {/* File Specs */}
         <div>
-          <span className="text-[#A1A1B5] font-semibold block mb-0.5">File Details</span>
-          <span className="text-[#F8FAFC] font-medium flex items-center gap-1.5">
-            <HardDrive className="w-3.5 h-3.5 text-[#71758B]" />
+          <span className="text-theme-secondary font-semibold block mb-0.5">File Details</span>
+          <span className="text-theme-main font-medium flex items-center gap-1.5">
+            <HardDrive className="w-3.5 h-3.5 text-theme-muted" />
             {formatBytes(paper.file_size_bytes)} ({paper.mime_type || 'application/pdf'})
           </span>
         </div>
 
         {/* Verification Status */}
         <div>
-          <span className="text-[#A1A1B5] font-semibold block mb-1">Integrity Verification</span>
+          <span className="text-theme-secondary font-semibold block mb-1">Integrity Verification</span>
           <Badge variant="success" size="xs" dot>
             Verified (%PDF- header parsed)
           </Badge>
         </div>
 
         {/* FR-11 Topic Tagging Workspace Shortcut */}
-        <div className="pt-3 border-t border-white/[0.07]">
+        <div className="pt-3 border-t border-theme-subtle">
           <Link
             to={`/tagging?paperId=${paper.id}`}
             className="w-full inline-flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 text-violet-300 font-semibold text-xs border border-violet-500/25 transition shadow-xs"

@@ -308,3 +308,241 @@ test('Paper-Tag Deletion: System Admin can remove any assignment including legac
   assert.strictEqual(res.status, 200);
   assert.match(res.body.message, /Tag assignment removed successfully/);
 });
+
+test('Annotation Deletion: Paper Owner can delete an annotation authored by another user on their paper', async () => {
+  mockDatabase({ id: RESEARCHER_USER_ID, role: 'RESEARCHER' }, async (sql) => {
+    if (sql.includes('SELECT id, created_by FROM annotations')) {
+      return { rows: [{ id: ANNOTATION_ID, created_by: OTHER_USER_ID }] };
+    }
+    if (sql.includes('SELECT a.paper_id, p.uploader_id FROM papers p')) {
+      return { rows: [{ paper_id: PAPER_ID, uploader_id: RESEARCHER_USER_ID }] };
+    }
+    if (sql.includes('DELETE FROM annotations')) {
+      return { rows: [{ id: ANNOTATION_ID }] };
+    }
+    return { rows: [] };
+  });
+
+  const app = createTestApp();
+  const res = await request(app)
+    .delete(`/api/annotations/${ANNOTATION_ID}`)
+    .set('Authorization', `Bearer ${tokenFor(RESEARCHER_USER_ID, 'RESEARCHER')}`);
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.body.id, ANNOTATION_ID);
+});
+
+test('Annotation Deletion: Paper Owner can delete a legacy annotation with NULL creator on their paper', async () => {
+  mockDatabase({ id: RESEARCHER_USER_ID, role: 'RESEARCHER' }, async (sql) => {
+    if (sql.includes('SELECT id, created_by FROM annotations')) {
+      return { rows: [{ id: ANNOTATION_ID, created_by: null }] };
+    }
+    if (sql.includes('SELECT a.paper_id, p.uploader_id FROM papers p')) {
+      return { rows: [{ paper_id: PAPER_ID, uploader_id: RESEARCHER_USER_ID }] };
+    }
+    if (sql.includes('DELETE FROM annotations')) {
+      return { rows: [{ id: ANNOTATION_ID }] };
+    }
+    return { rows: [] };
+  });
+
+  const app = createTestApp();
+  const res = await request(app)
+    .delete(`/api/annotations/${ANNOTATION_ID}`)
+    .set('Authorization', `Bearer ${tokenFor(RESEARCHER_USER_ID, 'RESEARCHER')}`);
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.body.id, ANNOTATION_ID);
+});
+
+test('Annotation Deletion: Cross-paper ID manipulation is rejected with 400', async () => {
+  mockDatabase({ id: RESEARCHER_USER_ID, role: 'RESEARCHER' }, async (sql) => {
+    if (sql.includes('SELECT paper_id FROM annotations')) {
+      return { rows: [{ paper_id: PAPER_ID }] };
+    }
+    return { rows: [] };
+  });
+
+  const WRONG_PAPER_ID = '99999999-9999-4999-8999-999999999999';
+  const app = createTestApp();
+  const res = await request(app)
+    .delete(`/api/annotations/${ANNOTATION_ID}?paper_id=${WRONG_PAPER_ID}`)
+    .set('Authorization', `Bearer ${tokenFor(RESEARCHER_USER_ID, 'RESEARCHER')}`);
+  assert.strictEqual(res.status, 400);
+  assert.strictEqual(res.body.error, 'Annotation does not belong to the specified paper.');
+});
+
+test('Annotation Editing: Paper Owner CANNOT edit another user annotation content (403)', async () => {
+  mockDatabase({ id: RESEARCHER_USER_ID, role: 'RESEARCHER' }, async (sql) => {
+    if (sql.includes('SELECT id, created_by FROM annotations')) {
+      return { rows: [{ id: ANNOTATION_ID, created_by: OTHER_USER_ID }] };
+    }
+    return { rows: [] };
+  });
+
+  const app = createTestApp();
+  const res = await request(app)
+    .put(`/api/annotations/${ANNOTATION_ID}`)
+    .set('Authorization', `Bearer ${tokenFor(RESEARCHER_USER_ID, 'RESEARCHER')}`)
+    .send({ content: 'Tampered note content' });
+  assert.strictEqual(res.status, 403);
+  assert.strictEqual(res.body.error, 'You can only edit your own annotations.');
+});
+
+test('Annotation Editing: Student role is rejected from editing with 403', async () => {
+  mockDatabase({ id: STUDENT_USER_ID, role: 'STUDENT' }, async () => ({ rows: [] }));
+  const app = createTestApp();
+  const res = await request(app)
+    .put(`/api/annotations/${ANNOTATION_ID}`)
+    .set('Authorization', `Bearer ${tokenFor(STUDENT_USER_ID, 'STUDENT')}`)
+    .send({ content: 'Student trying to edit' });
+  assert.strictEqual(res.status, 403);
+});
+
+test('Annotation Editing: Cross-paper ID manipulation is rejected with 400', async () => {
+  mockDatabase({ id: RESEARCHER_USER_ID, role: 'RESEARCHER' }, async (sql) => {
+    if (sql.includes('SELECT id, created_by FROM annotations')) {
+      return { rows: [{ id: ANNOTATION_ID, created_by: RESEARCHER_USER_ID }] };
+    }
+    if (sql.includes('SELECT paper_id FROM annotations')) {
+      return { rows: [{ paper_id: PAPER_ID }] };
+    }
+    return { rows: [] };
+  });
+
+  const WRONG_PAPER_ID = '99999999-9999-4999-8999-999999999999';
+  const app = createTestApp();
+  const res = await request(app)
+    .put(`/api/annotations/${ANNOTATION_ID}?paper_id=${WRONG_PAPER_ID}`)
+    .set('Authorization', `Bearer ${tokenFor(RESEARCHER_USER_ID, 'RESEARCHER')}`)
+    .send({ content: 'Updated content' });
+  assert.strictEqual(res.status, 400);
+  assert.strictEqual(res.body.error, 'Annotation does not belong to the specified paper.');
+});
+
+test('Paper-Tag Deletion: Paper Owner can remove a tag assignment created by another user on their paper', async () => {
+  mockDatabase({ id: RESEARCHER_USER_ID, role: 'RESEARCHER' }, async (sql) => {
+    if (sql.includes('FROM paper_tag_assignments pta')) {
+      return {
+        rows: [
+          {
+            id: ASSIGNMENT_ID,
+            paper_id: PAPER_ID,
+            tag_id: TAG_ID,
+            assigned_by: OTHER_USER_ID,
+            tag_name: 'Machine Learning',
+            tag_slug: 'machine-learning',
+            paper_uploader_id: RESEARCHER_USER_ID,
+          },
+        ],
+      };
+    }
+    if (sql.includes('DELETE FROM paper_tag_assignments')) {
+      return {
+        rows: [
+          {
+            id: ASSIGNMENT_ID,
+            paper_id: PAPER_ID,
+            tag_id: TAG_ID,
+            assigned_by: OTHER_USER_ID,
+          },
+        ],
+      };
+    }
+    return { rows: [] };
+  });
+
+  const app = createTestApp();
+  const res = await request(app)
+    .delete(`/api/paper-tags/${ASSIGNMENT_ID}`)
+    .set('Authorization', `Bearer ${tokenFor(RESEARCHER_USER_ID, 'RESEARCHER')}`);
+  assert.strictEqual(res.status, 200);
+  assert.match(res.body.message, /Tag assignment removed successfully/);
+});
+
+test('Paper-Tag Deletion: Paper Owner can remove a legacy assignment with NULL assigned_by', async () => {
+  mockDatabase({ id: RESEARCHER_USER_ID, role: 'RESEARCHER' }, async (sql) => {
+    if (sql.includes('FROM paper_tag_assignments pta')) {
+      return {
+        rows: [
+          {
+            id: ASSIGNMENT_ID,
+            paper_id: PAPER_ID,
+            tag_id: TAG_ID,
+            assigned_by: null,
+            tag_name: 'Machine Learning',
+            tag_slug: 'machine-learning',
+            paper_uploader_id: RESEARCHER_USER_ID,
+          },
+        ],
+      };
+    }
+    if (sql.includes('DELETE FROM paper_tag_assignments')) {
+      return {
+        rows: [
+          {
+            id: ASSIGNMENT_ID,
+            paper_id: PAPER_ID,
+            tag_id: TAG_ID,
+            assigned_by: null,
+          },
+        ],
+      };
+    }
+    return { rows: [] };
+  });
+
+  const app = createTestApp();
+  const res = await request(app)
+    .delete(`/api/paper-tags/${ASSIGNMENT_ID}`)
+    .set('Authorization', `Bearer ${tokenFor(RESEARCHER_USER_ID, 'RESEARCHER')}`);
+  assert.strictEqual(res.status, 200);
+  assert.match(res.body.message, /Tag assignment removed successfully/);
+});
+
+test('Paper-Tag Deletion: Cross-paper ID manipulation is rejected with 400', async () => {
+  mockDatabase({ id: RESEARCHER_USER_ID, role: 'RESEARCHER' }, async (sql) => {
+    if (sql.includes('FROM paper_tag_assignments pta')) {
+      return {
+        rows: [
+          {
+            id: ASSIGNMENT_ID,
+            paper_id: PAPER_ID,
+            tag_id: TAG_ID,
+            assigned_by: RESEARCHER_USER_ID,
+            tag_name: 'Machine Learning',
+            tag_slug: 'machine-learning',
+            paper_uploader_id: RESEARCHER_USER_ID,
+          },
+        ],
+      };
+    }
+    return { rows: [] };
+  });
+
+  const WRONG_PAPER_ID = '99999999-9999-4999-8999-999999999999';
+  const app = createTestApp();
+  const res = await request(app)
+    .delete(`/api/paper-tags/${ASSIGNMENT_ID}?paper_id=${WRONG_PAPER_ID}`)
+    .set('Authorization', `Bearer ${tokenFor(RESEARCHER_USER_ID, 'RESEARCHER')}`);
+  assert.strictEqual(res.status, 400);
+  assert.strictEqual(res.body.error, 'Assignment does not belong to the specified paper.');
+});
+
+test('Paper-Tag Sync: Unrelated researcher cannot sync tags on another user paper (403)', async () => {
+  mockDatabase({ id: RESEARCHER_USER_ID, role: 'RESEARCHER' }, async (sql) => {
+    if (sql.includes('SELECT id, uploader_id FROM papers')) {
+      return { rows: [{ id: PAPER_ID, uploader_id: OTHER_USER_ID }] };
+    }
+    if (sql.includes('FROM paper_collaborators')) {
+      return { rows: [] };
+    }
+    return { rows: [] };
+  });
+
+  const app = createTestApp();
+  const res = await request(app)
+    .put(`/api/paper-tags/paper/${PAPER_ID}`)
+    .set('Authorization', `Bearer ${tokenFor(RESEARCHER_USER_ID, 'RESEARCHER')}`)
+    .send({ tag_ids: [TAG_ID] });
+  assert.strictEqual(res.status, 403);
+  assert.strictEqual(res.body.error, 'Forbidden. You do not have permission to modify tags for this paper.');
+});

@@ -12,6 +12,7 @@ import { getApiErrorMessage } from '../../services/api';
 
 export default function AnnotationList({
   paperId,
+  paperOwnerId = null,
   annotations: initialAnnotations,
   loading: initialLoading,
   onAddAnnotation,
@@ -128,12 +129,12 @@ export default function AnnotationList({
       : annotations.filter((a) => a.page_number === Number(selectedPage));
 
   return (
-    <div className="space-y-5 text-[#F8FAFC]">
+    <div className="space-y-5 text-theme-main">
       {/* Header with Page Filter & Add CTA */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 pb-4 border-b border-white/[0.08]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 pb-4 border-b border-theme-subtle">
         <div className="flex items-center gap-2.5">
           <MessageSquare className="w-4 h-4 text-violet-400" />
-          <h3 className="text-sm sm:text-base font-bold text-[#F8FAFC]">
+          <h3 className="text-sm sm:text-base font-bold text-theme-main">
             Paper Annotations ({annotations.length})
           </h3>
         </div>
@@ -141,11 +142,11 @@ export default function AnnotationList({
         <div className="flex items-center gap-2.5 flex-wrap">
           {pages.length > 1 && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-[#71758B]">Page:</span>
+              <span className="text-xs text-theme-muted">Page:</span>
               <select
                 value={selectedPage}
                 onChange={(e) => setSelectedPage(e.target.value)}
-                className="text-xs bg-[#23263A] border border-white/10 rounded-xl px-2.5 py-1.5 text-[#F8FAFC] cursor-pointer focus:outline-none focus:ring-2 focus:ring-violet-500/30"
+                className="text-xs bg-theme-elevated border border-white/10 rounded-xl px-2.5 py-1.5 text-theme-main cursor-pointer focus:outline-none focus:ring-2 focus:ring-violet-500/30"
               >
                 <option value="all">All Pages ({annotations.length})</option>
                 {pages.map((p) => (
@@ -191,7 +192,7 @@ export default function AnnotationList({
 
       {/* Loading state */}
       {loading && !error ? (
-        <div className="py-12 text-center text-xs text-[#71758B] flex items-center justify-center gap-2.5">
+        <div className="py-12 text-center text-xs text-theme-muted flex items-center justify-center gap-2.5">
           <span className="w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
           <span className="font-medium">Loading research notes...</span>
         </div>
@@ -211,6 +212,7 @@ export default function AnnotationList({
               key={item.id}
               annotation={item}
               tags={annotationTagsMap[item.id] || []}
+              paperOwnerId={paperOwnerId}
               onEdit={handleEdit}
               onDelete={handleDelete}
             />

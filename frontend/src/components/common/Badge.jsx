@@ -1,6 +1,6 @@
 const variants = {
   default:
-    'bg-[#23263A] text-[#A1A1B5] border-white/10',
+    'bg-theme-elevated text-theme-secondary border-white/10',
   primary:
     'bg-violet-500/15 text-violet-300 border-violet-500/30 font-semibold',
   success:

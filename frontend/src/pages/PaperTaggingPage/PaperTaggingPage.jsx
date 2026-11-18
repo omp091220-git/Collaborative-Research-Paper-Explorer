@@ -182,7 +182,7 @@ export default function PaperTaggingPage() {
   };
 
   return (
-    <div className="space-y-7 animate-fadeIn text-[#F8FAFC]">
+    <div className="space-y-7 animate-fadeIn text-theme-main">
       {/* Page Header */}
       <PageHeader
         title="Paper & Annotation Tagging Workspace (FR-11)"
@@ -224,10 +224,10 @@ export default function PaperTaggingPage() {
       {/* Main Workspace Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column (4 cols): Paper Selector */}
-        <div className="lg:col-span-4 bg-[#1B1D2B] rounded-2xl border border-white/[0.08] p-4 sm:p-5 shadow-sm space-y-4 flex flex-col h-[780px]">
+        <div className="lg:col-span-4 bg-theme-card rounded-2xl border border-theme-subtle p-4 sm:p-5 shadow-sm space-y-4 flex flex-col h-[780px]">
           <div>
-            <div className="flex items-center justify-between pb-2.5 border-b border-white/[0.07]">
-              <h3 className="text-sm font-bold text-[#F8FAFC] flex items-center gap-2">
+            <div className="flex items-center justify-between pb-2.5 border-b border-theme-subtle">
+              <h3 className="text-sm font-bold text-theme-main flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-violet-400" />
                 <span>Select Publication</span>
               </h3>
@@ -235,27 +235,27 @@ export default function PaperTaggingPage() {
                 {filteredPapers.length} Available
               </Badge>
             </div>
-            <p className="text-xs text-[#A1A1B5] mt-1.5">
+            <p className="text-xs text-theme-secondary mt-1.5">
               Choose a paper from the repository to inspect and assign hierarchical topics
             </p>
           </div>
 
           {/* Search Papers */}
           <div className="relative">
-            <Search className="w-4 h-4 text-[#71758B] absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-theme-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={paperSearch}
               onChange={(e) => setPaperSearch(e.target.value)}
               placeholder="Search by title, author, arXiv ID..."
-              className="w-full pl-10 pr-3 py-2 text-xs bg-[#161827] border border-white/10 rounded-xl text-[#F8FAFC] placeholder:text-[#71758B] focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition"
+              className="w-full pl-10 pr-3 py-2 text-xs bg-theme-secondary border border-white/10 rounded-xl text-theme-main placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition"
             />
           </div>
 
           {/* Papers Scroll List */}
           <div className="flex-1 overflow-y-auto space-y-2 pr-1">
             {loadingPapers ? (
-              <div className="flex flex-col items-center justify-center py-16 text-xs text-[#71758B] space-y-2.5">
+              <div className="flex flex-col items-center justify-center py-16 text-xs text-theme-muted space-y-2.5">
                 <RefreshCw className="w-5 h-5 animate-spin text-violet-400" />
                 <span>Loading research library...</span>
               </div>
@@ -266,9 +266,9 @@ export default function PaperTaggingPage() {
                 onRetry={fetchPapers}
               />
             ) : filteredPapers.length === 0 ? (
-              <div className="text-center py-12 text-xs text-[#71758B] space-y-2.5">
-                <BookOpen className="w-8 h-8 text-[#71758B] mx-auto" />
-                <p className="font-semibold text-[#F8FAFC]">No papers found</p>
+              <div className="text-center py-12 text-xs text-theme-muted space-y-2.5">
+                <BookOpen className="w-8 h-8 text-theme-muted mx-auto" />
+                <p className="font-semibold text-theme-main">No papers found</p>
                 <p>Upload a new PDF paper from the Explore tab to start tagging.</p>
               </div>
             ) : (
@@ -280,8 +280,8 @@ export default function PaperTaggingPage() {
                     onClick={() => handleSelectPaper(paper)}
                     className={`p-3.5 rounded-xl border transition-all cursor-pointer select-none ${
                       isSelected
-                        ? 'border-violet-500 bg-violet-600/15 shadow-sm shadow-violet-950/20 text-[#F8FAFC]'
-                        : 'border-white/[0.08] hover:border-white/20 bg-[#161827]/70 text-[#A1A1B5] hover:text-[#F8FAFC]'
+                        ? 'border-violet-500 bg-violet-600/15 shadow-sm shadow-violet-950/20 text-theme-main'
+                        : 'border-theme-subtle hover:border-white/20 bg-theme-secondary/70 text-theme-secondary hover:text-theme-main'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -295,20 +295,20 @@ export default function PaperTaggingPage() {
                       )}
                     </div>
 
-                    <h4 className="text-xs sm:text-sm font-bold text-[#F8FAFC] line-clamp-2 leading-snug mb-1.5">
+                    <h4 className="text-xs sm:text-sm font-bold text-theme-main line-clamp-2 leading-snug mb-1.5">
                       {paper.title}
                     </h4>
 
                     {paper.authors && paper.authors.length > 0 && (
-                      <p className="text-[11px] text-[#A1A1B5] truncate flex items-center gap-1.5">
-                        <User className="w-3 h-3 shrink-0 text-[#71758B]" />
+                      <p className="text-[11px] text-theme-secondary truncate flex items-center gap-1.5">
+                        <User className="w-3 h-3 shrink-0 text-theme-muted" />
                         <span>{paper.authors.join(', ')}</span>
                       </p>
                     )}
 
-                    <div className="mt-2.5 pt-2 border-t border-white/[0.06] flex items-center justify-between text-[10px] text-[#71758B]">
+                    <div className="mt-2.5 pt-2 border-t border-white/[0.06] flex items-center justify-between text-[10px] text-theme-muted">
                       <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-[#71758B]" />
+                        <Calendar className="w-3 h-3 text-theme-muted" />
                         <span>{formatDate(paper.uploaded_at, { shortMonth: true })}</span>
                       </span>
 
@@ -331,7 +331,7 @@ export default function PaperTaggingPage() {
           {selectedPaper ? (
             <>
               {/* Active Paper Banner */}
-              <div className="p-5 bg-[#1B1D2B] rounded-2xl border border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+              <div className="p-5 bg-theme-card rounded-2xl border border-theme-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                     <span className="text-xs font-bold uppercase tracking-wider text-violet-400">
@@ -343,11 +343,11 @@ export default function PaperTaggingPage() {
                       </Badge>
                     )}
                   </div>
-                  <h2 className="text-base sm:text-lg font-bold text-[#F8FAFC] leading-snug">
+                  <h2 className="text-base sm:text-lg font-bold text-theme-main leading-snug">
                     {selectedPaper.title}
                   </h2>
-                  <p className="text-xs text-[#A1A1B5] mt-1.5">
-                    Authors: <strong className="text-[#F8FAFC]">{selectedPaper.authors?.join(', ') || 'Unknown'}</strong>
+                  <p className="text-xs text-theme-secondary mt-1.5">
+                    Authors: <strong className="text-theme-main">{selectedPaper.authors?.join(', ') || 'Unknown'}</strong>
                   </p>
                 </div>
 
@@ -389,9 +389,9 @@ export default function PaperTaggingPage() {
               />
             </>
           ) : (
-            <div className="bg-[#1B1D2B] rounded-2xl border border-dashed border-white/10 p-12 text-center text-xs text-[#71758B] space-y-3">
-              <BookOpen className="w-12 h-12 text-[#71758B] mx-auto" />
-              <h3 className="text-base font-bold text-[#F8FAFC]">
+            <div className="bg-theme-card rounded-2xl border border-dashed border-white/10 p-12 text-center text-xs text-theme-muted space-y-3">
+              <BookOpen className="w-12 h-12 text-theme-muted mx-auto" />
+              <h3 className="text-base font-bold text-theme-main">
                 No Paper Selected
               </h3>
               <p className="max-w-md mx-auto leading-relaxed">

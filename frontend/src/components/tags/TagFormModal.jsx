@@ -172,15 +172,15 @@ export default function TagFormModal({
 
         {/* Tag Name */}
         <div>
-          <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
-            Tag Name <span className="text-rose-600">*</span>
+          <label className="block text-xs font-bold text-theme-main mb-1">
+            Tag Name <span className="text-rose-400">*</span>
           </label>
           <input
             type="text"
             value={name}
             onChange={(e) => handleNameChange(e.target.value)}
             placeholder="e.g. Perovskite Solar Cells"
-            className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+            className="w-full px-3 py-2 text-xs bg-theme-elevated border border-theme-subtle rounded-xl text-theme-main placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
             required
             autoFocus
           />
@@ -189,10 +189,10 @@ export default function TagFormModal({
         {/* Slug */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">
-              Identifier Slug <span className="text-rose-600">*</span>
+            <label className="block text-xs font-bold text-theme-main">
+              Identifier Slug <span className="text-rose-400">*</span>
             </label>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+            <span className="text-[11px] text-theme-muted">
               Lowercase, underscores only
             </span>
           </div>
@@ -201,20 +201,20 @@ export default function TagFormModal({
             value={slug}
             onChange={(e) => handleSlugChange(e.target.value)}
             placeholder="perovskite_solar_cells"
-            className="w-full px-3 py-2 text-xs font-mono bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+            className="w-full px-3 py-2 text-xs font-mono bg-theme-elevated border border-theme-subtle rounded-xl text-theme-main placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
             required
           />
         </div>
 
         {/* Parent Tag Selector */}
         <div>
-          <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+          <label className="block text-xs font-bold text-theme-main mb-1">
             Parent Taxonomy Category
           </label>
           <select
             value={parentId || ''}
             onChange={(e) => setParentId(e.target.value || null)}
-            className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 font-sans"
+            className="w-full px-3 py-2 text-xs bg-theme-elevated border border-theme-subtle rounded-xl text-theme-main focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 font-sans cursor-pointer"
           >
             <option value="">(None - Root Topic Domain)</option>
             {eligibleParents.map((p) => (
@@ -223,27 +223,27 @@ export default function TagFormModal({
               </option>
             ))}
           </select>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-[11px] text-theme-muted mt-1">
             Moving a tag reparents it and recalculates all canonical descendant paths.
           </p>
         </div>
 
         {/* Description */}
         <div>
-          <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
-            Description <span className="text-slate-500 font-normal">(optional)</span>
+          <label className="block text-xs font-bold text-theme-main mb-1">
+            Description <span className="text-theme-muted font-normal">(optional)</span>
           </label>
           <textarea
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Scientific scope, methodologies, or relevance of this topic..."
-            className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 resize-y"
+            className="w-full px-3 py-2 text-xs bg-theme-elevated border border-theme-subtle rounded-xl text-theme-main placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 resize-y"
           />
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+        <div className="flex justify-end gap-2.5 pt-3 border-t border-theme-subtle">
           <Button variant="outline" size="sm" onClick={onClose} disabled={loading}>
             Cancel
           </Button>

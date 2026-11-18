@@ -35,7 +35,7 @@ export default function PaperFilters({
   );
 
   return (
-    <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3.5 mb-7 p-3.5 bg-[#1B1D2B] rounded-2xl border border-white/[0.08] shadow-sm">
+    <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3.5 mb-7 p-3.5 bg-theme-card rounded-2xl border border-theme-subtle shadow-sm">
       {/* Search Input */}
       <div className="flex-1 min-w-[240px]">
         <SearchInput
@@ -53,7 +53,7 @@ export default function PaperFilters({
           <select
             value={selectedTopic}
             onChange={(e) => onTopicChange && onTopicChange(e.target.value)}
-            className="text-xs bg-[#23263A] hover:bg-[#2B2F46] border border-white/10 rounded-xl px-3 py-2 text-[#F8FAFC] font-semibold focus:outline-none focus:ring-2 focus:ring-violet-500/30 shadow-xs cursor-pointer max-w-[170px] truncate transition"
+            className="text-xs bg-theme-elevated hover:bg-theme-elevated border border-white/10 rounded-xl px-3 py-2 text-theme-main font-semibold focus:outline-none focus:ring-2 focus:ring-violet-500/30 shadow-xs cursor-pointer max-w-[170px] truncate transition"
             title="Filter by topic tag"
           >
             <option value="">All Topics</option>
@@ -69,7 +69,7 @@ export default function PaperFilters({
         <select
           value={currentSource}
           onChange={(e) => handleSourceChange && handleSourceChange(e.target.value)}
-          className="text-xs bg-[#23263A] hover:bg-[#2B2F46] border border-white/10 rounded-xl px-3 py-2 text-[#F8FAFC] font-semibold focus:outline-none focus:ring-2 focus:ring-violet-500/30 shadow-xs cursor-pointer transition"
+          className="text-xs bg-theme-elevated hover:bg-theme-elevated border border-white/10 rounded-xl px-3 py-2 text-theme-main font-semibold focus:outline-none focus:ring-2 focus:ring-violet-500/30 shadow-xs cursor-pointer transition"
         >
           <option value="all">All Sources</option>
           <option value="arxiv">arXiv Preprints</option>
@@ -80,7 +80,7 @@ export default function PaperFilters({
         <select
           value={currentSort}
           onChange={(e) => handleSortChange && handleSortChange(e.target.value)}
-          className="text-xs bg-[#23263A] hover:bg-[#2B2F46] border border-white/10 rounded-xl px-3 py-2 text-[#F8FAFC] font-semibold focus:outline-none focus:ring-2 focus:ring-violet-500/30 shadow-xs cursor-pointer transition"
+          className="text-xs bg-theme-elevated hover:bg-theme-elevated border border-white/10 rounded-xl px-3 py-2 text-theme-main font-semibold focus:outline-none focus:ring-2 focus:ring-violet-500/30 shadow-xs cursor-pointer transition"
         >
           <option value="newest">Newest First</option>
           <option value="oldest">Oldest First</option>
@@ -104,14 +104,14 @@ export default function PaperFilters({
         )}
 
         {/* View Mode Toggle */}
-        <div className="flex items-center border border-white/10 rounded-xl p-0.5 bg-[#161827]">
+        <div className="flex items-center border border-white/10 rounded-xl p-0.5 bg-theme-secondary">
           <button
             type="button"
             onClick={() => onViewModeChange('grid')}
             className={`p-1.5 rounded-lg transition cursor-pointer ${
               viewMode === 'grid'
                 ? 'bg-violet-600 text-white shadow-xs font-bold'
-                : 'text-[#71758B] hover:text-[#F8FAFC]'
+                : 'text-theme-muted hover:text-theme-main'
             }`}
             title="Grid View"
             aria-label="Grid View"
@@ -124,7 +124,7 @@ export default function PaperFilters({
             className={`p-1.5 rounded-lg transition cursor-pointer ${
               viewMode === 'list'
                 ? 'bg-violet-600 text-white shadow-xs font-bold'
-                : 'text-[#71758B] hover:text-[#F8FAFC]'
+                : 'text-theme-muted hover:text-theme-main'
             }`}
             title="List View"
             aria-label="List View"

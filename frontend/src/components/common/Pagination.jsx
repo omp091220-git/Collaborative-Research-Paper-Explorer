@@ -14,11 +14,11 @@ export default function Pagination({
   const end = Math.min(currentPage * pageSize, totalItems);
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 border-t border-white/[0.08] text-xs text-[#A1A1B5] font-medium">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 border-t border-theme-subtle text-xs text-theme-secondary font-medium">
       <div>
-        Showing <span className="font-bold text-[#F8FAFC]">{start}</span> to{' '}
-        <span className="font-bold text-[#F8FAFC]">{end}</span> of{' '}
-        <span className="font-bold text-[#F8FAFC]">{totalItems}</span> results
+        Showing <span className="font-bold text-theme-main">{start}</span> to{' '}
+        <span className="font-bold text-theme-main">{end}</span> of{' '}
+        <span className="font-bold text-theme-main">{totalItems}</span> results
       </div>
 
       <div className="flex items-center gap-1.5">
@@ -45,14 +45,14 @@ export default function Pagination({
             return (
               <span key={page} className="flex items-center">
                 {showEllipsis && (
-                  <span className="px-1.5 text-[#71758B] font-bold">...</span>
+                  <span className="px-1.5 text-theme-muted font-bold">...</span>
                 )}
                 <button
                   onClick={() => onPageChange(page)}
                   className={`w-7 h-7 text-xs rounded-lg font-bold transition cursor-pointer ${
                     currentPage === page
                       ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm shadow-violet-600/30 font-extrabold'
-                      : 'text-[#A1A1B5] hover:text-[#F8FAFC] hover:bg-white/10'
+                      : 'text-theme-secondary hover:text-theme-main hover:bg-white/10'
                   }`}
                 >
                   {page}

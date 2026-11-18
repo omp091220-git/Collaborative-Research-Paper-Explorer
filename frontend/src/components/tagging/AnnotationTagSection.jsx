@@ -37,9 +37,11 @@ export default function AnnotationTagSection({
     }
   }
 
-  // Permission check: User can remove tag if they are SYSTEM_ADMIN or the assigner
+  // Permission check: User can remove tag if they are SYSTEM_ADMIN, the paper owner, or the assigner. Students cannot remove.
+  const isStudent = user?.role === 'STUDENT';
+  const isPaperOwner = Boolean(user?.id && paper?.uploader_id && paper.uploader_id === user.id);
   const canRemoveAssignment = (a) =>
-    Boolean(isAdmin || (user?.id && a.assigned_by && a.assigned_by === user.id));
+    !isStudent && Boolean(isAdmin || isPaperOwner || (user?.id && a.assigned_by && a.assigned_by === user.id));
 
   const handleAssignTagToAnnotation = async (annotationId, selectedTag) => {
     setActionError(null);
@@ -98,18 +100,18 @@ export default function AnnotationTagSection({
   };
 
   return (
-    <div className="bg-[#1B1D2B] rounded-2xl border border-white/[0.08] p-5 sm:p-6 shadow-sm space-y-4 text-[#F8FAFC]">
+    <div className="bg-theme-card rounded-2xl border border-theme-subtle p-5 sm:p-6 shadow-sm space-y-4 text-theme-main">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-white/[0.07]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-theme-subtle">
         <div>
-          <h3 className="text-sm sm:text-base font-bold text-[#F8FAFC] flex items-center gap-2">
+          <h3 className="text-sm sm:text-base font-bold text-theme-main flex items-center gap-2">
             <Edit3 className="w-4 h-4 text-violet-400" />
             <span>Annotation-Level Topic Tags</span>
             <Badge variant="purple" size="xs">
               {annotations.length} {annotations.length === 1 ? 'Annotation' : 'Annotations'}
             </Badge>
           </h3>
-          <p className="text-xs text-[#A1A1B5] mt-1">
+          <p className="text-xs text-theme-secondary mt-1">
             Assign fine-grained taxonomy topics to specific highlighted regions and page annotations
           </p>
         </div>
@@ -127,10 +129,10 @@ export default function AnnotationTagSection({
       </div>
 
       {/* Scope Disclaimer */}
-      <div className="p-3.5 rounded-xl bg-[#161827] border border-white/[0.08] flex items-start gap-2.5 text-xs text-[#A1A1B5]">
+      <div className="p-3.5 rounded-xl bg-theme-secondary border border-theme-subtle flex items-start gap-2.5 text-xs text-theme-secondary">
         <Info className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" />
         <p className="leading-relaxed">
-          <strong className="text-[#F8FAFC]">Taxonomy Scope:</strong> Tagging is anchored to verified paper-level records and user-created page annotations.
+          <strong className="text-theme-main">Taxonomy Scope:</strong> Tagging is anchored to verified paper-level records and user-created page annotations.
         </p>
       </div>
 
@@ -143,16 +145,16 @@ export default function AnnotationTagSection({
 
       {/* Annotations List */}
       {loading ? (
-        <div className="flex items-center gap-2.5 py-6 text-xs text-[#71758B]">
+        <div className="flex items-center gap-2.5 py-6 text-xs text-theme-muted">
           <RefreshCw className="w-4 h-4 animate-spin text-violet-400" />
           <span>Loading paper annotations...</span>
         </div>
       ) : annotations.length === 0 ? (
-        <div className="p-6 text-center rounded-2xl border border-dashed border-white/10 bg-[#161827]/50 text-xs text-[#A1A1B5]">
-          <p className="font-semibold text-[#F8FAFC]">
+        <div className="p-6 text-center rounded-2xl border border-dashed border-white/10 bg-theme-secondary/50 text-xs text-theme-secondary">
+          <p className="font-semibold text-theme-main">
             No annotations recorded for this paper yet.
           </p>
-          <p className="mt-1 text-[#71758B]">
+          <p className="mt-1 text-theme-muted">
             Open the paper in the PDF Viewer to create page annotations, then return here to attach hierarchical topic tags.
           </p>
         </div>
@@ -166,7 +168,7 @@ export default function AnnotationTagSection({
             return (
               <div
                 key={annotation.id}
-                className="p-4 rounded-xl bg-[#23263A] border border-white/10 space-y-3 transition hover:border-white/20"
+                className="p-4 rounded-xl bg-theme-elevated border border-white/10 space-y-3 transition hover:border-white/20"
               >
                 {/* Annotation Header */}
                 <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -175,7 +177,7 @@ export default function AnnotationTagSection({
                       Page {annotation.page_number}
                     </Badge>
                     {annotation.position_x !== null && annotation.position_x !== undefined && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-mono text-[#A1A1B5] bg-[#161827] px-2 py-0.5 rounded-md border border-white/10">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono text-theme-secondary bg-theme-secondary px-2 py-0.5 rounded-md border border-white/10">
                         <MapPin className="w-2.5 h-2.5 text-violet-400" />
                         <span>
                           {(annotation.position_x * 100).toFixed(0)}%,{' '}
@@ -201,7 +203,7 @@ export default function AnnotationTagSection({
                 </div>
 
                 {/* Annotation Content */}
-                <p className="text-xs text-[#F8FAFC] line-clamp-2 italic bg-[#1B1D2B] p-2.5 rounded-lg border border-white/[0.06]">
+                <p className="text-xs text-theme-main line-clamp-2 italic bg-theme-card p-2.5 rounded-lg border border-white/[0.06]">
                   "{annotation.content}"
                 </p>
 
@@ -220,11 +222,11 @@ export default function AnnotationTagSection({
 
                 {/* Assigned Tags List */}
                 <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                  <span className="text-[11px] font-bold text-[#A1A1B5] mr-1">
+                  <span className="text-[11px] font-bold text-theme-secondary mr-1">
                     Attached Topics:
                   </span>
                   {annotationTags.length === 0 ? (
-                    <span className="text-[11px] text-[#71758B] italic">None yet</span>
+                    <span className="text-[11px] text-theme-muted italic">None yet</span>
                   ) : (
                     annotationTags.map((a) => {
                       const removable = canRemoveAssignment(a);
@@ -237,7 +239,7 @@ export default function AnnotationTagSection({
                           <span>{a.tag_name}</span>
                           {a.canonical_path && (
                             <span
-                              className="font-mono text-[9px] text-[#A1A1B5] max-w-[140px] truncate"
+                              className="font-mono text-[9px] text-theme-secondary max-w-[140px] truncate"
                               title={a.canonical_path}
                             >
                               ({a.canonical_path})
@@ -248,7 +250,7 @@ export default function AnnotationTagSection({
                               type="button"
                               disabled={deleting}
                               onClick={() => setAssignmentToDelete(a)}
-                              className="hover:text-rose-400 p-0.5 rounded transition cursor-pointer text-[#71758B] disabled:opacity-40"
+                              className="hover:text-rose-400 p-0.5 rounded transition cursor-pointer text-theme-muted disabled:opacity-40"
                               title={
                                 isAdmin && a.assigned_by !== user?.id
                                   ? 'Remove tag (Admin override)'
@@ -260,10 +262,10 @@ export default function AnnotationTagSection({
                             </button>
                           ) : (
                             <span
-                              className="ml-0.5 text-[#71758B]"
+                              className="ml-0.5 text-theme-muted"
                               title="Assigned by another collaborator. Only the assigner or an admin can remove this tag."
                             >
-                              <Lock className="w-2.5 h-2.5 text-[#71758B]" />
+                              <Lock className="w-2.5 h-2.5 text-theme-muted" />
                             </span>
                           )}
                         </span>

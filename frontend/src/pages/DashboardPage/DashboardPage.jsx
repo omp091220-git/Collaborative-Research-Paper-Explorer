@@ -145,9 +145,9 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-8 animate-fadeIn text-[#F8FAFC]">
+    <div className="space-y-8 animate-fadeIn text-theme-main">
       {/* Personalized Welcome Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-white/[0.08]">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-theme-subtle">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
             <span className="text-xs font-bold uppercase tracking-wider text-violet-400">
@@ -157,10 +157,10 @@ export default function DashboardPage() {
               {ROLE_LABELS[user?.role] || user?.role || 'SCHOLAR'}
             </Badge>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#F8FAFC]">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-theme-main">
             {user?.full_name ? `Dr. ${user.full_name}` : 'Research Explorer'}
           </h1>
-          <p className="text-xs sm:text-sm text-[#A1A1B5] mt-1 font-normal">
+          <p className="text-xs sm:text-sm text-theme-secondary mt-1 font-normal">
             Collaborative analysis, hierarchical taxonomy, and multi-perspective AI syntheses.
           </p>
         </div>
@@ -204,13 +204,13 @@ export default function DashboardPage() {
             {invitations.slice(0, 3).map((inv) => (
               <div
                 key={inv.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-[#161827] rounded-xl border border-white/[0.08] text-xs"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-theme-secondary rounded-xl border border-theme-subtle text-xs"
               >
                 <div>
-                  <span className="font-bold text-[#F8FAFC]">
+                  <span className="font-bold text-theme-main">
                     {inv.paper_title || 'Collaborative Paper'}
                   </span>
-                  <span className="text-[#A1A1B5] ml-2">
+                  <span className="text-theme-secondary ml-2">
                     Invited as <strong className="uppercase text-violet-300">{inv.role}</strong> by {inv.inviter_name || 'Author'}
                   </span>
                 </div>
@@ -242,12 +242,12 @@ export default function DashboardPage() {
           const Icon = item.icon;
           return (
             <Link key={item.label} to={item.link}>
-              <div className="p-5 sm:p-6 bg-[#1B1D2B] rounded-2xl border border-white/[0.08] shadow-sm hover:border-violet-500/40 hover:bg-[#1E2132] hover:-translate-y-0.5 transition-all duration-200 group flex items-center justify-between">
+              <div className="p-5 sm:p-6 bg-theme-card rounded-2xl border border-theme-subtle shadow-sm hover:border-violet-500/40 hover:bg-theme-elevated hover:-translate-y-0.5 transition-all duration-200 group flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-[#A1A1B5] group-hover:text-[#F8FAFC] transition-colors">
+                  <p className="text-xs font-semibold text-theme-secondary group-hover:text-theme-main transition-colors">
                     {item.label}
                   </p>
-                  <p className="text-2xl sm:text-3xl font-extrabold text-[#F8FAFC] mt-1.5 tracking-tight">
+                  <p className="text-2xl sm:text-3xl font-extrabold text-theme-main mt-1.5 tracking-tight">
                     {item.value}
                   </p>
                 </div>
@@ -261,17 +261,17 @@ export default function DashboardPage() {
       </div>
 
       {/* AI Perspectives Banner */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-violet-950/70 via-[#1B1D2B] to-indigo-950/60 border border-violet-500/30 text-[#F8FAFC] shadow-xl relative overflow-hidden">
+      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-violet-950/70 via-[#1B1D2B] to-indigo-950/60 border border-violet-500/30 text-theme-main shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-violet-500/15 via-transparent to-transparent pointer-events-none" />
         <div className="max-w-2xl relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/15 border border-violet-500/30 text-xs font-bold text-violet-300 mb-3">
             <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
             <span>AI Multi-Perspective Summaries</span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight mb-2.5 text-[#F8FAFC]">
+          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight mb-2.5 text-theme-main">
             Accelerate Your Scientific Comprehension
           </h2>
-          <p className="text-xs sm:text-sm text-[#A1A1B5] leading-relaxed mb-5 font-normal">
+          <p className="text-xs sm:text-sm text-theme-secondary leading-relaxed mb-5 font-normal">
             Synthesize Layman analogies, executive summaries, or deep architectural breakdowns for any paper in seconds.
           </p>
           <div className="flex items-center gap-3 flex-wrap">
@@ -293,10 +293,10 @@ export default function DashboardPage() {
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg sm:text-xl font-extrabold text-[#F8FAFC] tracking-tight">
+            <h2 className="text-lg sm:text-xl font-extrabold text-theme-main tracking-tight">
               Recently Added Literature
             </h2>
-            <p className="text-xs text-[#A1A1B5] mt-0.5">
+            <p className="text-xs text-theme-secondary mt-0.5">
               Latest preprints and publications uploaded to ScholarSphere
             </p>
           </div>

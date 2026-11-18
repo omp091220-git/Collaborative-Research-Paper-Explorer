@@ -38,14 +38,14 @@ export default function Navbar({ onToggleSidebar, onOpenUpload }) {
   };
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-[#10111B]/85 backdrop-blur-md border-b border-white/[0.08] transition-colors">
+    <header className="sticky top-0 z-30 h-16 glass-nav transition-colors">
       <div className="h-full px-4 sm:px-6 flex items-center justify-between gap-4">
         {/* Left: Mobile hamburger & Logo */}
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={onToggleSidebar}
-            className="md:hidden p-2 -ml-2 text-[#A1A1B5] hover:text-[#F8FAFC] rounded-xl hover:bg-white/5 transition-colors cursor-pointer"
+            className="md:hidden p-2 -ml-2 text-theme-secondary hover:text-theme-main rounded-xl hover:bg-white/5 transition-colors cursor-pointer"
             aria-label="Toggle navigation menu"
           >
             <Menu className="w-5 h-5" />
@@ -53,16 +53,16 @@ export default function Navbar({ onToggleSidebar, onOpenUpload }) {
 
           <Link
             to="/dashboard"
-            className="flex items-center gap-2.5 font-bold text-lg text-[#F8FAFC] group"
+            className="flex items-center gap-2.5 font-bold text-lg text-theme-main group"
           >
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-cyan-400 flex items-center justify-center text-white shadow-md shadow-violet-600/30 group-hover:scale-105 transition-transform">
               <BookOpen className="w-5 h-5" />
             </div>
             <div className="hidden sm:flex flex-col">
-              <span className="leading-tight text-[#F8FAFC] font-extrabold tracking-tight text-base">
+              <span className="leading-tight text-theme-main font-extrabold tracking-tight text-base">
                 Scholar<span className="text-violet-400">Sphere</span>
               </span>
-              <span className="text-[10px] uppercase font-semibold tracking-wider text-[#71758B]">
+              <span className="text-[10px] uppercase font-semibold tracking-wider text-theme-muted">
                 Research Explorer
               </span>
             </div>
@@ -74,13 +74,13 @@ export default function Navbar({ onToggleSidebar, onOpenUpload }) {
           <button
             type="button"
             onClick={() => navigate('/explore')}
-            className="w-full flex items-center justify-between px-3.5 py-2 text-sm text-[#A1A1B5] bg-[#161827] border border-white/10 rounded-xl hover:border-violet-500/40 hover:bg-[#1E2132] transition-all cursor-pointer group shadow-2xs"
+            className="w-full flex items-center justify-between px-3.5 py-2 text-sm text-theme-secondary bg-theme-secondary border border-white/10 rounded-xl hover:border-violet-500/40 hover:bg-theme-elevated transition-all cursor-pointer group shadow-2xs"
           >
-            <span className="flex items-center gap-2.5 text-[#A1A1B5] group-hover:text-[#F8FAFC] font-medium">
-              <Search className="w-4 h-4 text-[#71758B] group-hover:text-violet-400 transition-colors" />
+            <span className="flex items-center gap-2.5 text-theme-secondary group-hover:text-theme-main font-medium">
+              <Search className="w-4 h-4 text-theme-muted group-hover:text-violet-400 transition-colors" />
               <span>Search papers, topics, authors...</span>
             </span>
-            <kbd className="hidden lg:inline-flex items-center gap-0.5 px-2 py-0.5 text-[11px] font-mono font-bold text-[#71758B] bg-[#23263A] border border-white/10 rounded-lg shadow-2xs">
+            <kbd className="hidden lg:inline-flex items-center gap-0.5 px-2 py-0.5 text-[11px] font-mono font-bold text-theme-muted bg-theme-elevated border border-white/10 rounded-lg shadow-2xs">
               /
             </kbd>
           </button>
@@ -99,7 +99,7 @@ export default function Navbar({ onToggleSidebar, onOpenUpload }) {
           <button
             type="button"
             onClick={toggleTheme}
-            className="p-2 text-[#A1A1B5] hover:text-[#F8FAFC] rounded-xl hover:bg-white/5 transition-colors cursor-pointer"
+            className="p-2 text-theme-secondary hover:text-theme-main rounded-xl hover:bg-white/5 transition-colors cursor-pointer"
             title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             aria-label="Toggle theme"
           >
@@ -139,10 +139,10 @@ export default function Navbar({ onToggleSidebar, onOpenUpload }) {
                 {user?.full_name ? user.full_name.charAt(0) : user?.email?.charAt(0) || 'U'}
               </div>
               <div className="hidden lg:flex flex-col text-left">
-                <span className="text-xs font-semibold text-[#F8FAFC] line-clamp-1 max-w-[120px]">
+                <span className="text-xs font-semibold text-theme-main line-clamp-1 max-w-[120px]">
                   {user?.full_name || 'My Account'}
                 </span>
-                <span className="text-[10px] text-[#71758B]">
+                <span className="text-[10px] text-theme-muted">
                   {ROLE_LABELS[user?.role] || user?.role || 'Guest'}
                 </span>
               </div>
@@ -154,12 +154,12 @@ export default function Navbar({ onToggleSidebar, onOpenUpload }) {
                   className="fixed inset-0 z-40"
                   onClick={() => setProfileDropdownOpen(false)}
                 />
-                <div className="absolute right-0 mt-2 w-64 bg-[#1B1D2B] rounded-2xl shadow-2xl shadow-black/70 border border-white/10 py-2 z-50 animate-scaleUp text-sm text-[#F8FAFC]">
-                  <div className="px-4 py-3 border-b border-white/[0.08]">
-                    <p className="font-semibold text-[#F8FAFC] truncate">
+                <div className="absolute right-0 mt-2 w-64 bg-theme-card rounded-2xl shadow-2xl shadow-black/70 border border-white/10 py-2 z-50 animate-scaleUp text-sm text-theme-main">
+                  <div className="px-4 py-3 border-b border-theme-subtle">
+                    <p className="font-semibold text-theme-main truncate">
                       {user?.full_name || 'Research Scholar'}
                     </p>
-                    <p className="text-xs text-[#A1A1B5] truncate mt-0.5">
+                    <p className="text-xs text-theme-secondary truncate mt-0.5">
                       {user?.email}
                     </p>
                     <div className="mt-2.5">
@@ -173,17 +173,17 @@ export default function Navbar({ onToggleSidebar, onOpenUpload }) {
                     <Link
                       to="/profile"
                       onClick={() => setProfileDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2 text-[#A1A1B5] hover:text-[#F8FAFC] hover:bg-white/5 transition-colors text-xs font-medium"
+                      className="flex items-center gap-2.5 px-4 py-2 text-theme-secondary hover:text-theme-main hover:bg-white/5 transition-colors text-xs font-medium"
                     >
-                      <User className="w-4 h-4 text-[#71758B]" />
+                      <User className="w-4 h-4 text-theme-muted" />
                       <span>My Profile</span>
                     </Link>
                     <Link
                       to="/settings"
                       onClick={() => setProfileDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2 text-[#A1A1B5] hover:text-[#F8FAFC] hover:bg-white/5 transition-colors text-xs font-medium"
+                      className="flex items-center gap-2.5 px-4 py-2 text-theme-secondary hover:text-theme-main hover:bg-white/5 transition-colors text-xs font-medium"
                     >
-                      <Settings className="w-4 h-4 text-[#71758B]" />
+                      <Settings className="w-4 h-4 text-theme-muted" />
                       <span>Settings & Preferences</span>
                     </Link>
                     {isAdmin && (
@@ -198,7 +198,7 @@ export default function Navbar({ onToggleSidebar, onOpenUpload }) {
                     )}
                   </div>
 
-                  <div className="pt-1 border-t border-white/[0.08]">
+                  <div className="pt-1 border-t border-theme-subtle">
                     <button
                       type="button"
                       onClick={() => {

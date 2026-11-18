@@ -8,7 +8,7 @@ export function Skeleton({ className = '' }) {
 
 export function PaperCardSkeleton() {
   return (
-    <div className="bg-[#1B1D2B] p-5 sm:p-6 rounded-2xl border border-white/[0.08] shadow-sm space-y-4">
+    <div className="bg-theme-card p-5 sm:p-6 rounded-2xl border border-theme-subtle shadow-sm space-y-4">
       <div className="flex items-start justify-between gap-3">
         <Skeleton className="h-5 w-3/4 rounded-lg" />
         <Skeleton className="h-5 w-16 rounded-md" />
@@ -18,7 +18,7 @@ export function PaperCardSkeleton() {
         <Skeleton className="h-3 w-full rounded" />
         <Skeleton className="h-3 w-5/6 rounded" />
       </div>
-      <div className="flex items-center justify-between pt-3 border-t border-white/[0.07]">
+      <div className="flex items-center justify-between pt-3 border-t border-theme-subtle">
         <Skeleton className="h-3 w-24 rounded" />
         <Skeleton className="h-8 w-20 rounded-xl" />
       </div>
@@ -42,7 +42,7 @@ export function LoadingSkeletonList({ count = 6 }) {
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="p-4 sm:p-5 bg-[#1B1D2B] rounded-2xl border border-white/[0.08] flex items-center justify-between gap-4"
+          className="p-4 sm:p-5 bg-theme-card rounded-2xl border border-theme-subtle flex items-center justify-between gap-4"
         >
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-3/4 rounded-md" />
