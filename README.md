@@ -19,6 +19,7 @@ The application consists of a React-based frontend, a Node.js and Express backen
 - **Session Management:** Track sessions, handle expiration, and revoke sessions.
 - **Research Paper Management:** Retrieve and browse paper metadata through API endpoints.
 - **Collaborative Annotations:** Create, update, retrieve, and delete annotations.
+- **Hierarchical Topic Tags & AI Suggestions (FR-23):** Propose relevant new taxonomy tags for papers, execute semantic & permutational deduplication against existing tags, and enforce privacy-scoped review workflows (accept as private or global).
 - **PostgreSQL Integration:** Store users, papers, collections, sessions, and related records.
 - **Testing:** Automated backend tests for authentication, authorization, validation, and other core functionality.
 
