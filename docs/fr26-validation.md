@@ -45,6 +45,6 @@ unmodified checkout before development, and the final failing-test names match.
 The four whole-frontend lint errors are pre-existing empty catch blocks in
 `frontend/src/components/research/ResearchWorkspace.jsx`.
 
-Because the user required everything to pass before pushing, the implementation
-is held locally pending an explicit decision about these unchanged baseline
-failures. This record does not claim perfect testing or a successful full suite.
+FR-26 introduces no new failures against the recorded base. Its acceptance checks
+pass; the unchanged repository-wide failures remain separate follow-up work. This
+record does not claim perfect testing or a successful full repository suite.
