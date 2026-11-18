@@ -28,6 +28,8 @@ const TopicTaxonomyPage = lazy(() => import('../pages/TopicTaxonomyPage/TopicTax
 const PaperTaggingPage = lazy(() => import('../pages/PaperTaggingPage/PaperTaggingPage'));
 const ProfilePage = lazy(() => import('../pages/ProfilePage/ProfilePage'));
 const SettingsPage = lazy(() => import('../pages/SettingsPage/SettingsPage'));
+const ResearcherSearchPage = lazy(() => import('../pages/ResearcherSearchPage/ResearcherSearchPage'));
+const ResearcherProfilePage = lazy(() => import('../pages/ResearcherProfilePage/ResearcherProfilePage'));
 const AdminMonitoringPage = lazy(() => import('../pages/AdminMonitoringPage/AdminMonitoringPage'));
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage/NotFoundPage'));
 
@@ -82,6 +84,8 @@ export default function AppRoutes() {
               <Route path="/paper-tags" element={<Navigate to="/tagging" replace />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/researchers" element={<ResearcherSearchPage />} />
+              <Route path="/researchers/:id" element={<ResearcherProfilePage />} />
 
               {/* Admin Protected Routes */}
               <Route

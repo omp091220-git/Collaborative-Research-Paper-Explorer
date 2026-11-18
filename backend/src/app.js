@@ -17,6 +17,8 @@ import directMessageRoutes from "./routes/directMessage.routes.js";
 import groupRoutes from "./routes/group.routes.js";
 import researcherRoutes from "./routes/researcher.routes.js";
 import accessRequestRoutes from "./routes/accessRequest.routes.js";
+import postRoutes from "./routes/post.routes.js";
+import userAccountRoutes from "./routes/userAccount.routes.js";
 import errorHandler from "./middleware/errorHandler.js";
 
 import summaryRoutes from './routes/summary.routes.js';
@@ -61,6 +63,8 @@ app.use("/api/direct-messages", directMessageRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/researchers", researcherRoutes);
 app.use("/api/access-requests", accessRequestRoutes);
+app.use("/api/posts", postRoutes);
+app.use("/api/users", userAccountRoutes);
 
 // Handle unknown routes
 app.use((req, res) => {

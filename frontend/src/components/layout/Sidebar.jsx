@@ -18,6 +18,7 @@ import {
   ChevronRight,
   FolderArchive,
   KeyRound,
+  GraduationCap,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLibrary } from '../../context/LibraryContext';
@@ -92,6 +93,7 @@ export default function Sidebar({ isOpen, onClose, collapsed, onCollapsedChange 
     },
     { name: 'Collaborations', href: '/collaborations', icon: Users2 },
     { name: 'Discussions', href: '/discussions', icon: MessageSquare },
+    { name: 'Researchers', href: '/researchers', icon: GraduationCap },
     { name: 'Topic Taxonomy', href: '/taxonomy', icon: FolderTree },
     { name: 'Paper Tagging', href: '/tagging', icon: Tag },
   ];
