@@ -3,6 +3,7 @@ import Modal from '../common/Modal';
 import Button from '../common/Button';
 import { annotationsService } from '../../services/annotations.service';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 import { Edit3, Eye } from 'lucide-react';
 import MarkdownMathRenderer from '../research/MarkdownMathRenderer';
 
@@ -14,6 +15,7 @@ export default function AddAnnotationModal({
   onSaved,
   onCreated,
 }) {
+  const { isStudent } = useAuth();
   const { success, error: showError } = useToast();
   const notifySuccess = onSaved || onCreated;
   const [pageNumber, setPageNumber] = useState(1);
@@ -27,6 +29,7 @@ export default function AddAnnotationModal({
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    if (!isOpen || isStudent) return;
     if (annotationToEdit) {
       setPageNumber(annotationToEdit.page_number || 1);
       setContent(annotationToEdit.content || '');
@@ -44,7 +47,12 @@ export default function AddAnnotationModal({
       setContent('');
       setUseCoords(false);
     }
-  }, [annotationToEdit, isOpen]);
+  }, [annotationToEdit, isOpen, isStudent]);
+
+  // Strict read-only guard for students or closed state
+  if (isStudent || !isOpen) {
+    return null;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();

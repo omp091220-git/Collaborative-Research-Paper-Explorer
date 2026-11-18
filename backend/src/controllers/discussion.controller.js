@@ -383,6 +383,13 @@ export async function updateDiscussionThread(req, res, next) {
 
     const thread = threadRes.rows[0];
 
+    // Students are strictly read-only on discussions
+    if (req.user?.role === 'STUDENT') {
+      return res.status(403).json({
+        error: "Students cannot modify or resolve discussion threads.",
+      });
+    }
+
     // Check permissions: Thread creator, paper owner/admin, or edit role can update
     const isCreator = req.user.id === thread.created_by;
     const canEdit = req.paperPermissions?.canEdit || req.paperPermissions?.canManage;
@@ -461,6 +468,13 @@ export async function deleteDiscussionMessage(req, res, next) {
     }
 
     const message = msgRes.rows[0];
+
+    if (req.user?.role === 'STUDENT') {
+      return res.status(403).json({
+        error: "Students cannot delete discussion messages.",
+      });
+    }
+
     const isAuthor = req.user.id === message.user_id;
     const canManage = req.paperPermissions?.canManage;
 
@@ -501,6 +515,13 @@ export async function deleteDiscussionThread(req, res, next) {
     }
 
     const thread = threadRes.rows[0];
+
+    if (req.user?.role === 'STUDENT') {
+      return res.status(403).json({
+        error: "Students cannot delete discussion threads.",
+      });
+    }
+
     const isCreator = req.user.id === thread.created_by;
     const canManage = req.paperPermissions?.canManage;
 

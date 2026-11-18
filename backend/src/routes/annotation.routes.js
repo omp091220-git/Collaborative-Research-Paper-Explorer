@@ -3,8 +3,9 @@ import express from "express";
 import pool from "../config/database.js";
 import { authenticateToken } from "../middleware/authenticate.js";
 import { authorizeRoles } from "../middleware/authorize.js";
-import { ROLES } from "../utils/roles.js";
+import { ROLES, normalizeRole } from "../utils/roles.js";
 import { notifyMentions } from "../services/notification.service.js";
+import { checkPaperAccess } from "../services/paperPermission.service.js";
 
 const router = express.Router();
 
@@ -93,6 +94,18 @@ router.get(
         });
       }
 
+      const isSysAdmin = normalizeRole(req.user.role) === ROLES.SYSTEM_ADMIN;
+
+      if (paper_id) {
+        const { allowed, reason } = await checkPaperAccess(paper_id, req.user, 'VIEW');
+        if (!allowed) {
+          if (reason === 'not_found') return res.status(404).json({ error: "Paper not found." });
+          return res.status(403).json({
+            error: "You do not have permission to view annotations on this private paper.",
+          });
+        }
+      }
+
       const query = paper_id
         ? `SELECT a.id, a.paper_id, a.created_by, a.page_number, a.content,
                   a.position_x, a.position_y, a.region_width, a.region_height,
@@ -107,12 +120,23 @@ router.get(
                   a.created_at, a.updated_at,
                   u.full_name AS author_name, u.email AS author_email
            FROM annotations a
+           JOIN papers p ON p.id = a.paper_id
            LEFT JOIN users u ON a.created_by = u.id
+           WHERE p.is_archived = FALSE
+             AND (
+               p.visibility = 'PUBLIC'
+               OR p.uploader_id = $1
+               OR $2 = TRUE
+               OR EXISTS (
+                 SELECT 1 FROM paper_collaborators pc
+                 WHERE pc.paper_id = p.id AND pc.user_id = $1 AND pc.status <> 'REVOKED'
+               )
+             )
            ORDER BY a.created_at DESC`;
 
       const result = paper_id
         ? await pool.query(query, [paper_id])
-        : await pool.query(query);
+        : await pool.query(query, [req.user.id, isSysAdmin]);
 
       return res.status(200).json({
         annotations: result.rows,
@@ -135,6 +159,17 @@ router.post(
       if (!isValidUUID(paper_id)) {
         return res.status(400).json({
           error: "paper_id must be a valid UUID.",
+        });
+      }
+
+      // Enforce paper-level ANNOTATE permission
+      const { allowed, reason } = await checkPaperAccess(paper_id, req.user, 'ANNOTATE');
+      if (!allowed) {
+        if (reason === 'not_found') {
+          return res.status(404).json({ error: "Paper not found." });
+        }
+        return res.status(403).json({
+          error: "You do not have permission to annotate on this paper. Please request access.",
         });
       }
 

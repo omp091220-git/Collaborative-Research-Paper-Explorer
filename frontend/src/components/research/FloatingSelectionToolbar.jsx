@@ -45,54 +45,62 @@ export default function FloatingSelectionToolbar({
       }}
     >
       {/* Action 1: Add Annotation */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (onAddAnnotation) onAddAnnotation(selectionData);
-        }}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/30 transition cursor-pointer whitespace-nowrap"
-        title="Add research highlight annotation"
-        aria-label="Add Annotation"
-      >
-        <Highlighter className="w-3.5 h-3.5 text-amber-400" />
-        <span>Add Annotation</span>
-      </button>
+      {onAddAnnotation && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onAddAnnotation(selectionData);
+          }}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/30 transition cursor-pointer whitespace-nowrap"
+          title="Add research highlight annotation"
+          aria-label="Add Annotation"
+        >
+          <Highlighter className="w-3.5 h-3.5 text-amber-400" />
+          <span>Add Annotation</span>
+        </button>
+      )}
 
       {/* Action 2: Assign Tags */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (onAssignTags) onAssignTags(selectionData);
-        }}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-purple-600/30 hover:bg-purple-600/45 text-purple-200 border border-purple-500/30 transition cursor-pointer whitespace-nowrap"
-        title="Assign Hierarchical Topic Tags (FR-11)"
-        aria-label="Assign Tags"
-      >
-        <Tag className="w-3.5 h-3.5 text-purple-400" />
-        <span>Assign Tags</span>
-      </button>
+      {onAssignTags && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onAssignTags(selectionData);
+          }}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-purple-600/30 hover:bg-purple-600/45 text-purple-200 border border-purple-500/30 transition cursor-pointer whitespace-nowrap"
+          title="Assign Hierarchical Topic Tags (FR-11)"
+          aria-label="Assign Tags"
+        >
+          <Tag className="w-3.5 h-3.5 text-purple-400" />
+          <span>Assign Tags</span>
+        </button>
+      )}
 
       {/* Action 3: Create Note */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (onCreateNote) onCreateNote(selectionData);
-        }}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600/30 hover:bg-indigo-600/45 text-indigo-200 border border-indigo-500/30 transition cursor-pointer whitespace-nowrap"
-        title="Create research note with Markdown & LaTeX"
-        aria-label="Create Note"
-      >
-        <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
-        <span>Create Note</span>
-      </button>
+      {onCreateNote && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onCreateNote(selectionData);
+          }}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600/30 hover:bg-indigo-600/45 text-indigo-200 border border-indigo-500/30 transition cursor-pointer whitespace-nowrap"
+          title="Create research note with Markdown & LaTeX"
+          aria-label="Create Note"
+        >
+          <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
+          <span>Create Note</span>
+        </button>
+      )}
 
-      <div className="h-4 w-px bg-slate-700 my-auto mx-0.5" />
+      {(onAddAnnotation || onAssignTags || onCreateNote) && (
+        <div className="h-4 w-px bg-slate-700 my-auto mx-0.5" />
+      )}
 
       {/* Copy text */}
       <button

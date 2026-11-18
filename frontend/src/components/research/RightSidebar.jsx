@@ -415,7 +415,9 @@ export default function RightSidebar({
                 <MessageSquare className="w-8 h-8 mx-auto text-slate-600 stroke-1" />
                 <p className="text-xs font-medium">No annotations found</p>
                 <p className="text-[11px] text-slate-500 max-w-xs mx-auto">
-                  Select any sentence or paragraph in the PDF to create highlights, notes, and topic tags.
+                  {isStudent
+                    ? 'No annotations yet. You can explore annotations added by researchers when they become available.'
+                    : 'Select any sentence or paragraph in the PDF to create highlights, notes, and topic tags.'}
                 </p>
               </div>
             ) : (
@@ -703,7 +705,13 @@ export default function RightSidebar({
                 <Quote className="w-8 h-8 mx-auto text-emerald-600/60 stroke-1" />
                 <p className="text-xs font-bold text-slate-300">No Tagged Paragraphs Yet</p>
                 <p className="text-[11px] text-slate-500 max-w-xs mx-auto leading-relaxed">
-                  Select any sentence or paragraph in the PDF viewer, then click <strong className="text-purple-400 font-semibold">"Assign Tag"</strong> or <strong className="text-indigo-400 font-semibold">"Add Annotation"</strong> in the floating toolbar to save and tag passages.
+                  {isStudent
+                    ? 'No paragraph-level topic tags have been assigned to this paper yet.'
+                    : (
+                      <>
+                        Select any sentence or paragraph in the PDF viewer, then click <strong className="text-purple-400 font-semibold">"Assign Tag"</strong> or <strong className="text-indigo-400 font-semibold">"Add Annotation"</strong> in the floating toolbar to save and tag passages.
+                      </>
+                    )}
                 </p>
               </div>
             ) : (

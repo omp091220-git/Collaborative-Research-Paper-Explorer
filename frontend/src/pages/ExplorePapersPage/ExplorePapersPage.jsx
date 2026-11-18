@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import {
   FilePlus,
@@ -15,8 +15,10 @@ import {
   MapPin,
   Sparkles,
   Layers,
+  Loader2,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import papersService from '../../services/papers.service';
 import tagsService from '../../services/tags.service';
 import PageHeader from '../../components/layout/PageHeader';
@@ -25,7 +27,6 @@ import PaperCard from '../../components/papers/PaperCard';
 import PaperListItem from '../../components/papers/PaperListItem';
 import PaperSummaryModal from '../../components/papers/PaperSummaryModal';
 import PaperUploadModal from '../../components/papers/PaperUploadModal';
-import Pagination from '../../components/common/Pagination';
 import EmptyState from '../../components/common/EmptyState';
 import ErrorState from '../../components/common/ErrorState';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
@@ -36,6 +37,8 @@ import {
   LoadingSkeletonList,
 } from '../../components/common/LoadingSkeleton';
 import { formatDate } from '../../utils/formatters';
+
+const EXPLORE_BATCH_SIZE = 12;
 
 export default function ExplorePapersPage() {
   const { isAdmin, hasPermission } = useAuth();
@@ -50,7 +53,6 @@ export default function ExplorePapersPage() {
   const urlTopic = searchParams.get('topic') || '';
   const urlSource = searchParams.get('source') || 'all';
   const urlSort = searchParams.get('sort') || 'newest';
-  const urlPage = parseInt(searchParams.get('page') || '1', 10);
 
   // Active view tab ('papers' | 'topics')
   const [activeTab, setActiveTab] = useState(urlTab);
@@ -62,7 +64,13 @@ export default function ExplorePapersPage() {
   const [selectedSource, setSelectedSource] = useState(urlSource);
   const [sortBy, setSortBy] = useState(urlSort);
   const [viewMode, setViewMode] = useState('grid');
-  const [currentPage, setCurrentPage] = useState(urlPage);
+
+  // Infinite Scroll & Pagination state
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState(null);
+  const abortControllerRef = useRef(null);
 
   // Data state
   const [papers, setPapers] = useState([]);
@@ -80,7 +88,6 @@ export default function ExplorePapersPage() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
   const canUpload = hasPermission('papers:upload') || isAdmin;
-  const itemsPerPage = 9;
 
   // ── Debounce Search Input (300ms) for paper search ──────────────────
   useEffect(() => {
@@ -100,8 +107,15 @@ export default function ExplorePapersPage() {
     setSelectedTopic(urlTopic);
     setSelectedSource(urlSource);
     setSortBy(urlSort);
-    setCurrentPage(urlPage);
-  }, [urlTab, urlQ, urlTopic, urlSource, urlSort, urlPage]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [urlTab, urlQ, urlTopic, urlSource, urlSort]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   // Push debounced search to URL query params safely without breaking in-flight typing
   useEffect(() => {
@@ -120,14 +134,12 @@ export default function ExplorePapersPage() {
   // Push state updates to URL parameters
   const updateUrlParam = (key, value) => {
     const params = new URLSearchParams(searchParams);
-    if (!value || value === 'all' || (key === 'sort' && value === 'newest') || (key === 'page' && Number(value) <= 1) || (key === 'tab' && value === 'papers')) {
+    if (!value || value === 'all' || (key === 'sort' && value === 'newest') || (key === 'tab' && value === 'papers')) {
       params.delete(key);
     } else {
       params.set(key, String(value));
     }
-    if (key !== 'page') {
-      params.delete('page');
-    }
+    params.delete('page');
     setSearchParams(params, { replace: true });
   };
 
@@ -164,14 +176,24 @@ export default function ExplorePapersPage() {
       .catch((err) => console.warn('Failed to load taxonomy tree:', err));
   }, []);
 
-  // ── 2. Fetch Papers with Backend Search & Filters ──────────────────────────
+  // ── 2. Fetch Papers with Backend Search & Filters (Infinite Scroll Initial Batch) ────
   const fetchPapers = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setLoading(true);
     setError(null);
+    setLoadMoreError(null);
+    setPage(1);
+    setHasMore(true);
+
     try {
       const params = {
-        page: currentPage,
-        limit: itemsPerPage,
+        page: 1,
+        limit: EXPLORE_BATCH_SIZE,
         sort: sortBy,
       };
 
@@ -179,11 +201,20 @@ export default function ExplorePapersPage() {
       if (selectedTopic) params.topic = selectedTopic;
       if (selectedSource && selectedSource !== 'all') params.source = selectedSource;
 
-      const res = await papersService.getPapers(params);
-      const paperList = res.papers || res.data || (Array.isArray(res) ? res : []);
+      const res = await papersService.getPapers(params, { signal: controller.signal });
+      const paperList = res.papers || res.data?.papers || (Array.isArray(res) ? res : []);
+      const total = res.total ?? res.pagination?.total ?? paperList.length;
+
       setPapers(paperList);
-      setTotalPapers(res.total || paperList.length);
+      setTotalPapers(total);
+      setPage(1);
+
+      const hasNext = res.pagination?.hasNextPage ?? (paperList.length >= EXPLORE_BATCH_SIZE && paperList.length < total);
+      setHasMore(Boolean(hasNext));
     } catch (err) {
+      if (err.name === 'CanceledError' || err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
+        return;
+      }
       setError(
         err.response?.data?.error ||
           err.message ||
@@ -192,7 +223,63 @@ export default function ExplorePapersPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, debouncedSearch, selectedTopic, selectedSource, sortBy]);
+  }, [debouncedSearch, selectedTopic, selectedSource, sortBy]);
+
+  const loadMorePapers = useCallback(async () => {
+    if (loading || loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    setLoadMoreError(null);
+    const nextPage = page + 1;
+
+    try {
+      const params = {
+        page: nextPage,
+        limit: EXPLORE_BATCH_SIZE,
+        sort: sortBy,
+      };
+
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
+      if (selectedTopic) params.topic = selectedTopic;
+      if (selectedSource && selectedSource !== 'all') params.source = selectedSource;
+
+      const res = await papersService.getPapers(params);
+      const nextBatch = res.papers || res.data?.papers || (Array.isArray(res) ? res : []);
+
+      if (nextBatch.length === 0) {
+        setHasMore(false);
+      } else {
+        setPapers((prev) => {
+          const existingIds = new Set(prev.map((p) => p.id));
+          const uniqueNew = nextBatch.filter((p) => !existingIds.has(p.id));
+          return [...prev, ...uniqueNew];
+        });
+
+        const total = res.total ?? res.pagination?.total ?? (papers.length + nextBatch.length);
+        setTotalPapers(total);
+
+        const hasNext = res.pagination?.hasNextPage ?? (nextBatch.length >= EXPLORE_BATCH_SIZE);
+        setHasMore(Boolean(hasNext));
+        setPage(nextPage);
+      }
+    } catch (err) {
+      if (err.name === 'CanceledError' || err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
+        return;
+      }
+      setLoadMoreError(
+        err.response?.data?.error ||
+          err.message ||
+          'Failed to load more papers.'
+      );
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loading, loadingMore, hasMore, page, papers.length, debouncedSearch, selectedTopic, selectedSource, sortBy]);
+
+  const sentinelRef = useInfiniteScroll({
+    onIntersect: loadMorePapers,
+    enabled: hasMore && !loading && !loadingMore && !loadMoreError && activeTab === 'papers',
+  });
 
   useEffect(() => {
     if (activeTab === 'papers') {
@@ -227,7 +314,6 @@ export default function ExplorePapersPage() {
     setSelectedTopic('');
     setSelectedSource('all');
     setSortBy('newest');
-    setCurrentPage(1);
     setSearchParams({}, { replace: true });
   };
 
@@ -385,19 +471,41 @@ export default function ExplorePapersPage() {
                 </div>
               )}
 
-              {/* Pagination */}
-              <div className="pt-4">
-                <Pagination
-                  currentPage={currentPage}
-                  totalItems={totalPapers}
-                  itemsPerPage={itemsPerPage}
-                  onPageChange={(p) => {
-                    setCurrentPage(p);
-                    updateUrlParam('page', p);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                />
-              </div>
+              {/* Infinite Scroll Indicators & Sentinel */}
+              {loadingMore && (
+                <div className="mt-4 space-y-3">
+                  {viewMode === 'grid' ? (
+                    <LoadingSkeletonGrid count={3} />
+                  ) : (
+                    <LoadingSkeletonList count={3} />
+                  )}
+                  <div className="flex items-center justify-center gap-2 text-xs text-theme-muted py-2">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-violet-400" />
+                    <span>Loading more papers...</span>
+                  </div>
+                </div>
+              )}
+
+              {loadMoreError && (
+                <div className="mt-4 p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-300 flex items-center justify-between">
+                  <span>{loadMoreError}</span>
+                  <button
+                    type="button"
+                    onClick={loadMorePapers}
+                    className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold transition-colors"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
+
+              {!hasMore && papers.length > 0 && (
+                <div className="mt-8 text-center text-xs text-theme-muted py-4 border-t border-theme-subtle">
+                  You've reached the end of the collection.
+                </div>
+              )}
+
+              <div ref={sentinelRef} className="h-4 w-full" />
             </>
           )}
         </div>

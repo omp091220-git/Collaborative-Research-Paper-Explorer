@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   BookOpen,
@@ -14,12 +14,18 @@ import {
   TrendingUp,
   Clock,
   Layers,
+  KeyRound,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLibrary } from '../../context/LibraryContext';
 import { useToast } from '../../context/ToastContext';
+import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import papersService from '../../services/papers.service';
 import collaborationsService from '../../services/collaborations.service';
+import accessRequestsService from '../../services/accessRequests.service';
 import PageHeader from '../../components/layout/PageHeader';
 import PaperCard from '../../components/papers/PaperCard';
 import PaperSummaryModal from '../../components/papers/PaperSummaryModal';
@@ -28,46 +34,142 @@ import Badge from '../../components/common/Badge';
 import EmptyState from '../../components/common/EmptyState';
 import { LoadingSkeletonGrid } from '../../components/common/LoadingSkeleton';
 import ErrorState from '../../components/common/ErrorState';
-import { ROLE_LABELS, ROLE_COLORS } from '../../utils/constants';
+import { ROLE_LABELS } from '../../utils/constants';
+
+const DASHBOARD_BATCH_SIZE = 12;
 
 export default function DashboardPage() {
-  const { user, isAdmin, hasPermission } = useAuth();
+  const { user, isAdmin, isStudent, hasPermission } = useAuth();
   const { bookmarks, collections } = useLibrary();
   const { addToast } = useToast();
   const navigate = useNavigate();
 
   const [papers, setPapers] = useState([]);
+  const [totalPapers, setTotalPapers] = useState(0);
   const [invitations, setInvitations] = useState([]);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+
+  // Pagination & Infinite Scroll states
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
+  const [loadMoreError, setLoadMoreError] = useState(null);
+
   const [summaryPaper, setSummaryPaper] = useState(null);
 
   const canUpload = hasPermission('papers:upload') || isAdmin;
+  const abortControllerRef = useRef(null);
 
   const loadDashboardData = useCallback(async () => {
+    // Abort previous in-flight request if any
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setLoading(true);
     setError(null);
+    setLoadMoreError(null);
+    setPage(1);
+
     try {
-      const [papersRes, invitationsRes] = await Promise.allSettled([
-        papersService.getPapers({ limit: 6 }),
-        collaborationsService.getMyInvitations(),
-      ]);
+      if (isStudent) {
+        const [papersRes, requestsRes] = await Promise.allSettled([
+          papersService.getPapers({ page: 1, limit: DASHBOARD_BATCH_SIZE }, { signal: controller.signal }),
+          accessRequestsService.getMyRequests({ status: 'PENDING', limit: 50 }),
+        ]);
 
-      if (papersRes.status === 'fulfilled') {
-        setPapers(papersRes.value.papers || papersRes.value || []);
+        if (papersRes.status === 'fulfilled') {
+          const data = papersRes.value;
+          const loadedPapers = data.papers || data.data?.papers || [];
+          setPapers(loadedPapers);
+          const total = data.total ?? data.pagination?.total ?? loadedPapers.length;
+          setTotalPapers(total);
+          const hasNext = data.pagination?.hasNextPage ?? (loadedPapers.length >= DASHBOARD_BATCH_SIZE && loadedPapers.length < total);
+          setHasMore(Boolean(hasNext));
+        } else if (papersRes.reason?.name !== 'CanceledError' && papersRes.reason?.name !== 'AbortError') {
+          throw new Error('Failed to load recent research papers.');
+        }
+
+        if (requestsRes.status === 'fulfilled') {
+          const reqs = requestsRes.value.requests || requestsRes.value || [];
+          setPendingRequestsCount(reqs.length);
+        }
       } else {
-        throw new Error('Failed to load recent research papers.');
-      }
+        const [papersRes, invitationsRes] = await Promise.allSettled([
+          papersService.getPapers({ page: 1, limit: DASHBOARD_BATCH_SIZE }, { signal: controller.signal }),
+          collaborationsService.getMyInvitations(),
+        ]);
 
-      if (invitationsRes.status === 'fulfilled') {
-        setInvitations(invitationsRes.value.invitations || []);
+        if (papersRes.status === 'fulfilled') {
+          const data = papersRes.value;
+          const loadedPapers = data.papers || data.data?.papers || [];
+          setPapers(loadedPapers);
+          const total = data.total ?? data.pagination?.total ?? loadedPapers.length;
+          setTotalPapers(total);
+          const hasNext = data.pagination?.hasNextPage ?? (loadedPapers.length >= DASHBOARD_BATCH_SIZE && loadedPapers.length < total);
+          setHasMore(Boolean(hasNext));
+        } else if (papersRes.reason?.name !== 'CanceledError' && papersRes.reason?.name !== 'AbortError') {
+          throw new Error('Failed to load recent research papers.');
+        }
+
+        if (invitationsRes.status === 'fulfilled') {
+          setInvitations(invitationsRes.value.invitations || []);
+        }
       }
     } catch (err) {
-      setError(err.message || 'Unable to load dashboard data.');
+      if (err.name !== 'CanceledError' && err.name !== 'AbortError') {
+        setError(err.message || 'Unable to load dashboard data.');
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isStudent]);
+
+  // Load next batch of papers when scrolling
+  const loadMorePapers = useCallback(async () => {
+    if (loading || loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    setLoadMoreError(null);
+    const nextPage = page + 1;
+
+    try {
+      const data = await papersService.getPapers({
+        page: nextPage,
+        limit: DASHBOARD_BATCH_SIZE,
+      });
+
+      const nextBatch = data.papers || data.data?.papers || [];
+      if (nextBatch.length === 0) {
+        setHasMore(false);
+      } else {
+        setPapers((prev) => {
+          const existingIds = new Set(prev.map((p) => p.id));
+          const uniqueNew = nextBatch.filter((p) => !existingIds.has(p.id));
+          return [...prev, ...uniqueNew];
+        });
+
+        const total = data.total ?? data.pagination?.total ?? (papers.length + nextBatch.length);
+        setTotalPapers(total);
+        const hasNext = data.pagination?.hasNextPage ?? (nextBatch.length >= DASHBOARD_BATCH_SIZE);
+        setHasMore(Boolean(hasNext));
+        setPage(nextPage);
+      }
+    } catch (err) {
+      setLoadMoreError(err.response?.data?.error || err.message || 'Failed to load more papers.');
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loading, loadingMore, hasMore, page, papers.length]);
+
+  const sentinelRef = useInfiniteScroll({
+    onIntersect: loadMorePapers,
+    enabled: hasMore && !loading && !loadingMore && !loadMoreError,
+  });
 
   useEffect(() => {
     loadDashboardData();
@@ -116,7 +218,7 @@ export default function DashboardPage() {
   const stats = [
     {
       label: 'Repository Papers',
-      value: papers.length,
+      value: totalPapers || papers.length,
       icon: BookOpen,
       color: 'text-violet-400 bg-violet-500/15 border-violet-500/25',
       link: '/explore',
@@ -135,14 +237,24 @@ export default function DashboardPage() {
       color: 'text-cyan-400 bg-cyan-500/15 border-cyan-500/25',
       link: '/collections',
     },
-    {
-      label: 'Pending Invites',
-      value: invitations.length,
-      icon: Users2,
-      color: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/25',
-      link: '/collaborations',
-    },
+    isStudent
+      ? {
+          label: 'Pending Requests',
+          value: pendingRequestsCount,
+          icon: KeyRound,
+          color: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/25',
+          link: '/access-requests',
+        }
+      : {
+          label: 'Pending Invites',
+          value: invitations.length,
+          icon: Users2,
+          color: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/25',
+          link: '/collaborations',
+        },
   ];
+
+  const roleBadgeVariant = isStudent ? 'success' : isAdmin ? 'warning' : 'purple';
 
   return (
     <div className="space-y-8 animate-fadeIn text-theme-main">
@@ -153,15 +265,19 @@ export default function DashboardPage() {
             <span className="text-xs font-bold uppercase tracking-wider text-violet-400">
               Welcome back
             </span>
-            <Badge variant={ROLE_COLORS[user?.role] || 'primary'} size="xs">
+            <Badge variant={roleBadgeVariant} size="xs">
               {ROLE_LABELS[user?.role] || user?.role || 'SCHOLAR'}
             </Badge>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-theme-main">
-            {user?.full_name ? `Dr. ${user.full_name}` : 'Research Explorer'}
+            {isStudent
+              ? (user?.full_name || 'Scholar')
+              : (user?.full_name ? `Dr. ${user.full_name}` : 'Research Explorer')}
           </h1>
           <p className="text-xs sm:text-sm text-theme-secondary mt-1 font-normal">
-            Collaborative analysis, hierarchical taxonomy, and multi-perspective AI syntheses.
+            {isStudent
+              ? 'Explore research, learn from scholarly work, and build your reading library.'
+              : 'Collaborative analysis, hierarchical taxonomy, and multi-perspective AI syntheses.'}
           </p>
         </div>
 
@@ -184,8 +300,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Pending Invitations Banner (if any) */}
-      {invitations.length > 0 && (
+      {/* Pending Invitations Banner (Researchers & Admins only) */}
+      {!isStudent && invitations.length > 0 && (
         <div className="p-5 bg-gradient-to-r from-emerald-950/40 via-[#1B1D2B] to-emerald-950/30 rounded-2xl border border-emerald-500/30 shadow-md space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 font-bold text-xs sm:text-sm text-emerald-300">
@@ -280,11 +396,19 @@ export default function DashboardPage() {
                 Explore Repository
               </Button>
             </Link>
-            <Link to="/taxonomy">
-              <Button variant="secondary" size="sm" iconLeft={Layers}>
-                Taxonomy Explorer
-              </Button>
-            </Link>
+            {isStudent ? (
+              <Link to="/library">
+                <Button variant="secondary" size="sm" iconLeft={Bookmark}>
+                  My Reading Library
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/taxonomy">
+                <Button variant="secondary" size="sm" iconLeft={Layers}>
+                  Taxonomy Explorer
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -326,15 +450,48 @@ export default function DashboardPage() {
             onAction={canUpload ? () => navigate('/explore') : undefined}
           />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {papers.map((paper) => (
-              <PaperCard
-                key={paper.id}
-                paper={paper}
-                onOpenSummary={(p) => setSummaryPaper(p)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {papers.map((paper) => (
+                <PaperCard
+                  key={paper.id}
+                  paper={paper}
+                  onOpenSummary={(p) => setSummaryPaper(p)}
+                />
+              ))}
+            </div>
+
+            {loadingMore && (
+              <div className="mt-4 space-y-3">
+                <LoadingSkeletonGrid count={3} />
+                <div className="flex items-center justify-center gap-2 text-xs text-theme-muted py-2">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-violet-400" />
+                  <span>Loading more literature...</span>
+                </div>
+              </div>
+            )}
+
+            {loadMoreError && (
+              <div className="mt-4 p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-300 flex items-center justify-between">
+                <span>{loadMoreError}</span>
+                <button
+                  type="button"
+                  onClick={loadMorePapers}
+                  className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold transition-colors"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {!hasMore && papers.length > 0 && (
+              <div className="mt-8 text-center text-xs text-theme-muted py-4 border-t border-theme-subtle">
+                You've reached the end of the collection.
+              </div>
+            )}
+
+            <div ref={sentinelRef} className="h-4 w-full" />
+          </>
         )}
       </section>
 

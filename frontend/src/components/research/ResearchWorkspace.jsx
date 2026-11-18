@@ -30,7 +30,7 @@ export default function ResearchWorkspace({
   isBookmarked,
   onToggleBookmark,
 }) {
-  const { user, isAdmin, isResearcher } = useAuth();
+  const { user, isAdmin, isResearcher, isStudent } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -42,7 +42,7 @@ export default function ResearchWorkspace({
   const urlPageParam = parseInt(searchParams.get('page'), 10);
   const urlAnnotationIdParam = searchParams.get('annotationId');
 
-  const canManageTaxonomy = isAdmin || isResearcher;
+  const canManageTaxonomy = !isStudent && (isAdmin || isResearcher);
 
   // ── 0. Active Paper State ──────────────────────────────────────────────────
   const [currentPaperId, setCurrentPaperId] = useState(initialPaperId || initialPaper?.id || null);
@@ -756,7 +756,7 @@ export default function ResearchWorkspace({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFullscreen]);
 
-  const handleDownload = useCallback(() => {
+  const handleDownload = useCallback(async () => {
     if (blobUrl) {
       const a = document.createElement('a');
       a.href = blobUrl;
@@ -764,8 +764,39 @@ export default function ResearchWorkspace({
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      return;
     }
-  }, [blobUrl, currentPaper]);
+    if (!currentPaperId) return;
+    try {
+      addToast({
+        type: 'info',
+        title: 'Downloading Document',
+        message: 'Preparing PDF download...',
+      });
+      const response = await api.get(`/papers/${currentPaperId}/pdf`, { responseType: 'blob' });
+      if (response.data) {
+        const url = URL.createObjectURL(response.data);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentPaper?.title || 'research_paper'}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+        addToast({
+          type: 'success',
+          title: 'Download Complete',
+          message: 'PDF downloaded successfully.',
+        });
+      }
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Download Failed',
+        message: getApiErrorMessage(err, 'Failed to download paper PDF.'),
+      });
+    }
+  }, [blobUrl, currentPaper, currentPaperId, addToast]);
 
   const handlePrint = useCallback(() => {
     if (!blobUrl) return;
@@ -919,9 +950,9 @@ export default function ResearchWorkspace({
               annotations={annotations}
               activeAnnotationId={activeAnnotationId}
               onSelectAnnotation={handleSelectAnnotation}
-              onHighlightSelection={handleQuickHighlight}
-              onAnnotateSelection={handleAnnotateSelection}
-              onAssignTagSelection={handleAssignTagSelection}
+              onHighlightSelection={!isStudent ? handleQuickHighlight : undefined}
+              onAnnotateSelection={!isStudent ? handleAnnotateSelection : undefined}
+              onAssignTagSelection={!isStudent ? handleAssignTagSelection : undefined}
               searchQuery={searchQuery}
               searchResults={searchResults}
               setSearchResults={handleSetSearchResults}
@@ -968,27 +999,27 @@ export default function ResearchWorkspace({
             annotations={annotations}
             activeAnnotationId={activeAnnotationId}
             onSelectAnnotation={handleSelectAnnotation}
-            onEditAnnotation={handleEditAnnotation}
-            onDeleteAnnotation={handleDeleteAnnotation}
-            onOpenTagPickerForAnnotation={handleOpenTagPickerForAnnotation}
-            onRemoveAnnotationTag={handleRemoveAssignment}
-            onCreateManualAnnotation={() => {
+            onEditAnnotation={!isStudent ? handleEditAnnotation : undefined}
+            onDeleteAnnotation={!isStudent ? handleDeleteAnnotation : undefined}
+            onOpenTagPickerForAnnotation={!isStudent ? handleOpenTagPickerForAnnotation : undefined}
+            onRemoveAnnotationTag={!isStudent ? handleRemoveAssignment : undefined}
+            onCreateManualAnnotation={!isStudent ? () => {
               setAnnotationToEdit(null);
               setActiveSelectionForModal(null);
               setAnnotationModalOpen(true);
-            }}
+            } : undefined}
             // FR-10 Topic Tree props
             tagTree={tagTree}
             allTags={allTags}
             selectedTagId={selectedTagId}
             onSelectTag={(t) => setSelectedTagId(t ? t.id : null)}
-            onOpenCreateTopicModal={handleOpenCreateTopicModal}
-            onOpenEditTopicModal={handleOpenEditTopicModal}
-            onDeleteTopic={handleDeleteTopic}
-            onAssignTagToPaper={(tag) => {
+            onOpenCreateTopicModal={!isStudent && canManageTaxonomy ? handleOpenCreateTopicModal : undefined}
+            onOpenEditTopicModal={!isStudent && canManageTaxonomy ? handleOpenEditTopicModal : undefined}
+            onDeleteTopic={!isStudent && canManageTaxonomy ? handleDeleteTopic : undefined}
+            onAssignTagToPaper={!isStudent ? (tag) => {
               setTagSelectorTarget({ type: 'paper' });
               handleSelectTagFromPicker(tag);
-            }}
+            } : undefined}
             paperAssignments={paperAssignments}
             canManageTaxonomy={canManageTaxonomy}
             isAdmin={isAdmin}
@@ -998,8 +1029,8 @@ export default function ResearchWorkspace({
         </ErrorBoundary>
       </div>
 
-      {/* MODAL 1: Create or Edit Annotation */}
-      {annotationModalOpen && (
+      {/* MODAL 1: Create or Edit Annotation (Never mounted for students) */}
+      {!isStudent && annotationModalOpen && (
         <CreateAnnotationModal
           isOpen={annotationModalOpen}
           onClose={() => {
@@ -1016,8 +1047,8 @@ export default function ResearchWorkspace({
         />
       )}
 
-      {/* MODAL 2: Assign Hierarchical Topic Tags (FR-11 Multi-Tag) */}
-      {tagSelectorOpen && (
+      {/* MODAL 2: Assign Hierarchical Topic Tags (Never mounted for students) */}
+      {!isStudent && tagSelectorOpen && (
         <TagSelectorModal
           isOpen={tagSelectorOpen}
           onClose={() => {
@@ -1040,8 +1071,8 @@ export default function ResearchWorkspace({
         />
       )}
 
-      {/* MODAL 3: Create or Edit FR-10 Topic Tag */}
-      {topicModalOpen && (
+      {/* MODAL 3: Create or Edit FR-10 Topic Tag (Never mounted for students) */}
+      {!isStudent && topicModalOpen && (
         <TagFormModal
           isOpen={topicModalOpen}
           onClose={() => setTopicModalOpen(false)}

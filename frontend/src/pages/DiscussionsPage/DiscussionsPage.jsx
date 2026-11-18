@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { MessageSquare, BookOpen, ArrowRight } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import papersService from '../../services/papers.service';
 import PageHeader from '../../components/layout/PageHeader';
 import DiscussionPanel from '../../components/DiscussionPanel';
@@ -10,6 +11,7 @@ import EmptyState from '../../components/common/EmptyState';
 import { LoadingSkeletonGrid } from '../../components/common/LoadingSkeleton';
 
 export default function DiscussionsPage() {
+  const { isStudent } = useAuth();
   const [papers, setPapers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPaper, setSelectedPaper] = useState(null);
@@ -44,12 +46,18 @@ export default function DiscussionsPage() {
           <MessageSquare className="w-5 h-5" />
         </div>
         <div className="text-xs sm:text-sm text-theme-secondary">
-          <p className="font-semibold text-theme-main mb-1">
-            Contextual Discussions Tied to Text and Figures
+          <p className="font-semibold text-theme-main mb-1 flex items-center gap-2 flex-wrap">
+            <span>Contextual Discussions Tied to Text and Figures</span>
+            {isStudent && (
+              <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                Read-only Access (Student)
+              </span>
+            )}
           </p>
           <p className="leading-relaxed">
-            Discussions in ScholarSphere are tied directly to paper highlights, page numbers, or figure captions.
-            Select any research paper below to launch its full threaded conversation panel.
+            {isStudent
+              ? 'Browse open discussion threads, peer review remarks, and section-specific notes posted by researchers on available papers.'
+              : 'Discussions in ScholarSphere are tied directly to paper highlights, page numbers, or figure captions. Select any research paper below to launch its full threaded conversation panel.'}
           </p>
         </div>
       </div>

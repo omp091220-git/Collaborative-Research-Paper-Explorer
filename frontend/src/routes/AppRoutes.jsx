@@ -17,6 +17,8 @@ const VerifyEmailPage = lazy(() => import('../pages/VerifyEmailPage/VerifyEmailP
 
 const DashboardPage = lazy(() => import('../pages/DashboardPage/DashboardPage'));
 const ExplorePapersPage = lazy(() => import('../pages/ExplorePapersPage/ExplorePapersPage'));
+const MyPapersPage = lazy(() => import('../pages/MyPapersPage/MyPapersPage'));
+const AccessRequestsPage = lazy(() => import('../pages/AccessRequestsPage/AccessRequestsPage'));
 const PaperDetailsPage = lazy(() => import('../pages/PaperDetailsPage/PaperDetailsPage'));
 const LibraryPage = lazy(() => import('../pages/LibraryPage/LibraryPage'));
 const CollectionsPage = lazy(() => import('../pages/CollectionsPage/CollectionsPage'));
@@ -66,6 +68,8 @@ export default function AppRoutes() {
             >
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/explore" element={<ExplorePapersPage />} />
+              <Route path="/my-papers" element={<MyPapersPage />} />
+              <Route path="/access-requests" element={<AccessRequestsPage />} />
               <Route path="/papers/:id" element={<PaperDetailsPage />} />
               <Route path="/library" element={<LibraryPage />} />
               <Route path="/bookmarks" element={<Navigate to="/library" replace />} />
