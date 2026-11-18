@@ -39,29 +39,29 @@ export default function SettingsPage() {
       />
 
       {/* Security & Inactivity Policy */}
-      <div className="p-6 sm:p-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-xs space-y-4">
+      <div className="p-6 sm:p-8 bg-theme-card rounded-3xl border border-theme-subtle shadow-xs space-y-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400">
+          <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400">
             <Clock className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
+            <h3 className="text-base font-bold text-theme-main">
               Session Inactivity Policy (FR-04)
             </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+            <p className="text-xs text-theme-secondary font-medium">
               Automatic idle expiration for institutional security compliance
             </p>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700/60 text-xs text-slate-700 dark:text-slate-300 leading-relaxed space-y-2">
+        <div className="p-4 rounded-2xl bg-theme-elevated border border-theme-subtle text-xs text-theme-secondary leading-relaxed space-y-2">
           <p>
             For privacy and institutional compliance, user sessions are protected by a{' '}
-            <strong>30-minute rolling inactivity window</strong>. Any authenticated API request
+            <strong className="text-theme-main">30-minute rolling inactivity window</strong>. Any authenticated API request
             or user interaction keeps your session active.
           </p>
-          <div className="flex items-center gap-2 text-amber-800 dark:text-amber-400 font-bold pt-1">
-            <Shield className="w-4 h-4" />
+          <div className="flex items-center gap-2 text-amber-400 font-bold pt-1">
+            <Shield className="w-4 h-4 shrink-0" />
             <span>A 2-minute countdown warning modal will prompt you before expiration.</span>
           </div>
         </div>
@@ -70,29 +70,29 @@ export default function SettingsPage() {
       {/* Notification Preferences */}
       <form
         onSubmit={handleSaveNotifications}
-        className="p-6 sm:p-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-700 shadow-xs space-y-6"
+        className="p-6 sm:p-8 bg-theme-card rounded-3xl border border-theme-subtle shadow-xs space-y-6"
       >
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-700 dark:text-indigo-400">
+          <div className="p-2.5 rounded-xl bg-violet-500/10 text-violet-400">
             <Bell className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
+            <h3 className="text-base font-bold text-theme-main">
               Notification Preferences
             </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+            <p className="text-xs text-theme-secondary font-medium">
               Control which paper activities trigger alerts in your notification center
             </p>
           </div>
         </div>
 
-        <div className="space-y-4 divide-y divide-slate-200 dark:divide-slate-800 text-sm">
+        <div className="space-y-4 divide-y divide-[var(--border-subtle)] text-sm">
           <div className="flex items-center justify-between pt-4 first:pt-0">
             <div>
-              <p className="font-bold text-slate-900 dark:text-white">
+              <p className="font-bold text-theme-main">
                 Collaboration Invitations
               </p>
-              <p className="text-xs text-slate-600 dark:text-slate-400">
+              <p className="text-xs text-theme-secondary">
                 Receive notifications when colleagues invite you to join research papers.
               </p>
             </div>
@@ -100,16 +100,16 @@ export default function SettingsPage() {
               type="checkbox"
               checked={notifyInvites}
               onChange={(e) => setNotifyInvites(e.target.checked)}
-              className="w-4 h-4 text-indigo-600 rounded-md focus:ring-indigo-500 cursor-pointer"
+              className="w-4 h-4 rounded text-violet-500 focus:ring-violet-500 bg-theme-elevated border-theme-strong cursor-pointer"
             />
           </div>
 
           <div className="flex items-center justify-between pt-4">
             <div>
-              <p className="font-bold text-slate-900 dark:text-white">
+              <p className="font-bold text-theme-main">
                 Discussion Replies & Mentions
               </p>
-              <p className="text-xs text-slate-600 dark:text-slate-400">
+              <p className="text-xs text-theme-secondary">
                 Notify when collaborators reply to your threads or annotations.
               </p>
             </div>
@@ -117,16 +117,16 @@ export default function SettingsPage() {
               type="checkbox"
               checked={notifyDiscussions}
               onChange={(e) => setNotifyDiscussions(e.target.checked)}
-              className="w-4 h-4 text-indigo-600 rounded-md focus:ring-indigo-500 cursor-pointer"
+              className="w-4 h-4 rounded text-violet-500 focus:ring-violet-500 bg-theme-elevated border-theme-strong cursor-pointer"
             />
           </div>
 
           <div className="flex items-center justify-between pt-4">
             <div>
-              <p className="font-bold text-slate-900 dark:text-white">
+              <p className="font-bold text-theme-main">
                 AI Research Recommendations
               </p>
-              <p className="text-xs text-slate-600 dark:text-slate-400">
+              <p className="text-xs text-theme-secondary">
                 Weekly digest of preprints matching your research interests.
               </p>
             </div>
@@ -134,7 +134,7 @@ export default function SettingsPage() {
               type="checkbox"
               checked={notifyRecommendations}
               onChange={(e) => setNotifyRecommendations(e.target.checked)}
-              className="w-4 h-4 text-indigo-600 rounded-md focus:ring-indigo-500 cursor-pointer"
+              className="w-4 h-4 rounded text-violet-500 focus:ring-violet-500 bg-theme-elevated border-theme-strong cursor-pointer"
             />
           </div>
         </div>
@@ -147,12 +147,12 @@ export default function SettingsPage() {
       </form>
 
       {/* Account Termination & Logout */}
-      <div className="p-6 sm:p-8 bg-white dark:bg-slate-900 rounded-3xl border border-rose-300 dark:border-rose-900 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="p-6 sm:p-8 bg-theme-card rounded-3xl border border-rose-500/30 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h3 className="text-base font-bold text-rose-700 dark:text-rose-400">
+          <h3 className="text-base font-bold text-rose-400">
             Sign Out of ScholarSphere
           </h3>
-          <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mt-1">
+          <p className="text-xs text-theme-secondary font-medium mt-1">
             End your authenticated session across active browser tabs.
           </p>
         </div>

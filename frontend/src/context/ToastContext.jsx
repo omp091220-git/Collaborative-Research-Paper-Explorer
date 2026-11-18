@@ -10,14 +10,28 @@ export function ToastProvider({ children }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const addToast = useCallback((type, title, message, duration = 4500) => {
-    const id = Date.now() + Math.random().toString(36).substring(2, 7);
-    setToasts((prev) => [...prev, { id, type, title, message }]);
+  const addToast = useCallback((typeOrPayload, title, message, duration = 4500) => {
+    let type = typeOrPayload;
+    let resolvedTitle = title;
+    let resolvedMessage = message;
+    let resolvedDuration = duration;
 
-    if (duration > 0) {
+    if (typeOrPayload && typeof typeOrPayload === 'object') {
+      type = typeOrPayload.type || 'info';
+      resolvedTitle = typeOrPayload.title;
+      resolvedMessage = typeOrPayload.message;
+      if (typeof typeOrPayload.duration === 'number') {
+        resolvedDuration = typeOrPayload.duration;
+      }
+    }
+
+    const id = Date.now() + Math.random().toString(36).substring(2, 7);
+    setToasts((prev) => [...prev, { id, type, title: resolvedTitle, message: resolvedMessage }]);
+
+    if (resolvedDuration > 0) {
       setTimeout(() => {
         removeToast(id);
-      }, duration);
+      }, resolvedDuration);
     }
   }, [removeToast]);
 
@@ -34,10 +48,10 @@ export function ToastProvider({ children }) {
   };
 
   const borders = {
-    success: 'border-emerald-200 bg-white/95 text-slate-800',
-    error: 'border-rose-200 bg-white/95 text-slate-800',
-    info: 'border-indigo-200 bg-white/95 text-slate-800',
-    warning: 'border-amber-200 bg-white/95 text-slate-800',
+    success: 'border-emerald-500/30 bg-theme-card text-theme-main',
+    error: 'border-rose-500/40 bg-theme-card text-theme-main',
+    info: 'border-violet-500/35 bg-theme-card text-theme-main',
+    warning: 'border-amber-500/40 bg-theme-card text-theme-main',
   };
 
   return (
@@ -48,16 +62,17 @@ export function ToastProvider({ children }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl border shadow-lg backdrop-blur-md transition-all duration-300 animate-slideUp ${borders[t.type] || borders.info}`}
+            className={`pointer-events-auto flex items-start gap-3 p-4 rounded-2xl border shadow-2xl backdrop-blur-md transition-all duration-300 animate-fadeIn ${borders[t.type] || borders.info}`}
+            role="status"
           >
             {icons[t.type] || icons.info}
             <div className="flex-1 min-w-0">
-              {t.title && <h4 className="text-sm font-semibold text-slate-900 leading-snug">{t.title}</h4>}
-              {t.message && <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">{t.message}</p>}
+              {t.title && <h4 className="text-sm font-semibold text-theme-main leading-snug">{t.title}</h4>}
+              {t.message && <p className="text-xs text-theme-secondary mt-0.5 leading-relaxed">{t.message}</p>}
             </div>
             <button
               onClick={() => removeToast(t.id)}
-              className="text-slate-400 hover:text-slate-600 p-0.5 rounded transition cursor-pointer"
+              className="text-theme-muted hover:text-theme-main p-0.5 rounded transition cursor-pointer"
               aria-label="Close notification"
             >
               <X className="w-4 h-4" />

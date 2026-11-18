@@ -149,7 +149,9 @@ export default function ResearchWorkspace({
       const saved = localStorage.getItem('crpe_reader_split_width');
       const parsed = parseInt(saved, 10);
       if (!isNaN(parsed) && parsed >= 280 && parsed <= 1200) return parsed;
-    } catch (_) {}
+    } catch {
+      // storage unavailable
+    }
     return 420; // default comfortable split width
   });
   const [isDraggingSplit, setIsDraggingSplit] = useState(false);
@@ -163,7 +165,9 @@ export default function ResearchWorkspace({
     setSplitWidth(clamped);
     try {
       localStorage.setItem('crpe_reader_split_width', String(clamped));
-    } catch (_) {}
+    } catch {
+      // storage unavailable
+    }
   }, []);
 
   useEffect(() => {
@@ -182,7 +186,9 @@ export default function ResearchWorkspace({
       setIsDraggingSplit(false);
       try {
         localStorage.setItem('crpe_reader_split_width', String(splitWidth));
-      } catch (_) {}
+      } catch {
+        // storage unavailable
+      }
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -782,7 +788,9 @@ export default function ResearchWorkspace({
       setTimeout(() => {
         try {
           document.body.removeChild(iframe);
-        } catch (_) {}
+        } catch {
+          // already unmounted
+        }
       }, 60000);
     };
   }, [blobUrl]);
@@ -985,6 +993,7 @@ export default function ResearchWorkspace({
             canManageTaxonomy={canManageTaxonomy}
             isAdmin={isAdmin}
             currentUser={user}
+            paperUploaderId={currentPaper?.uploader_id || initialPaper?.uploader_id}
           />
         </ErrorBoundary>
       </div>

@@ -64,14 +64,14 @@ export default function VerifyEmail() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-slate-50 to-purple-100 font-sans p-4">
+    <div className="auth-shell">
       {/* Decorative background blobs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="hidden">
         <div className="absolute -top-24 -left-24 w-72 h-72 bg-indigo-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" />
         <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" />
       </div>
 
-      <div className="relative bg-white/95 backdrop-blur-sm p-8 md:p-10 rounded-2xl shadow-2xl w-full max-w-md border border-white/50 text-center">
+      <div className="auth-card text-center">
         {/* Brand / Logo */}
         <div className="flex justify-center mb-4">
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
@@ -83,8 +83,8 @@ export default function VerifyEmail() {
         {verificationStatus === 'verifying' && (
           <div className="py-8">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent mb-4" />
-            <h1 className="text-xl font-bold text-slate-800 mb-2">Verifying Your Email...</h1>
-            <p className="text-slate-500 text-sm">Please wait while we confirm your email token.</p>
+            <h1 className="auth-title !text-xl mb-2">Verifying Your Email...</h1>
+            <p className="text-theme-muted text-sm">Please wait while we confirm your email token.</p>
           </div>
         )}
 
@@ -94,13 +94,13 @@ export default function VerifyEmail() {
             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-3xl font-bold shadow-sm">
               ✓
             </div>
-            <h1 className="text-2xl font-bold text-slate-800 mb-2">Email Verified!</h1>
-            <p className="text-slate-600 text-sm mb-6 leading-relaxed">
+            <h1 className="auth-title !text-2xl mb-2">Email Verified!</h1>
+            <p className="text-theme-secondary text-sm mb-6 leading-relaxed">
               {verificationMessage}
             </p>
             <Link
               to="/login"
-              className="inline-block w-full py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-semibold shadow hover:from-indigo-700 hover:to-purple-700 transition"
+              className="inline-block auth-submit"
             >
               Sign In to Your Account
             </Link>
@@ -115,7 +115,7 @@ export default function VerifyEmail() {
                 <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center text-3xl shadow-sm">
                   ⚠️
                 </div>
-                <h1 className="text-xl font-bold text-slate-800 mb-2">
+                <h1 className="auth-title !text-xl mb-2">
                   Verification Failed
                 </h1>
                 <p className="text-red-600 text-sm bg-red-50 border border-red-200 p-3 rounded-lg">
@@ -127,10 +127,10 @@ export default function VerifyEmail() {
                 <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-3xl shadow-sm">
                   ✉️
                 </div>
-                <h1 className="text-2xl font-bold text-slate-800 mb-1">
+                <h1 className="auth-title !text-2xl mb-1">
                   Email Verification
                 </h1>
-                <p className="text-slate-500 text-sm">
+                <p className="text-theme-muted text-sm">
                   Need a new verification link? Enter your email address below.
                 </p>
               </div>
@@ -153,11 +153,11 @@ export default function VerifyEmail() {
             )}
 
             <form onSubmit={handleResend} noValidate className="text-left mb-6">
-              <label htmlFor="resendEmail" className="block mb-2 text-sm font-semibold text-slate-700">
+              <label htmlFor="resendEmail" className="auth-label">
                 Email Address
               </label>
               <div className="relative mb-4">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-muted text-base">
                   ✉️
                 </span>
                 <input
@@ -168,7 +168,7 @@ export default function VerifyEmail() {
                   placeholder="you@example.com"
                   autoComplete="email"
                   required
-                  className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  className="auth-input pl-10"
                 />
               </div>
 
@@ -191,10 +191,10 @@ export default function VerifyEmail() {
               </button>
             </form>
 
-            <div className="border-t border-slate-200 pt-4">
+            <div className="border-t border-theme-subtle pt-4">
               <Link
                 to="/login"
-                className="text-sm text-indigo-600 font-semibold hover:text-indigo-800 hover:underline transition"
+                className="text-sm auth-link"
               >
                 ← Back to Sign In
               </Link>

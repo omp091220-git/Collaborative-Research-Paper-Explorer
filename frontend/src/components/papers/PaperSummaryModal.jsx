@@ -119,7 +119,7 @@ function SummaryModalContent({ isOpen, onClose, paper }) {
       <div className="space-y-5">
         {/* Summary Type Selector */}
         <div>
-          <label className="block text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider mb-2">
+          <label className="block text-xs font-bold text-theme-secondary uppercase tracking-wider mb-2">
             Select Summary Perspective
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -129,17 +129,17 @@ function SummaryModalContent({ isOpen, onClose, paper }) {
                 onClick={() => { if (isGenerating) return; setSelectedType(type.id); setSummary(null); setJob(null); setError(''); setCopied(false); }}
                 className={`p-3 rounded-xl border transition cursor-pointer ${
                   selectedType === type.id
-                    ? 'border-indigo-600 bg-indigo-50 shadow-xs dark:border-indigo-400 dark:bg-indigo-950/60'
-                    : 'border-slate-300 hover:border-slate-400 bg-white dark:border-slate-600 dark:bg-slate-900'
+                    ? 'border-violet-500 bg-violet-500/10 shadow-xs'
+                    : 'border-theme-subtle hover:border-theme-strong bg-theme-elevated'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">{type.label}</span>
+                  <span className="text-xs font-semibold text-theme-main">{type.label}</span>
                   {selectedType === type.id && (
-                    <span className="w-2 h-2 rounded-full bg-indigo-600" />
+                    <span className="w-2 h-2 rounded-full bg-violet-400" />
                   )}
                 </div>
-                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-snug font-medium">
+                <p className="text-xs text-theme-secondary mt-1 leading-snug font-medium">
                   {type.description}
                 </p>
               </div>
@@ -147,16 +147,16 @@ function SummaryModalContent({ isOpen, onClose, paper }) {
           </div>
         </div>
 
-        {error && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-        {isGenerating && <p role="status" className="text-sm text-indigo-700 dark:text-indigo-300">{providerRetry
+        {error && <p role="alert" className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-300">{error}</p>}
+        {isGenerating && <p role="status" className="text-xs text-violet-300">{providerRetry
           ? `Gemini is temporarily unavailable or rate limited. Retrying ${retrySeconds ? `in ${retrySeconds} seconds` : 'shortly'} — next attempt ${Math.min(3, (job?.attempts || 0) + 1)} of 3.`
           : `${job?.status === 'processing' ? 'Generating structured summary' : 'Summary queued'} — attempt ${job?.attempts || 1} of 3.`}</p>}
-        <p className="text-xs text-slate-500">AI summaries use the original PDF. Verify claims using the source references below.</p>
+        <p className="text-xs text-theme-muted">AI summaries use the original PDF. Verify claims using the source references below.</p>
 
         {/* Generate Trigger */}
         <div className="flex flex-wrap gap-3 justify-between items-center pt-2">
-          <Badge variant="purple" size="xs">
-            <Bot className="w-3 h-3 text-purple-600" />
+          <Badge variant="violet" size="xs">
+            <Bot className="w-3 h-3 text-violet-400" />
             <span>Multi-Format AI Engine</span>
           </Badge>
 
@@ -174,9 +174,9 @@ function SummaryModalContent({ isOpen, onClose, paper }) {
 
         {/* Result Area */}
         {summary && (
-          <div className="p-4 rounded-xl border border-indigo-100 bg-indigo-50/20 space-y-3 animate-fadeIn">
+          <div className="p-4 rounded-xl border border-violet-500/20 bg-violet-500/5 space-y-3 animate-fadeIn">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-indigo-900 capitalize">
+              <span className="text-xs font-semibold text-violet-300 capitalize">
                 {summary.type} Summary ({summary.generatedAt})
               </span>
               <Button
@@ -190,13 +190,13 @@ function SummaryModalContent({ isOpen, onClose, paper }) {
             </div>
 
             {summary.sections.map(section => (
-              <section key={section.heading} className="bg-white p-4 rounded-lg border border-slate-300 space-y-2">
-                <h4 className="text-sm font-semibold text-slate-900">{section.heading}</h4>
-                <p className="text-xs text-slate-700 whitespace-pre-line leading-relaxed">{section.text}</p>
+              <section key={section.heading} className="bg-theme-card p-4 rounded-xl border border-theme-subtle space-y-2">
+                <h4 className="text-sm font-semibold text-theme-main">{section.heading}</h4>
+                <p className="text-xs text-theme-secondary whitespace-pre-line leading-relaxed">{section.text}</p>
                 <div className="flex flex-wrap gap-2">
                   {section.sources.map(source => (
                     <a key={source.id} href={paper.arxiv_id ? `https://arxiv.org/pdf/${paper.arxiv_id}.pdf#page=${source.page}` : `/api/papers/${paper.id}/pdf#page=${source.page}`}
-                      target="_blank" rel="noreferrer" className="text-xs text-indigo-700 underline"
+                      target="_blank" rel="noreferrer" className="text-xs text-violet-400 hover:text-violet-300 underline"
                       title={`PDF coordinates: x=${source.x.toFixed(3)}, y=${source.y.toFixed(3)}, width=${source.width.toFixed(3)}, height=${source.height.toFixed(3)}`}>
                       Page {source.page} ({Math.round(source.x * 100)}%, {Math.round(source.y * 100)}%)
                     </a>

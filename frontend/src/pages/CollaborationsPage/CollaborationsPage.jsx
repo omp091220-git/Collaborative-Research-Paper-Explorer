@@ -103,8 +103,8 @@ export default function CollaborationsPage() {
       {/* Invitations Section */}
       <section className="space-y-4">
         <div className="flex items-center gap-2">
-          <MailCheck className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+          <MailCheck className="w-5 h-5 text-violet-400" />
+          <h2 className="text-lg font-bold text-theme-main">
             Pending Collaboration Invitations
           </h2>
           <Badge variant={invitations.length > 0 ? 'success' : 'default'} size="sm">
@@ -131,16 +131,16 @@ export default function CollaborationsPage() {
             {invitations.map((inv) => (
               <div
                 key={inv.id}
-                className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-700 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                className="p-5 bg-theme-card rounded-2xl border border-theme-subtle shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4"
               >
                 <div>
-                  <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-1">
+                  <h3 className="font-bold text-sm text-theme-main mb-1">
                     {inv.paper_title || 'Collaborative Research Paper'}
                   </h3>
-                  <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
-                    <span>Invited by <strong className="text-slate-800 dark:text-slate-200">{inv.inviter_name || inv.inviter_email}</strong></span>
+                  <div className="flex items-center gap-2 text-xs text-theme-secondary">
+                    <span>Invited by <strong className="text-theme-main">{inv.inviter_name || inv.inviter_email}</strong></span>
                     <span>•</span>
-                    <span>Role: <strong className="uppercase text-indigo-700 dark:text-indigo-400 font-bold">{inv.role}</strong></span>
+                    <span>Role: <strong className="uppercase text-violet-400 font-bold">{inv.role}</strong></span>
                   </div>
                 </div>
 
@@ -167,34 +167,34 @@ export default function CollaborationsPage() {
       </section>
 
       {/* Collaboration Permissions Guide */}
-      <section className="p-6 bg-slate-50 dark:bg-slate-900/60 rounded-3xl border border-slate-300 dark:border-slate-700 space-y-4">
-        <div className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-sm">
-          <Shield className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+      <section className="p-6 bg-theme-elevated rounded-3xl border border-theme-subtle space-y-4">
+        <div className="flex items-center gap-2 text-theme-main font-bold text-sm">
+          <Shield className="w-4 h-4 text-violet-400" />
           <span>Understanding Collaboration Roles</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-          <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-700">
-            <span className="font-bold text-indigo-700 dark:text-indigo-400 uppercase">Owner</span>
-            <p className="text-slate-700 dark:text-slate-300 mt-1 leading-relaxed">
+          <div className="p-4 bg-theme-card rounded-xl border border-theme-subtle">
+            <span className="font-bold text-violet-400 uppercase">Owner</span>
+            <p className="text-theme-secondary mt-1 leading-relaxed">
               Full control over the paper, invite management, permission delegation, and deletion.
             </p>
           </div>
-          <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-700">
-            <span className="font-bold text-emerald-700 dark:text-emerald-400 uppercase">Editor</span>
-            <p className="text-slate-700 dark:text-slate-300 mt-1 leading-relaxed">
+          <div className="p-4 bg-theme-card rounded-xl border border-theme-subtle">
+            <span className="font-bold text-emerald-400 uppercase">Editor</span>
+            <p className="text-theme-secondary mt-1 leading-relaxed">
               Can create, edit, and organize annotations, participate in discussions, and update metadata.
             </p>
           </div>
-          <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-700">
-            <span className="font-bold text-amber-700 dark:text-amber-400 uppercase">Commenter</span>
-            <p className="text-slate-700 dark:text-slate-300 mt-1 leading-relaxed">
+          <div className="p-4 bg-theme-card rounded-xl border border-theme-subtle">
+            <span className="font-bold text-amber-400 uppercase">Commenter</span>
+            <p className="text-theme-secondary mt-1 leading-relaxed">
               Can post discussion threads, reply to peer comments, and submit page annotations.
             </p>
           </div>
-          <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-700">
-            <span className="font-bold text-slate-700 dark:text-slate-300 uppercase">Viewer</span>
-            <p className="text-slate-700 dark:text-slate-300 mt-1 leading-relaxed">
+          <div className="p-4 bg-theme-card rounded-xl border border-theme-subtle">
+            <span className="font-bold text-theme-muted uppercase">Viewer</span>
+            <p className="text-theme-secondary mt-1 leading-relaxed">
               Read-only access to view the paper PDF, inspect annotations, and generate AI perspectives.
             </p>
           </div>
@@ -204,10 +204,10 @@ export default function CollaborationsPage() {
       {/* Available Papers for Collaboration */}
       <section className="space-y-4">
         <div>
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+          <h2 className="text-lg font-bold text-theme-main">
             Workspace Papers Available for Collaboration
           </h2>
-          <p className="text-xs text-slate-600 dark:text-slate-400">
+          <p className="text-xs text-theme-secondary">
             Click on any paper to open the Collaborators panel and invite researchers by institutional email.
           </p>
         </div>
@@ -217,18 +217,18 @@ export default function CollaborationsPage() {
             <Link
               key={paper.id}
               to={`/papers/${paper.id}`}
-              className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-600 transition-all hover:shadow-xs group flex flex-col justify-between"
+              className="p-4 bg-theme-card rounded-2xl border border-theme-subtle hover:border-violet-500/50 transition-all hover:shadow-xs group flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-center gap-1.5 text-xs text-indigo-700 dark:text-indigo-400 font-semibold mb-1">
+                <div className="flex items-center gap-1.5 text-xs text-violet-400 font-semibold mb-1">
                   <BookOpen className="w-3.5 h-3.5" />
                   <span>Paper #{paper.id}</span>
                 </div>
-                <h4 className="font-bold text-sm text-slate-900 dark:text-white line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                <h4 className="font-bold text-sm text-theme-main line-clamp-2 group-hover:text-violet-400 transition-colors">
                   {paper.title}
                 </h4>
               </div>
-              <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 font-semibold">
+              <div className="mt-4 pt-3 border-t border-theme-subtle flex items-center justify-between text-xs text-theme-secondary font-semibold">
                 <span>Manage Collaborators →</span>
               </div>
             </Link>

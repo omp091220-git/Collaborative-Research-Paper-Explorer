@@ -372,24 +372,24 @@ export default function CitationGraph({ paperId, initialPaper, onClose, onSelect
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6 animate-fade-in">
-      <div className="bg-white w-full h-[92vh] max-w-7xl rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 sm:p-6 animate-fade-in">
+      <div className="bg-theme-card w-full h-[92vh] max-w-7xl rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-theme-subtle">
         {/* Top Header Bar */}
-        <div className="px-6 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4 bg-slate-50">
+        <div className="px-6 py-4 border-b border-theme-subtle flex flex-wrap items-center justify-between gap-4 bg-theme-elevated">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xl">🕸️</span>
-              <h2 className="text-lg font-bold text-slate-800">
+              <h2 className="text-lg font-bold text-theme-main">
                 Interactive Citation Explorer
               </h2>
               {graphData?.summary?.is_mock && (
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
                   Simulated Citation Data
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
-              Focal paper: <strong className="text-slate-700">{graphData?.rootPaper?.title || initialPaper?.title || activePaperId}</strong>
+            <p className="text-xs text-theme-muted mt-0.5 line-clamp-1">
+              Focal paper: <strong className="text-theme-main">{graphData?.rootPaper?.title || initialPaper?.title || activePaperId}</strong>
             </p>
           </div>
 
@@ -402,16 +402,16 @@ export default function CitationGraph({ paperId, initialPaper, onClose, onSelect
                 placeholder="Search graph nodes..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white w-44 sm:w-56"
+                className="pl-8 pr-3 py-1.5 text-xs rounded-xl border border-theme-subtle focus:outline-none focus:ring-2 focus:ring-violet-500/30 bg-theme-card text-theme-main placeholder:text-theme-muted w-44 sm:w-56"
               />
-              <span className="absolute left-2.5 top-2 text-slate-400 text-xs">🔍</span>
+              <span className="absolute left-2.5 top-2 text-theme-muted text-xs">🔍</span>
             </div>
 
             {/* Close Button */}
             {onClose && (
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition"
+                className="p-1.5 rounded-lg text-theme-muted hover:text-theme-main hover:bg-theme-card transition cursor-pointer"
                 title="Close Graph"
               >
                 ✕
@@ -421,55 +421,55 @@ export default function CitationGraph({ paperId, initialPaper, onClose, onSelect
         </div>
 
         {/* Filter Toolbar */}
-        <div className="px-6 py-2.5 bg-white border-b border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs">
+        <div className="px-6 py-2.5 bg-theme-card border-b border-theme-subtle flex flex-wrap items-center justify-between gap-4 text-xs">
           {/* Edge / Relation Filter Badges */}
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-500 mr-1">Show:</span>
+            <span className="font-semibold text-theme-muted mr-1">Show:</span>
 
             <button
               onClick={() => setFilterType((prev) => ({ ...prev, backward: !prev.backward }))}
-              className={`px-2.5 py-1 rounded-md font-medium flex items-center gap-1.5 border transition ${
+              className={`px-2.5 py-1 rounded-xl font-medium flex items-center gap-1.5 border transition cursor-pointer ${
                 filterType.backward
-                  ? 'bg-blue-50 text-blue-700 border-blue-300'
-                  : 'bg-slate-50 text-slate-400 border-slate-200'
+                  ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                  : 'bg-theme-elevated text-theme-muted border-theme-subtle'
               }`}
             >
-              <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
               Backward References ({graphData?.summary?.total_backward || 0})
             </button>
 
             <button
               onClick={() => setFilterType((prev) => ({ ...prev, forward: !prev.forward }))}
-              className={`px-2.5 py-1 rounded-md font-medium flex items-center gap-1.5 border transition ${
+              className={`px-2.5 py-1 rounded-xl font-medium flex items-center gap-1.5 border transition cursor-pointer ${
                 filterType.forward
-                  ? 'bg-purple-50 text-purple-700 border-purple-300'
-                  : 'bg-slate-50 text-slate-400 border-slate-200'
+                  ? 'bg-violet-500/20 text-violet-300 border-violet-500/40'
+                  : 'bg-theme-elevated text-theme-muted border-theme-subtle'
               }`}
             >
-              <span className="w-2 h-2 rounded-full bg-purple-600"></span>
+              <span className="w-2 h-2 rounded-full bg-violet-500"></span>
               Forward Citations ({graphData?.summary?.total_forward || 0})
             </button>
 
             <button
               onClick={() => setFilterType((prev) => ({ ...prev, co_citation: !prev.co_citation }))}
-              className={`px-2.5 py-1 rounded-md font-medium flex items-center gap-1.5 border transition ${
+              className={`px-2.5 py-1 rounded-xl font-medium flex items-center gap-1.5 border transition cursor-pointer ${
                 filterType.co_citation
-                  ? 'bg-amber-50 text-amber-700 border-amber-300'
-                  : 'bg-slate-50 text-slate-400 border-slate-200'
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                  : 'bg-theme-elevated text-theme-muted border-theme-subtle'
               }`}
             >
-              <span className="w-2 h-2 rounded-full bg-amber-600"></span>
+              <span className="w-2 h-2 rounded-full bg-amber-500"></span>
               Co-Citation Clusters ({graphData?.summary?.total_co_citations || 0})
             </button>
           </div>
 
           {/* Cluster Selector */}
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-500">Research Cluster:</span>
+            <span className="font-semibold text-theme-muted">Research Cluster:</span>
             <select
               value={selectedCluster}
               onChange={(e) => setSelectedCluster(e.target.value)}
-              className="py-1 px-2.5 rounded-md border border-slate-300 text-xs text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-teal-500"
+              className="py-1 px-2.5 rounded-xl border border-theme-subtle text-xs text-theme-main bg-theme-elevated focus:outline-none focus:ring-1 focus:ring-violet-500 cursor-pointer"
             >
               <option value="ALL">All Clusters</option>
               {graphData?.clusters?.map((c) => (
@@ -482,23 +482,23 @@ export default function CitationGraph({ paperId, initialPaper, onClose, onSelect
         </div>
 
         {/* Main Body: Graph Canvas + Side Inspector Panel */}
-        <div className="flex-1 relative flex overflow-hidden bg-slate-900/5">
+        <div className="flex-1 relative flex overflow-hidden bg-theme-main">
           {/* Loading Overlay */}
           {loading && (
-            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 backdrop-blur-xs">
-              <div className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-3"></div>
-              <p className="text-sm font-semibold text-slate-700">Computing citation physics & clusters…</p>
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-theme-main/80 backdrop-blur-xs">
+              <div className="w-10 h-10 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+              <p className="text-sm font-semibold text-theme-main">Computing citation physics & clusters…</p>
             </div>
           )}
 
           {/* Error Message */}
           {error && (
-            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 bg-white">
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 bg-theme-main">
               <div className="text-4xl mb-3">⚠️</div>
-              <p className="text-sm font-medium text-rose-600 mb-3">{error}</p>
+              <p className="text-sm font-medium text-rose-400 mb-3">{error}</p>
               <button
                 onClick={() => setActivePaperId(paperId)}
-                className="px-4 py-2 bg-teal-600 text-white text-xs font-semibold rounded-lg hover:bg-teal-700 transition"
+                className="px-4 py-2 bg-violet-600 text-white text-xs font-semibold rounded-xl hover:bg-violet-700 transition"
               >
                 Retry
               </button>
@@ -510,24 +510,24 @@ export default function CitationGraph({ paperId, initialPaper, onClose, onSelect
             <svg ref={svgRef} className="w-full h-full block cursor-grab active:cursor-grabbing" />
 
             {/* Floating Zoom / Reset Controls */}
-            <div className="absolute bottom-5 left-5 flex flex-col gap-1.5 bg-white/90 backdrop-blur-md p-1.5 rounded-xl shadow-md border border-slate-200">
+            <div className="absolute bottom-5 left-5 flex flex-col gap-1.5 bg-theme-card/90 backdrop-blur-md p-1.5 rounded-xl shadow-md border border-theme-subtle">
               <button
                 onClick={handleZoomIn}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-700 font-bold transition"
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-theme-elevated text-theme-main font-bold transition cursor-pointer"
                 title="Zoom In"
               >
                 +
               </button>
               <button
                 onClick={handleZoomOut}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-700 font-bold transition"
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-theme-elevated text-theme-main font-bold transition cursor-pointer"
                 title="Zoom Out"
               >
                 −
               </button>
               <button
                 onClick={handleResetZoom}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-700 text-xs transition"
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-theme-elevated text-theme-main text-xs transition cursor-pointer"
                 title="Reset View"
               >
                 ⟲
@@ -537,22 +537,22 @@ export default function CitationGraph({ paperId, initialPaper, onClose, onSelect
             {/* Hover Tooltip */}
             {hoveredNode && !selectedNode && (
               <div
-                className="absolute pointer-events-none z-30 bg-slate-900 text-white text-xs rounded-lg px-3 py-2 shadow-xl border border-slate-700 max-w-xs transition-opacity duration-150"
+                className="absolute pointer-events-none z-30 bg-theme-elevated text-theme-main text-xs rounded-xl px-3 py-2 shadow-2xl border border-theme-subtle max-w-xs transition-opacity duration-150"
                 style={{
                   left: 20,
                   top: 20,
                 }}
               >
-                <p className="font-bold text-white mb-0.5">{hoveredNode.title}</p>
-                <p className="text-slate-400 text-[10px]">
+                <p className="font-bold text-theme-main mb-0.5">{hoveredNode.title}</p>
+                <p className="text-theme-muted text-[10px]">
                   {hoveredNode.authors?.join(', ')} ({hoveredNode.publication_year || 'N/A'})
                 </p>
                 <div className="mt-1 flex items-center gap-2 text-[10px]">
-                  <span className="text-teal-300 font-medium capitalize">
+                  <span className="text-cyan-400 font-medium capitalize">
                     {hoveredNode.node_type?.replace('_', ' ')}
                   </span>
                   {hoveredNode.citation_count && (
-                    <span className="text-slate-300">
+                    <span className="text-theme-secondary">
                       ★ {hoveredNode.citation_count.toLocaleString()} citations
                     </span>
                   )}
@@ -563,9 +563,9 @@ export default function CitationGraph({ paperId, initialPaper, onClose, onSelect
 
           {/* Right Slide-out Details Inspector */}
           {selectedNode && (
-            <div className="w-80 sm:w-96 bg-white border-l border-slate-200 p-5 flex flex-col justify-between shadow-lg overflow-y-auto z-10 animate-slide-left">
+            <div className="w-80 sm:w-96 bg-theme-card border-l border-theme-subtle p-5 flex flex-col justify-between shadow-2xl overflow-y-auto z-10 animate-slide-left">
               <div>
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                <div className="flex items-center justify-between pb-3 border-b border-theme-subtle mb-4">
                   <span
                     className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider text-white"
                     style={{
@@ -581,49 +581,49 @@ export default function CitationGraph({ paperId, initialPaper, onClose, onSelect
                   </span>
                   <button
                     onClick={() => setSelectedNode(null)}
-                    className="text-slate-400 hover:text-slate-700 text-sm p-1 rounded-md"
+                    className="text-theme-muted hover:text-theme-main text-sm p-1 rounded-md cursor-pointer"
                   >
                     ✕
                   </button>
                 </div>
 
-                <h3 className="text-base font-bold text-slate-800 mb-2 leading-snug">
+                <h3 className="text-base font-bold text-theme-main mb-2 leading-snug">
                   {selectedNode.title}
                 </h3>
 
-                <div className="space-y-2 text-xs text-slate-600 mb-4">
+                <div className="space-y-2 text-xs text-theme-secondary mb-4">
                   <p>
-                    <strong className="text-slate-700">Authors:</strong>{' '}
+                    <strong className="text-theme-main">Authors:</strong>{' '}
                     {Array.isArray(selectedNode.authors)
                       ? selectedNode.authors.join(', ')
                       : selectedNode.authors || 'Unknown'}
                   </p>
                   <p>
-                    <strong className="text-slate-700">Publication Year:</strong>{' '}
+                    <strong className="text-theme-main">Publication Year:</strong>{' '}
                     {selectedNode.publication_year || 'N/A'}
                   </p>
                   {selectedNode.cluster_label && (
                     <p>
-                      <strong className="text-slate-700">Thematic Cluster:</strong>{' '}
-                      <span className="text-teal-700 font-medium">
+                      <strong className="text-theme-main">Thematic Cluster:</strong>{' '}
+                      <span className="text-violet-400 font-medium">
                         {selectedNode.cluster_label}
                       </span>
                     </p>
                   )}
                   {selectedNode.citation_count && (
                     <p>
-                      <strong className="text-slate-700">Citations:</strong>{' '}
+                      <strong className="text-theme-main">Citations:</strong>{' '}
                       {selectedNode.citation_count.toLocaleString()}
                     </p>
                   )}
                   {selectedNode.arxiv_id && (
                     <p>
-                      <strong className="text-slate-700">arXiv:</strong>{' '}
+                      <strong className="text-theme-main">arXiv:</strong>{' '}
                       <a
                         href={`https://arxiv.org/abs/${selectedNode.arxiv_id}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-blue-600 hover:underline"
+                        className="text-cyan-400 hover:underline"
                       >
                         {selectedNode.arxiv_id} ↗
                       </a>
@@ -632,21 +632,21 @@ export default function CitationGraph({ paperId, initialPaper, onClose, onSelect
                 </div>
 
                 {selectedNode.abstract && (
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs text-slate-600 mb-4">
-                    <p className="font-bold text-slate-700 mb-1">Abstract Summary</p>
+                  <div className="bg-theme-elevated p-3 rounded-xl border border-theme-subtle text-xs text-theme-secondary mb-4">
+                    <p className="font-bold text-theme-main mb-1">Abstract Summary</p>
                     <p className="leading-relaxed line-clamp-6">{selectedNode.abstract}</p>
                   </div>
                 )}
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-4 border-t border-slate-100 space-y-2">
+              <div className="pt-4 border-t border-theme-subtle space-y-2">
                 {selectedNode.id !== activePaperId && (
                   <button
                     onClick={() => {
                       setActivePaperId(selectedNode.id);
                     }}
-                    className="w-full py-2 px-3 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center justify-center gap-1.5"
+                    className="w-full py-2 px-3 bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <span>🎯</span> Center Graph on this Paper
                   </button>
@@ -658,7 +658,7 @@ export default function CitationGraph({ paperId, initialPaper, onClose, onSelect
                       onSelectPaper(selectedNode);
                       if (onClose) onClose();
                     }}
-                    className="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition"
+                    className="w-full py-2 px-3 bg-theme-elevated hover:bg-theme-card text-theme-main text-xs font-semibold rounded-xl border border-theme-subtle transition cursor-pointer"
                   >
                     Open Full Paper Details
                   </button>
@@ -669,24 +669,24 @@ export default function CitationGraph({ paperId, initialPaper, onClose, onSelect
         </div>
 
         {/* Footer Legend Bar */}
-        <div className="px-6 py-2.5 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between text-xs text-slate-500">
+        <div className="px-6 py-2.5 bg-theme-elevated border-t border-theme-subtle flex flex-wrap items-center justify-between text-xs text-theme-muted">
           <div className="flex items-center gap-4 flex-wrap">
-            <span className="font-semibold text-slate-600">Legend:</span>
+            <span className="font-semibold text-theme-secondary">Legend:</span>
             <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-teal-600"></span> Focal Paper
+              <span className="w-3 h-3 rounded-full bg-teal-500"></span> Focal Paper
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-blue-600"></span> Backward Reference (Cited by focal)
+              <span className="w-3 h-3 rounded-full bg-blue-500"></span> Backward Reference (Cited by focal)
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-purple-600"></span> Forward Citation (Cites focal)
+              <span className="w-3 h-3 rounded-full bg-violet-500"></span> Forward Citation (Cites focal)
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-amber-600"></span> Co-citation Cluster
+              <span className="w-3 h-3 rounded-full bg-amber-500"></span> Co-citation Cluster
             </span>
           </div>
 
-          <div className="text-[11px] text-slate-400">
+          <div className="text-[11px] text-theme-muted">
             Tip: Drag nodes to rearrange • Scroll wheel to zoom • Click a node to view paper details
           </div>
         </div>

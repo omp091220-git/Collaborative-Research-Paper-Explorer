@@ -1,22 +1,26 @@
 export function Skeleton({ className = '' }) {
-  return <div className={`animate-pulse bg-slate-200 dark:bg-slate-800 rounded ${className}`} />;
+  return (
+    <div
+      className={`bg-white/[0.06] rounded-xl animate-shimmer ${className}`}
+    />
+  );
 }
 
 export function PaperCardSkeleton() {
   return (
-    <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-300 dark:border-slate-700 shadow-xs space-y-3">
+    <div className="bg-theme-card p-5 sm:p-6 rounded-2xl border border-theme-subtle shadow-sm space-y-4">
       <div className="flex items-start justify-between gap-3">
-        <Skeleton className="h-5 w-3/4" />
-        <Skeleton className="h-5 w-16" />
+        <Skeleton className="h-5 w-3/4 rounded-lg" />
+        <Skeleton className="h-5 w-16 rounded-md" />
       </div>
-      <Skeleton className="h-4 w-1/2" />
-      <div className="space-y-1.5 pt-1">
-        <Skeleton className="h-3 w-full" />
-        <Skeleton className="h-3 w-5/6" />
+      <Skeleton className="h-4 w-1/2 rounded-md" />
+      <div className="space-y-2 pt-1">
+        <Skeleton className="h-3 w-full rounded" />
+        <Skeleton className="h-3 w-5/6 rounded" />
       </div>
-      <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">
-        <Skeleton className="h-3 w-24" />
-        <Skeleton className="h-7 w-20 rounded-lg" />
+      <div className="flex items-center justify-between pt-3 border-t border-theme-subtle">
+        <Skeleton className="h-3 w-24 rounded" />
+        <Skeleton className="h-8 w-20 rounded-xl" />
       </div>
     </div>
   );
@@ -38,13 +42,13 @@ export function LoadingSkeletonList({ count = 6 }) {
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-700 flex items-center justify-between gap-4"
+          className="p-4 sm:p-5 bg-theme-card rounded-2xl border border-theme-subtle flex items-center justify-between gap-4"
         >
           <div className="flex-1 space-y-2">
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-3 w-1/3" />
+            <Skeleton className="h-4 w-3/4 rounded-md" />
+            <Skeleton className="h-3 w-1/3 rounded" />
           </div>
-          <Skeleton className="h-8 w-24 rounded-lg" />
+          <Skeleton className="h-8 w-24 rounded-xl" />
         </div>
       ))}
     </div>
@@ -55,7 +59,7 @@ export function LoadingSkeleton({ count = 3, className = '' }) {
   return (
     <div className={`space-y-3 ${className}`}>
       {Array.from({ length: count }).map((_, i) => (
-        <Skeleton key={i} className="h-10 w-full" />
+        <Skeleton key={i} className="h-10 w-full rounded-xl" />
       ))}
     </div>
   );
