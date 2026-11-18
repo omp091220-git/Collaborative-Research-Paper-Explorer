@@ -5,10 +5,6 @@ import AssetItem from './AssetItem';
 /**
  * AssetSection component
  *
- * Props:
- *   - paperId: string – the identifier of the paper.
- *   - initialStatus?: string – optional pre-fetched extraction status.
- *
  * It polls the extraction status every 5 seconds while the job is in
  * `queued` or `processing` state. When the status becomes `completed`, it
  * fetches the list of assets and displays them.
@@ -26,7 +22,6 @@ export default function AssetSection({ paperId }) {
       const res = await axios.get(`/api/papers/${paperId}/extraction-status`, {
         withCredentials: true,
       });
-      // Backend returns { status: 'queued'|'processing'|'completed'|'failed', job: {...} }
       setStatus(res.data.status);
       setError(null);
     } catch (err) {
@@ -62,7 +57,7 @@ export default function AssetSection({ paperId }) {
 
     // Setup polling for queued/processing
     const startPolling = () => {
-      if (pollRef.current) return; // already polling
+      if (pollRef.current) return;
       pollRef.current = setInterval(async () => {
         if (!active) return;
         await fetchStatus();
@@ -76,14 +71,12 @@ export default function AssetSection({ paperId }) {
       }
     };
 
-    // Manage polling based on status changes
     if (status === 'queued' || status === 'processing') {
       startPolling();
     } else {
       stopPolling();
     }
 
-    // When status becomes completed, load assets
     if (status === 'completed') {
       fetchAssets();
     }
@@ -95,26 +88,25 @@ export default function AssetSection({ paperId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paperId, status]);
 
-  // Render UI
   if (loadingStatus) {
     return (
-      <div className="p-4 text-sm text-gray-600">Loading extraction status...</div>
+      <div className="p-4 text-xs text-theme-muted">Loading extraction status...</div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4 text-sm text-red-600">{error}</div>
+      <div className="p-4 text-xs text-rose-400">{error}</div>
     );
   }
 
   return (
-    <div className="asset-section border-t pt-4 mt-4">
-      <h3 className="text-lg font-semibold mb-2">Extraction Status: {status?.toUpperCase()}</h3>
+    <div className="asset-section border-t border-theme-subtle pt-4 mt-4">
+      <h3 className="text-sm font-bold text-theme-main mb-2">Extraction Status: <span className="text-violet-400">{status?.toUpperCase()}</span></h3>
       {status === 'completed' && (
         <>
           {loadingAssets ? (
-            <div className="text-sm text-gray-600">Loading assets...</div>
+            <div className="text-xs text-theme-muted">Loading assets...</div>
           ) : assets.length > 0 ? (
             <div className="asset-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {assets.map((asset) => (
@@ -122,17 +114,16 @@ export default function AssetSection({ paperId }) {
               ))}
             </div>
           ) : (
-            <div className="text-sm text-gray-500">No assets extracted.</div>
+            <div className="text-xs text-theme-muted">No assets extracted.</div>
           )}
         </>
       )}
       {status === 'failed' && (
-        <div className="text-sm text-red-600">Extraction failed. Please try again later.</div>
+        <div className="text-xs text-rose-400">Extraction failed. Please try again later.</div>
       )}
       {(status === 'queued' || status === 'processing') && (
-        <div className="text-sm text-gray-600">Extraction is {status}...</div>
+        <div className="text-xs text-theme-muted">Extraction is {status}...</div>
       )}
     </div>
   );
 }
-

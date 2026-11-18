@@ -193,8 +193,89 @@ test("Annotation API: invalid annotation content returns 400", async () => {
   assert.equal(response.status, 400);
 });
 
-test("Annotation API: researcher cannot delete annotations", async () => {
-  mockDatabase("RESEARCHER");
+test("Annotation API: researcher cannot delete another user's annotation", async () => {
+  mockDatabase("RESEARCHER", async (sql) => {
+    if (sql.includes("SELECT id, created_by FROM annotations")) {
+      return {
+        rows: [{
+          id: ANNOTATION_ID,
+          created_by: OTHER_USER_ID,
+        }],
+      };
+    }
+    return { rows: [] };
+  });
+
+  const response = await request(createTestApp())
+    .delete(`/api/annotations/${ANNOTATION_ID}`)
+    .set("Authorization", `Bearer ${tokenFor()}`);
+
+  assert.equal(response.status, 403);
+  assert.equal(response.body.error, "You can only delete your own annotations.");
+});
+
+test("Annotation API: researcher cannot delete legacy annotation without creator metadata", async () => {
+  mockDatabase("RESEARCHER", async (sql) => {
+    if (sql.includes("SELECT id, created_by FROM annotations")) {
+      return {
+        rows: [{
+          id: ANNOTATION_ID,
+          created_by: null,
+        }],
+      };
+    }
+    return { rows: [] };
+  });
+
+  const response = await request(createTestApp())
+    .delete(`/api/annotations/${ANNOTATION_ID}`)
+    .set("Authorization", `Bearer ${tokenFor()}`);
+
+  assert.equal(response.status, 403);
+  assert.match(response.body.error, /Legacy annotations without ownership metadata/);
+});
+
+test("Annotation API: researcher can delete their own annotation", async () => {
+  mockDatabase("RESEARCHER", async (sql) => {
+    if (sql.includes("SELECT id, created_by FROM annotations")) {
+      return {
+        rows: [{
+          id: ANNOTATION_ID,
+          created_by: TEST_USER_ID,
+        }],
+      };
+    }
+    if (sql.includes("DELETE FROM annotations")) {
+      return { rows: [{ id: ANNOTATION_ID }] };
+    }
+    return { rows: [] };
+  });
+
+  const response = await request(createTestApp())
+    .delete(`/api/annotations/${ANNOTATION_ID}`)
+    .set("Authorization", `Bearer ${tokenFor()}`);
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.id, ANNOTATION_ID);
+});
+
+test("Annotation API: deleting nonexistent annotation returns 404", async () => {
+  mockDatabase("RESEARCHER", async (sql) => {
+    if (sql.includes("SELECT id, created_by FROM annotations")) {
+      return { rows: [] };
+    }
+    return { rows: [] };
+  });
+
+  const response = await request(createTestApp())
+    .delete(`/api/annotations/${ANNOTATION_ID}`)
+    .set("Authorization", `Bearer ${tokenFor()}`);
+
+  assert.equal(response.status, 404);
+});
+
+test("Annotation API: student role is rejected from deleting annotations", async () => {
+  mockDatabase("STUDENT");
 
   const response = await request(createTestApp())
     .delete(`/api/annotations/${ANNOTATION_ID}`)

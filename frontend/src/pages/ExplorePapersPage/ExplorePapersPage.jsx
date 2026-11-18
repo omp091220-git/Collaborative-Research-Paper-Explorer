@@ -1,8 +1,24 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { FilePlus } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import {
+  FilePlus,
+  BookOpen,
+  FolderTree,
+  Search,
+  ExternalLink,
+  ChevronRight,
+  User,
+  Calendar,
+  Tag,
+  ArrowRight,
+  FileText,
+  MapPin,
+  Sparkles,
+  Layers,
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import papersService from '../../services/papers.service';
+import tagsService from '../../services/tags.service';
 import PageHeader from '../../components/layout/PageHeader';
 import PaperFilters from '../../components/papers/PaperFilters';
 import PaperCard from '../../components/papers/PaperCard';
@@ -12,44 +28,52 @@ import PaperUploadModal from '../../components/papers/PaperUploadModal';
 import Pagination from '../../components/common/Pagination';
 import EmptyState from '../../components/common/EmptyState';
 import ErrorState from '../../components/common/ErrorState';
+import ErrorBoundary from '../../components/common/ErrorBoundary';
+import Badge from '../../components/common/Badge';
+import Button from '../../components/common/Button';
 import {
   LoadingSkeletonGrid,
   LoadingSkeletonList,
 } from '../../components/common/LoadingSkeleton';
+import { formatDate } from '../../utils/formatters';
 
 export default function ExplorePapersPage() {
   const { isAdmin, hasPermission } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
-  // Read query params from URL
+  // Read URL query parameters
+  const validTabs = ['papers', 'topics'];
+  const rawTab = searchParams.get('tab');
+  const urlTab = validTabs.includes(rawTab) ? rawTab : 'papers';
   const urlQ = searchParams.get('q') || '';
   const urlTopic = searchParams.get('topic') || '';
   const urlSource = searchParams.get('source') || 'all';
-  const urlSort = searchParams.get('sort') || 'created_at';
+  const urlSort = searchParams.get('sort') || 'newest';
   const urlPage = parseInt(searchParams.get('page') || '1', 10);
 
-  // Search, filter & pagination state
-  const [searchQuery, setSearchQuery] = useState(urlQ);
+  // Active view tab ('papers' | 'topics')
+  const [activeTab, setActiveTab] = useState(urlTab);
+
+  // Filter & Search state
+  const [searchInput, setSearchInput] = useState(urlQ);
+  const [debouncedSearch, setDebouncedSearch] = useState(urlQ);
   const [selectedTopic, setSelectedTopic] = useState(urlTopic);
   const [selectedSource, setSelectedSource] = useState(urlSource);
   const [sortBy, setSortBy] = useState(urlSort);
   const [viewMode, setViewMode] = useState('grid');
   const [currentPage, setCurrentPage] = useState(urlPage);
 
-  // Synchronize state when URL query parameters change (e.g., browser back/forward or navigation from navbar/sidebar)
-  useEffect(() => {
-    setSearchQuery(urlQ);
-    setSelectedTopic(urlTopic);
-    setSelectedSource(urlSource);
-    setSortBy(urlSort);
-    setCurrentPage(urlPage);
-  }, [urlQ, urlTopic, urlSource, urlSort, urlPage]);
-
   // Data state
   const [papers, setPapers] = useState([]);
   const [totalPapers, setTotalPapers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Taxonomy & Topics state
+  const [tagTree, setTagTree] = useState([]);
+  const [flatTags, setFlatTags] = useState([]);
+  const [activeTopicForExplorer, setActiveTopicForExplorer] = useState(null);
 
   // Modals state
   const [summaryPaper, setSummaryPaper] = useState(null);
@@ -58,6 +82,89 @@ export default function ExplorePapersPage() {
   const canUpload = hasPermission('papers:upload') || isAdmin;
   const itemsPerPage = 9;
 
+  // ── Debounce Search Input (300ms) for paper search ──────────────────
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchInput]);
+
+  // Synchronize state when URL query changes from outside (e.g. forward/back navigation)
+  useEffect(() => {
+    setActiveTab(urlTab);
+    if (urlQ !== searchInput && urlQ !== debouncedSearch) {
+      setSearchInput(urlQ);
+      setDebouncedSearch(urlQ);
+    }
+    setSelectedTopic(urlTopic);
+    setSelectedSource(urlSource);
+    setSortBy(urlSort);
+    setCurrentPage(urlPage);
+  }, [urlTab, urlQ, urlTopic, urlSource, urlSort, urlPage]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Push debounced search to URL query params safely without breaking in-flight typing
+  useEffect(() => {
+    const currentQ = searchParams.get('q') || '';
+    if (debouncedSearch.trim() !== currentQ.trim()) {
+      const params = new URLSearchParams(searchParams);
+      if (debouncedSearch.trim()) {
+        params.set('q', debouncedSearch.trim());
+      } else {
+        params.delete('q');
+      }
+      setSearchParams(params, { replace: true });
+    }
+  }, [debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Push state updates to URL parameters
+  const updateUrlParam = (key, value) => {
+    const params = new URLSearchParams(searchParams);
+    if (!value || value === 'all' || (key === 'sort' && value === 'newest') || (key === 'page' && Number(value) <= 1) || (key === 'tab' && value === 'papers')) {
+      params.delete(key);
+    } else {
+      params.set(key, String(value));
+    }
+    if (key !== 'page') {
+      params.delete('page');
+    }
+    setSearchParams(params, { replace: true });
+  };
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    updateUrlParam('tab', tab);
+  };
+
+  // ── 1. Load Taxonomy Tree (FR-10) ─────────────────────────────────────────
+  useEffect(() => {
+    tagsService
+      .getTagTree()
+      .then((tree) => {
+        setTagTree(tree || []);
+        const flat = [];
+        const walk = (nodes, currentPath = '') => {
+          for (const node of nodes) {
+            const fullPath = currentPath ? `${currentPath} > ${node.name}` : node.name;
+            flat.push({
+              ...node,
+              canonicalPath: fullPath,
+            });
+            if (node.children && node.children.length > 0) {
+              walk(node.children, fullPath);
+            }
+          }
+        };
+        walk(tree || []);
+        setFlatTags(flat);
+        if (flat.length > 0 && !activeTopicForExplorer) {
+          setActiveTopicForExplorer(flat[0]);
+        }
+      })
+      .catch((err) => console.warn('Failed to load taxonomy tree:', err));
+  }, []);
+
+  // ── 2. Fetch Papers with Backend Search & Filters ──────────────────────────
   const fetchPapers = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -68,7 +175,7 @@ export default function ExplorePapersPage() {
         sort: sortBy,
       };
 
-      if (searchQuery.trim()) params.search = searchQuery.trim();
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
       if (selectedTopic) params.topic = selectedTopic;
       if (selectedSource && selectedSource !== 'all') params.source = selectedSource;
 
@@ -85,32 +192,41 @@ export default function ExplorePapersPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, searchQuery, selectedTopic, selectedSource, sortBy]);
+  }, [currentPage, debouncedSearch, selectedTopic, selectedSource, sortBy]);
 
   useEffect(() => {
-    fetchPapers();
-  }, [fetchPapers]);
+    if (activeTab === 'papers') {
+      fetchPapers();
+    }
+  }, [fetchPapers, activeTab]);
 
-  // Push state updates to URL query parameters
-  const updateUrlParam = (key, value) => {
-    const params = new URLSearchParams(searchParams);
-    if (!value || value === 'all' || (key === 'sort' && value === 'created_at') || (key === 'page' && Number(value) <= 1)) {
-      params.delete(key);
-    } else {
-      params.set(key, String(value).trim());
+  // ── 3. Papers for Selected Topic in Topic Explorer ─────────────────────────
+  const [topicExplorerPapers, setTopicExplorerPapers] = useState([]);
+  const [loadingTopicPapers, setLoadingTopicPapers] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === 'topics' && activeTopicForExplorer) {
+      setLoadingTopicPapers(true);
+      papersService
+        .getPapers({ topic: activeTopicForExplorer.id, limit: 30 })
+        .then((res) => {
+          setTopicExplorerPapers(res.papers || []);
+        })
+        .catch((err) => {
+          console.warn('Failed to load topic papers:', err);
+        })
+        .finally(() => {
+          setLoadingTopicPapers(false);
+        });
     }
-    // If updating a search/filter, reset page back to 1
-    if (key !== 'page') {
-      params.delete('page');
-    }
-    setSearchParams(params, { replace: true });
-  };
+  }, [activeTab, activeTopicForExplorer]);
 
   const handleResetFilters = () => {
-    setSearchQuery('');
+    setSearchInput('');
+    setDebouncedSearch('');
     setSelectedTopic('');
     setSelectedSource('all');
-    setSortBy('created_at');
+    setSortBy('newest');
     setCurrentPage(1);
     setSearchParams({}, { replace: true });
   };
@@ -121,116 +237,288 @@ export default function ExplorePapersPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-6 animate-fadeIn pb-12">
       {/* Page Header */}
       <PageHeader
-        title="Explore Research Papers"
-        description="Search, filter, and inspect peer-reviewed publications and preprints with AI insights."
+        title="ScholarSphere Research Explorer"
+        description="Explore research papers, browse hierarchical scientific topics, and discover granular paragraph insights across preprints."
+        actions={
+          canUpload && (
+            <Button
+              variant="primary"
+              size="sm"
+              iconLeft={FilePlus}
+              onClick={() => setUploadModalOpen(true)}
+              className="gap-1.5 shadow-xs"
+            >
+              <span>Upload Research Paper</span>
+            </Button>
+          )
+        }
       />
 
-      {/* Filter and Search Bar */}
-      <PaperFilters
-        searchQuery={searchQuery}
-        onSearchChange={(q) => {
-          setSearchQuery(q);
-          updateUrlParam('q', q);
-        }}
-        selectedTopic={selectedTopic}
-        onTopicChange={(t) => {
-          setSelectedTopic(t);
-          updateUrlParam('topic', t);
-        }}
-        selectedSource={selectedSource}
-        onSourceChange={(s) => {
-          setSelectedSource(s);
-          updateUrlParam('source', s);
-        }}
-        sortBy={sortBy}
-        onSortChange={(s) => {
-          setSortBy(s);
-          updateUrlParam('sort', s);
-        }}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        onReset={handleResetFilters}
-      />
+      {/* Discovery Navigation Tabs */}
+      <div className="border-b border-theme-subtle">
+        <nav className="flex space-x-2 sm:space-x-4 overflow-x-auto scrollbar-none" aria-label="Explorer Tabs">
+          <button
+            type="button"
+            onClick={() => handleTabChange('papers')}
+            className={`py-3.5 px-3 border-b-2 text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap cursor-pointer transition-colors ${
+              activeTab === 'papers'
+                ? 'border-violet-500 text-violet-400 font-bold'
+                : 'border-transparent text-theme-muted hover:text-theme-main font-medium'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>Papers Explorer</span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-theme-elevated text-theme-secondary border border-white/10">
+              {totalPapers}
+            </span>
+          </button>
 
-      {/* Papers Listing View */}
-      {loading ? (
-        viewMode === 'grid' ? (
-          <LoadingSkeletonGrid count={6} />
-        ) : (
-          <LoadingSkeletonList count={6} />
-        )
-      ) : error ? (
-        <ErrorState
-          title="Could not load papers"
-          message={error}
-          onRetry={fetchPapers}
-        />
-      ) : papers.length === 0 ? (
-        <EmptyState
-          title="No research papers found"
-          description={
-            searchQuery || selectedTopic || selectedSource !== 'all'
-              ? 'No papers matched your search criteria. Try modifying or clearing your filters.'
-              : 'There are currently no research papers available in the explorer.'
-          }
-          icon={FilePlus}
-          actionLabel={
-            searchQuery || selectedTopic || selectedSource !== 'all'
-              ? 'Reset All Filters'
-              : canUpload
-              ? 'Upload New Paper'
-              : undefined
-          }
-          onAction={
-            searchQuery || selectedTopic || selectedSource !== 'all'
-              ? handleResetFilters
-              : canUpload
-              ? () => setUploadModalOpen(true)
-              : undefined
-          }
-        />
-      ) : (
-        <>
-          {viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {papers.map((paper) => (
-                <PaperCard
-                  key={paper.id}
-                  paper={paper}
-                  onOpenSummary={(p) => setSummaryPaper(p)}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800 shadow-xs">
-              {papers.map((paper) => (
-                <PaperListItem
-                  key={paper.id}
-                  paper={paper}
-                  onOpenSummary={(p) => setSummaryPaper(p)}
-                />
-              ))}
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={() => handleTabChange('topics')}
+            className={`py-3.5 px-3 border-b-2 text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap cursor-pointer transition-colors ${
+              activeTab === 'topics'
+                ? 'border-cyan-400 text-cyan-300 font-bold'
+                : 'border-transparent text-theme-muted hover:text-theme-main font-medium'
+            }`}
+          >
+            <FolderTree className="w-4 h-4 text-cyan-400" />
+            <span>Topic Explorer (FR-10)</span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+              {flatTags.length} Topics
+            </span>
+          </button>
+        </nav>
+      </div>
 
-          {/* Pagination */}
-          <div className="pt-4">
-            <Pagination
-              currentPage={currentPage}
-              totalItems={totalPapers}
-              itemsPerPage={itemsPerPage}
-              onPageChange={(p) => {
-                setCurrentPage(p);
-                updateUrlParam('page', p);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
+      {/* ──────────────────────────────────────────────────────────────────────────
+          TAB 1: PAPERS EXPLORER
+      ────────────────────────────────────────────────────────────────────────── */}
+      {activeTab === 'papers' && (
+        <div className="space-y-4">
+          <PaperFilters
+            searchQuery={searchInput}
+            onSearchChange={(q) => {
+              setSearchInput(q);
+            }}
+            selectedTopic={selectedTopic}
+            onTopicChange={(t) => {
+              setSelectedTopic(t);
+              updateUrlParam('topic', t);
+            }}
+            topics={flatTags}
+            selectedSource={selectedSource}
+            onSourceChange={(s) => {
+              setSelectedSource(s);
+              updateUrlParam('source', s);
+            }}
+            sortBy={sortBy}
+            onSortChange={(s) => {
+              setSortBy(s);
+              updateUrlParam('sort', s);
+            }}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            onReset={handleResetFilters}
+          />
+
+          {loading ? (
+            viewMode === 'grid' ? (
+              <LoadingSkeletonGrid count={6} />
+            ) : (
+              <LoadingSkeletonList count={6} />
+            )
+          ) : error ? (
+            <ErrorState
+              title="Could not load research papers"
+              message={error}
+              onRetry={fetchPapers}
             />
-          </div>
-        </>
+          ) : papers.length === 0 ? (
+            <EmptyState
+              title="No research papers found"
+              description={
+                debouncedSearch || selectedTopic || selectedSource !== 'all'
+                  ? 'No papers matched your search query. Try clearing filters or searching by author, topic, or abstract.'
+                  : 'There are currently no research papers available in the explorer.'
+              }
+              icon={BookOpen}
+              actionLabel={
+                debouncedSearch || selectedTopic || selectedSource !== 'all'
+                  ? 'Reset All Filters'
+                  : canUpload
+                  ? 'Upload New Paper'
+                  : undefined
+              }
+              onAction={
+                debouncedSearch || selectedTopic || selectedSource !== 'all'
+                  ? handleResetFilters
+                  : canUpload
+                  ? () => setUploadModalOpen(true)
+                  : undefined
+              }
+            />
+          ) : (
+            <>
+              {viewMode === 'grid' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {papers.map((paper) => (
+                    <PaperCard
+                      key={paper.id}
+                      paper={paper}
+                      onOpenSummary={(p) => setSummaryPaper(p)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {papers.map((paper) => (
+                    <PaperListItem
+                      key={paper.id}
+                      paper={paper}
+                      onOpenSummary={(p) => setSummaryPaper(p)}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Pagination */}
+              <div className="pt-4">
+                <Pagination
+                  currentPage={currentPage}
+                  totalItems={totalPapers}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={(p) => {
+                    setCurrentPage(p);
+                    updateUrlParam('page', p);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                />
+              </div>
+            </>
+          )}
+        </div>
       )}
+
+      {/* ──────────────────────────────────────────────────────────────────────────
+          TAB 2: TOPIC EXPLORER (FR-10 Knowledge Base)
+      ────────────────────────────────────────────────────────────────────────── */}
+      {activeTab === 'topics' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Column (4 cols): Topic Hierarchy Selector */}
+          <div className="lg:col-span-4 bg-theme-card rounded-2xl border border-theme-subtle p-4 shadow-xs space-y-3 h-[750px] flex flex-col">
+            <div className="border-b border-theme-subtle pb-2">
+              <h3 className="text-sm font-bold text-theme-main flex items-center gap-2">
+                <FolderTree className="w-4 h-4 text-violet-400" />
+                <span>Taxonomy Topic Selector</span>
+              </h3>
+              <p className="text-xs text-theme-muted mt-0.5">
+                Select a topic to explore its research papers and child subtopics
+              </p>
+            </div>
+
+            {/* Topics Scrollable Tree/List */}
+            <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
+              {flatTags.map((t) => {
+                const isSelected = activeTopicForExplorer?.id === t.id;
+                return (
+                  <div
+                    key={t.id}
+                    onClick={() => setActiveTopicForExplorer(t)}
+                    className={`p-2.5 rounded-xl border transition cursor-pointer text-left select-none ${
+                      isSelected
+                        ? 'bg-violet-500/15 border-violet-500 shadow-xs'
+                        : 'border-theme-subtle hover:border-theme-strong bg-theme-elevated'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-theme-main">
+                        {t.name}
+                      </span>
+                      {isSelected && (
+                        <span className="text-[10px] font-bold text-violet-300 bg-violet-500/20 px-1.5 py-0.5 rounded-full">
+                          Active
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] font-mono text-violet-400 truncate mt-1">
+                      {t.canonicalPath}
+                    </p>
+                    {t.description && (
+                      <p className="text-[11px] text-theme-muted line-clamp-1 mt-0.5">
+                        {t.description}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right Column (8 cols): Papers Assigned to Active Topic */}
+          <div className="lg:col-span-8 space-y-4">
+            {activeTopicForExplorer ? (
+              <>
+                {/* Active Topic Banner */}
+                <div className="p-5 bg-theme-card rounded-2xl border border-theme-subtle shadow-xs space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold uppercase tracking-wider text-violet-400">
+                      Topic Hierarchy Path
+                    </span>
+                    <Badge variant="violet" size="xs">
+                      {activeTopicForExplorer.slug}
+                    </Badge>
+                  </div>
+                  <h2 className="text-xl font-extrabold text-theme-main">
+                    {activeTopicForExplorer.canonicalPath}
+                  </h2>
+                  {activeTopicForExplorer.description && (
+                    <p className="text-xs text-theme-secondary">
+                      {activeTopicForExplorer.description}
+                    </p>
+                  )}
+                  <div className="pt-2 flex items-center gap-3 text-xs text-theme-muted">
+                    <span className="font-semibold text-theme-main">
+                      {topicExplorerPapers.length} Research Paper{topicExplorerPapers.length === 1 ? '' : 's'} Categorized
+                    </span>
+                  </div>
+                </div>
+
+                {/* Papers List */}
+                {loadingTopicPapers ? (
+                  <LoadingSkeletonGrid count={4} />
+                ) : topicExplorerPapers.length === 0 ? (
+                  <div className="p-12 text-center bg-theme-card rounded-2xl border border-theme-subtle text-xs text-theme-muted space-y-2">
+                    <Tag className="w-8 h-8 text-theme-muted mx-auto" />
+                    <p className="font-bold text-theme-main">
+                      No papers tagged under "{activeTopicForExplorer.name}" yet
+                    </p>
+                    <p>Open any paper in the workspace or tagging tool to assign this topic tag.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {topicExplorerPapers.map((paper) => (
+                      <PaperCard
+                        key={paper.id}
+                        paper={paper}
+                        onOpenSummary={(p) => setSummaryPaper(p)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="p-12 text-center bg-theme-card rounded-2xl border border-theme-subtle text-theme-muted">
+                Select a topic from the left to view categorized research papers.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
 
       {/* AI Perspectives Summary Modal */}
       <PaperSummaryModal

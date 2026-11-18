@@ -75,29 +75,29 @@ export default function ProfilePage() {
       />
 
       {/* User Hero Banner */}
-      <div className="p-6 sm:p-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-center sm:items-start gap-6">
+      <div className="p-6 sm:p-8 bg-theme-card rounded-3xl border border-theme-subtle shadow-xs flex flex-col sm:flex-row items-center sm:items-start gap-6">
         <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white text-3xl font-extrabold shadow-lg shadow-indigo-500/20 shrink-0">
           {fullName.charAt(0) || user?.email?.charAt(0) || 'U'}
         </div>
 
         <div className="flex-1 text-center sm:text-left">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
+            <h2 className="text-xl sm:text-2xl font-bold text-theme-main">
               {fullName || 'Academic Scholar'}
             </h2>
-            <Badge variant={ROLE_COLORS[user?.role] || 'indigo'} size="sm">
+            <Badge variant={user?.role === 'STUDENT' ? 'emerald' : user?.role === 'RESEARCHER' ? 'violet' : 'amber'} size="sm">
               {ROLE_LABELS[user?.role] || user?.role}
             </Badge>
           </div>
 
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-3 flex items-center justify-center sm:justify-start gap-1.5">
-            <Mail className="w-4 h-4 text-slate-400" />
+          <p className="text-sm text-theme-muted mb-3 flex items-center justify-center sm:justify-start gap-1.5">
+            <Mail className="w-4 h-4 text-theme-muted" />
             <span>{user?.email}</span>
           </p>
 
           {affiliation && (
-            <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center justify-center sm:justify-start gap-1.5">
-              <Building2 className="w-3.5 h-3.5 text-slate-400" />
+            <p className="text-xs text-theme-secondary flex items-center justify-center sm:justify-start gap-1.5">
+              <Building2 className="w-3.5 h-3.5 text-theme-muted" />
               <span>{affiliation}</span>
             </p>
           )}
@@ -107,36 +107,36 @@ export default function ProfilePage() {
       {/* Edit Profile Form */}
       <form
         onSubmit={handleSubmit}
-        className="p-6 sm:p-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-6"
+        className="p-6 sm:p-8 bg-theme-card rounded-3xl border border-theme-subtle shadow-xs space-y-6"
       >
-        <h3 className="text-base font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3">
+        <h3 className="text-base font-bold text-theme-main border-b border-theme-subtle pb-3">
           Personal Details & Affiliation
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-xs font-semibold text-theme-secondary mb-2">
               Full Legal Name
             </label>
             <input
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-2.5 rounded-xl border border-theme-subtle bg-theme-elevated text-theme-main text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
               placeholder="Dr. Jane Doe"
               required
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-xs font-semibold text-theme-secondary mb-2">
               Affiliation / University / Lab
             </label>
             <input
               type="text"
               value={affiliation}
               onChange={(e) => setAffiliation(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-2.5 rounded-xl border border-theme-subtle bg-theme-elevated text-theme-main text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
               placeholder="Stanford AI Lab"
             />
           </div>
@@ -144,10 +144,10 @@ export default function ProfilePage() {
 
         {/* Research Interests */}
         <div>
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
+          <label className="block text-xs font-semibold text-theme-secondary mb-2">
             Research Interests & Topics
           </label>
-          <p className="text-xs text-slate-500 mb-3">
+          <p className="text-xs text-theme-muted mb-3">
             Select predefined research areas or add custom keywords below:
           </p>
 
@@ -160,8 +160,8 @@ export default function ProfilePage() {
                 onClick={() => handleAddTag(area)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
                   researchInterests.includes(area)
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                    ? 'bg-violet-500 text-white'
+                    : 'bg-theme-elevated text-theme-secondary hover:bg-theme-card'
                 }`}
               >
                 + {area}
@@ -170,14 +170,14 @@ export default function ProfilePage() {
           </div>
 
           {/* Current tags */}
-          <div className="flex flex-wrap gap-2 p-3 min-h-[48px] rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 mb-3">
+          <div className="flex flex-wrap gap-2 p-3 min-h-[48px] rounded-xl border border-theme-subtle bg-theme-elevated mb-3">
             {researchInterests.length === 0 ? (
-              <span className="text-xs text-slate-400">No research interests specified yet.</span>
+              <span className="text-xs text-theme-muted">No research interests specified yet.</span>
             ) : (
               researchInterests.map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-semibold"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-violet-500/15 text-violet-300 text-xs font-semibold"
                 >
                   <span>{tag}</span>
                   <button
@@ -204,7 +204,7 @@ export default function ProfilePage() {
                   handleAddTag();
                 }
               }}
-              className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="flex-1 px-4 py-2 rounded-xl border border-theme-subtle bg-theme-elevated text-theme-main text-xs focus:outline-none focus:ring-2 focus:ring-violet-500"
               placeholder="Add another topic or keyword..."
             />
             <Button
@@ -219,7 +219,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Submit Button */}
-        <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+        <div className="pt-4 border-t border-theme-subtle flex justify-end">
           <Button
             type="submit"
             variant="primary"

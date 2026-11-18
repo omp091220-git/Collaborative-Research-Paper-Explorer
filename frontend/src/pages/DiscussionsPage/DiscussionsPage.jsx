@@ -39,12 +39,12 @@ export default function DiscussionsPage() {
       />
 
       {/* Intro info box */}
-      <div className="p-5 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/40 dark:to-purple-950/30 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 flex items-start gap-4">
-        <div className="p-2.5 rounded-xl bg-indigo-600 text-white shrink-0 mt-0.5">
+      <div className="p-5 bg-gradient-to-r from-violet-500/10 to-indigo-500/10 rounded-2xl border border-violet-500/20 flex items-start gap-4">
+        <div className="p-2.5 rounded-xl bg-violet-600 text-white shrink-0 mt-0.5 shadow-md shadow-violet-600/30">
           <MessageSquare className="w-5 h-5" />
         </div>
-        <div className="text-xs sm:text-sm text-slate-700 dark:text-slate-300">
-          <p className="font-semibold text-slate-900 dark:text-white mb-1">
+        <div className="text-xs sm:text-sm text-theme-secondary">
+          <p className="font-semibold text-theme-main mb-1">
             Contextual Discussions Tied to Text and Figures
           </p>
           <p className="leading-relaxed">
@@ -57,11 +57,11 @@ export default function DiscussionsPage() {
       {/* Papers Grid */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-indigo-500" />
+          <h2 className="text-lg font-bold text-theme-main flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-violet-400" />
             <span>Select a Paper to Open Discussions</span>
           </h2>
-          <Badge variant="indigo" size="sm">
+          <Badge variant="violet" size="sm">
             {papers.length} Papers Available
           </Badge>
         </div>
@@ -79,28 +79,28 @@ export default function DiscussionsPage() {
             {papers.map((paper) => (
               <div
                 key={paper.id}
-                className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700/60 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+                className="p-5 bg-theme-card rounded-2xl border border-theme-subtle hover:border-violet-500/50 shadow-xs hover:shadow-xl transition-all flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-violet-400">
                       Paper #{paper.id}
                     </span>
                     {paper.arxiv_id && (
-                      <Badge variant="purple" size="sm">
+                      <Badge variant="cyan" size="sm">
                         arXiv:{paper.arxiv_id}
                       </Badge>
                     )}
                   </div>
-                  <h3 className="font-bold text-base text-slate-900 dark:text-white line-clamp-2 mb-2">
+                  <h3 className="font-bold text-base text-theme-main line-clamp-2 mb-2">
                     {paper.title}
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+                  <p className="text-xs text-theme-muted line-clamp-2">
                     {paper.abstract || 'No abstract preview available.'}
                   </p>
                 </div>
 
-                <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div className="mt-5 pt-4 border-t border-theme-subtle flex items-center justify-between">
                   <Button
                     variant="primary"
                     size="sm"
@@ -113,7 +113,7 @@ export default function DiscussionsPage() {
 
                   <Link
                     to={`/papers/${paper.id}`}
-                    className="text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 inline-flex items-center gap-1"
+                    className="text-xs font-semibold text-theme-secondary hover:text-violet-400 inline-flex items-center gap-1"
                   >
                     <span>Details</span>
                     <ArrowRight className="w-3.5 h-3.5" />

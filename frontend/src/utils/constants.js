@@ -12,19 +12,19 @@ export const ROLE_LABELS = {
 
 export const ROLE_COLORS = {
   [ROLES.STUDENT]: {
-    bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    dot: 'bg-emerald-500',
-    badge: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+    dot: 'bg-emerald-400',
+    badge: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25',
   },
   [ROLES.RESEARCHER]: {
-    bg: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    dot: 'bg-indigo-500',
-    badge: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+    bg: 'bg-violet-500/10 text-violet-400 border-violet-500/30',
+    dot: 'bg-violet-400',
+    badge: 'bg-violet-500/15 text-violet-300 border-violet-500/25',
   },
   [ROLES.SYSTEM_ADMIN]: {
-    bg: 'bg-purple-50 text-purple-700 border-purple-200',
-    dot: 'bg-purple-500',
-    badge: 'bg-purple-100 text-purple-800 border-purple-200',
+    bg: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+    dot: 'bg-amber-400',
+    badge: 'bg-amber-500/15 text-amber-300 border-amber-500/25',
   },
 };
 

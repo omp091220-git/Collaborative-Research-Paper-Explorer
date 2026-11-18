@@ -128,33 +128,33 @@ export default function Register() {
 
   if (registeredEmail) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-slate-50 to-purple-100 font-sans py-10 px-4">
-        <div className="relative bg-white/95 backdrop-blur-sm p-8 md:p-10 rounded-2xl shadow-2xl w-full max-w-lg border border-white/50 text-center">
+      <div className="auth-shell">
+        <div className="auth-card auth-card-wide text-center">
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg text-3xl text-white">
             ✉️
           </div>
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">
+          <h2 className="auth-title !text-2xl mb-2">
             Verify Your Email Address
           </h2>
-          <p className="text-slate-600 text-sm mb-4 leading-relaxed">
+          <p className="text-theme-secondary text-sm mb-4 leading-relaxed">
             Your account has been created successfully! We sent a verification link to:
           </p>
-          <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg text-indigo-800 font-semibold text-sm mb-6 break-all">
+          <div className="p-3 bg-violet-500/10 border border-violet-500/30 rounded-lg text-violet-300 font-semibold text-sm mb-6 break-all">
             {registeredEmail}
           </div>
-          <p className="text-slate-500 text-xs mb-6">
+          <p className="text-theme-muted text-xs mb-6">
             Please check your inbox and click the verification link to activate your account before logging in. If you don't see it, check your spam folder.
           </p>
           <div className="flex flex-col gap-3">
             <Link
               to="/login"
-              className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-semibold shadow hover:from-indigo-700 hover:to-purple-700 transition"
+              className="auth-submit"
             >
               Go to Sign In
             </Link>
             <Link
               to={`/verify-email?email=${encodeURIComponent(registeredEmail)}`}
-              className="w-full py-2.5 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition"
+              className="auth-secondary"
             >
               Verify Token or Resend Link
             </Link>
@@ -165,14 +165,14 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-slate-50 to-purple-100 font-sans py-10 px-4">
+    <div className="auth-shell">
       {/* Decorative background blobs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="hidden">
         <div className="absolute -top-24 -left-24 w-72 h-72 bg-indigo-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" />
         <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" />
       </div>
 
-      <div className="relative bg-white/95 backdrop-blur-sm p-8 md:p-10 rounded-2xl shadow-2xl w-full max-w-xl border border-white/50">
+      <div className="auth-card auth-card-wide">
         {/* Brand/Logo */}
         <div className="flex justify-center mb-4">
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
@@ -180,16 +180,16 @@ export default function Register() {
           </div>
         </div>
 
-        <h1 className="text-2xl md:text-3xl font-bold text-center text-slate-800 mb-1">
+        <h1 className="auth-title mb-1">
           Create an Account
         </h1>
-        <p className="text-center text-slate-500 text-sm mb-6">
-          Join <span className="font-semibold text-indigo-600">Paper Explorer</span> today
+        <p className="text-center text-theme-muted text-sm mb-6">
+          Join <span className="font-semibold text-violet-400">Paper Explorer</span> today
         </p>
 
         {/* Error Alert */}
         {error && (
-          <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg mb-5 text-sm">
+          <div className="flex items-start gap-2 auth-error mb-5">
             <span className="text-base leading-none mt-0.5">⚠️</span>
             <span>{error}</span>
           </div>
@@ -198,7 +198,7 @@ export default function Register() {
         <form onSubmit={handleSubmit} noValidate>
           {/* Role Selection */}
           <div className="mb-5">
-            <label className="block mb-2 text-sm font-semibold text-slate-700">
+            <label className="auth-label">
               I am joining as a...
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -206,8 +206,8 @@ export default function Register() {
               <label
                 className={`cursor-pointer border-2 rounded-xl p-3 text-center transition duration-200 ${
                   role === 'STUDENT'
-                    ? 'border-indigo-600 bg-indigo-50 shadow-sm'
-                    : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50'
+                    ? 'border-violet-500 bg-violet-500/10 shadow-sm'
+                    : 'border-theme-subtle hover:border-violet-400/50 hover:bg-theme-elevated'
                 }`}
               >
                 <input
@@ -219,10 +219,10 @@ export default function Register() {
                   className="hidden"
                 />
                 <div className="text-xl">🎓</div>
-                <div className="font-semibold text-slate-800 text-sm mt-1">
+                <div className="font-semibold text-theme-main text-sm mt-1">
                   Student
                 </div>
-                <div className="text-xs text-slate-500 mt-1">
+                <div className="text-xs text-theme-muted mt-1">
                   Learning & exploring
                 </div>
               </label>
@@ -231,8 +231,8 @@ export default function Register() {
               <label
                 className={`cursor-pointer border-2 rounded-xl p-3 text-center transition duration-200 ${
                   role === 'RESEARCHER'
-                    ? 'border-indigo-600 bg-indigo-50 shadow-sm'
-                    : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50'
+                    ? 'border-violet-500 bg-violet-500/10 shadow-sm'
+                    : 'border-theme-subtle hover:border-violet-400/50 hover:bg-theme-elevated'
                 }`}
               >
                 <input
@@ -244,16 +244,16 @@ export default function Register() {
                   className="hidden"
                 />
                 <div className="text-xl">🔬</div>
-                <div className="font-semibold text-slate-800 text-sm mt-1">
+                <div className="font-semibold text-theme-main text-sm mt-1">
                   Researcher
                 </div>
-                <div className="text-xs text-slate-500 mt-1">
+                <div className="text-xs text-theme-muted mt-1">
                   Publishing & collaborating
                 </div>
               </label>
             </div>
             {role === 'RESEARCHER' && (
-              <div className="mt-2 text-xs bg-amber-50 border border-amber-200 text-amber-800 p-2.5 rounded-lg flex items-start gap-1.5">
+              <div className="mt-2 text-xs bg-amber-500/10 border border-amber-500/30 text-amber-300 p-2.5 rounded-lg flex items-start gap-1.5">
                 <span className="font-bold text-sm leading-none mt-0.5">ℹ️</span>
                 <span>
                   Researcher accounts require an approved institutional email address (e.g. university or research institution domain).
@@ -266,12 +266,12 @@ export default function Register() {
           <div className="mb-4">
             <label
               htmlFor="fullName"
-              className="block mb-2 text-sm font-semibold text-slate-700"
+              className="auth-label"
             >
               Full Name <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-muted text-base">
                 👤
               </span>
               <input
@@ -282,7 +282,7 @@ export default function Register() {
                 placeholder="Dr. Jane Smith or Alex Doe"
                 autoComplete="name"
                 required
-                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
+                className="auth-input pl-10"
               />
             </div>
           </div>
@@ -291,17 +291,17 @@ export default function Register() {
           <div className="mb-4">
             <label
               htmlFor="email"
-              className="block mb-2 text-sm font-semibold text-slate-700"
+              className="auth-label"
             >
               Email Address <span className="text-red-500">*</span>
               {role === 'RESEARCHER' && (
-                <span className="text-xs font-normal text-indigo-600 ml-1">
+                <span className="text-xs font-normal text-violet-400 ml-1">
                   (Institutional email)
                 </span>
               )}
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-muted text-base">
                 ✉️
               </span>
               <input
@@ -312,7 +312,7 @@ export default function Register() {
                 placeholder={role === 'RESEARCHER' ? 'jane@stanford.edu' : 'alex@example.com'}
                 autoComplete="email"
                 required
-                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
+                className="auth-input pl-10"
               />
             </div>
           </div>
@@ -321,12 +321,12 @@ export default function Register() {
           <div className="mb-4">
             <label
               htmlFor="affiliation"
-              className="block mb-2 text-sm font-semibold text-slate-700"
+              className="auth-label"
             >
               Affiliation / Institution <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-muted text-base">
                 🏛️
               </span>
               <input
@@ -337,7 +337,7 @@ export default function Register() {
                 placeholder="e.g. Stanford University, MIT, Oxford, IISc"
                 maxLength={255}
                 required
-                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
+                className="auth-input pl-10"
               />
             </div>
           </div>
@@ -347,11 +347,11 @@ export default function Register() {
             <div className="flex items-center justify-between mb-2">
               <label
                 htmlFor="customInterest"
-                className="text-sm font-semibold text-slate-700"
+                className="auth-label inline"
               >
                 Research Interests
               </label>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-theme-muted">
                 {researchInterests.length}/20 added
               </span>
             </div>
@@ -366,13 +366,13 @@ export default function Register() {
                 onKeyDown={handleKeyDownInterest}
                 placeholder="Type an interest and press Enter or Add"
                 maxLength={50}
-                className="flex-1 px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                className="auth-input flex-1"
               />
               <button
                 type="button"
                 onClick={() => handleAddInterest()}
                 disabled={!customInterest.trim() || researchInterests.length >= 20}
-                className="px-4 py-2 bg-slate-800 text-white text-sm font-medium rounded-lg hover:bg-slate-900 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                className="px-4 py-2 bg-gradient-violet text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition"
               >
                 + Add
               </button>
@@ -380,11 +380,11 @@ export default function Register() {
 
             {/* Selected Tags Display */}
             {researchInterests.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 p-2.5 bg-slate-50 border border-slate-200 rounded-lg mb-2.5">
+              <div className="flex flex-wrap gap-1.5 p-2.5 bg-theme-secondary border border-theme-subtle rounded-lg mb-2.5">
                 {researchInterests.map((interest) => (
                   <span
                     key={interest}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs font-medium"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-violet-500/15 text-violet-300 rounded-full text-xs font-medium"
                   >
                     <span>{interest}</span>
                     <button
@@ -402,7 +402,7 @@ export default function Register() {
 
             {/* Popular Suggestions */}
             <div>
-              <p className="text-xs text-slate-500 mb-1.5">Suggested interests (click to add):</p>
+              <p className="text-xs text-theme-muted mb-1.5">Suggested interests (click to add):</p>
               <div className="flex flex-wrap gap-1.5">
                 {POPULAR_INTERESTS.filter(
                   (item) => !researchInterests.some((t) => t.toLowerCase() === item.toLowerCase())
@@ -412,7 +412,7 @@ export default function Register() {
                     type="button"
                     onClick={() => handleAddInterest(item)}
                     disabled={researchInterests.length >= 20}
-                    className="text-xs px-2.5 py-1 border border-slate-200 bg-white hover:bg-indigo-50 hover:border-indigo-300 text-slate-600 rounded-full transition disabled:opacity-50"
+                    className="text-xs px-2.5 py-1 border border-theme-subtle bg-theme-secondary hover:bg-violet-500/10 hover:border-violet-400/40 text-theme-secondary rounded-full transition disabled:opacity-50"
                   >
                     + {item}
                   </button>
@@ -425,12 +425,12 @@ export default function Register() {
           <div className="mb-3">
             <label
               htmlFor="password"
-              className="block mb-2 text-sm font-semibold text-slate-700"
+              className="auth-label"
             >
               Password <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-muted text-base">
                 🔒
               </span>
               <input
@@ -441,13 +441,13 @@ export default function Register() {
                 placeholder="••••••••"
                 autoComplete="new-password"
                 required
-                className="w-full pl-10 pr-11 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
+                className="auth-input pl-10 pr-11"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm focus:outline-none"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-muted hover:text-theme-secondary text-sm focus:outline-none"
               >
                 {showPassword ? '🙈' : '👁️'}
               </button>
@@ -455,15 +455,15 @@ export default function Register() {
           </div>
 
           {/* Password Policy Guidelines */}
-          <div className="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1.5">
-            <p className="font-semibold text-slate-700 mb-1">
+          <div className="mb-4 p-3 bg-theme-secondary border border-theme-subtle rounded-lg text-xs space-y-1.5">
+            <p className="font-semibold text-theme-secondary mb-1">
               Password requirements:
             </p>
             <div
               className={`flex items-center gap-1.5 transition ${
                 isLengthValid
                   ? 'text-emerald-600 font-medium'
-                  : 'text-slate-500'
+                  : 'text-theme-muted'
               }`}
             >
               <span>{isLengthValid ? '✓' : '○'}</span>
@@ -473,7 +473,7 @@ export default function Register() {
               className={`flex items-center gap-1.5 transition ${
                 hasUpper && hasLower
                   ? 'text-emerald-600 font-medium'
-                  : 'text-slate-500'
+                  : 'text-theme-muted'
               }`}
             >
               <span>{hasUpper && hasLower ? '✓' : '○'}</span>
@@ -481,7 +481,7 @@ export default function Register() {
             </div>
             <div
               className={`flex items-center gap-1.5 transition ${
-                hasNumber ? 'text-emerald-600 font-medium' : 'text-slate-500'
+                hasNumber ? 'text-emerald-600 font-medium' : 'text-theme-muted'
               }`}
             >
               <span>{hasNumber ? '✓' : '○'}</span>
@@ -489,7 +489,7 @@ export default function Register() {
             </div>
             <div
               className={`flex items-center gap-1.5 transition ${
-                hasSpecial ? 'text-emerald-600 font-medium' : 'text-slate-500'
+                hasSpecial ? 'text-emerald-600 font-medium' : 'text-theme-muted'
               }`}
             >
               <span>{hasSpecial ? '✓' : '○'}</span>
@@ -501,12 +501,12 @@ export default function Register() {
           <div className="mb-5">
             <label
               htmlFor="confirmPassword"
-              className="block mb-2 text-sm font-semibold text-slate-700"
+              className="auth-label"
             >
               Confirm Password <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-muted text-base">
                 🔒
               </span>
               <input
@@ -517,9 +517,9 @@ export default function Register() {
                 placeholder="••••••••"
                 autoComplete="new-password"
                 required
-                className={`w-full pl-10 pr-11 py-2.5 border rounded-lg bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 transition duration-200 ${
+                className={`w-full pl-10 pr-11 py-2.5 border auth-input text-theme-main placeholder-slate-400 focus:outline-none focus:ring-2 transition duration-200 ${
                   confirmPassword.length === 0
-                    ? 'border-slate-300 focus:ring-indigo-500 focus:border-transparent'
+                    ? 'border-theme-strong focus:ring-violet-500 focus:border-transparent'
                     : passwordsMatch
                     ? 'border-emerald-400 focus:ring-emerald-500 focus:border-transparent'
                     : 'border-red-300 focus:ring-red-500 focus:border-transparent'
@@ -531,7 +531,7 @@ export default function Register() {
                 aria-label={
                   showConfirmPassword ? 'Hide password' : 'Show password'
                 }
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm focus:outline-none"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-muted hover:text-theme-secondary text-sm focus:outline-none"
               >
                 {showConfirmPassword ? '🙈' : '👁️'}
               </button>
@@ -551,7 +551,7 @@ export default function Register() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-semibold shadow-md hover:from-indigo-700 hover:to-purple-700 hover:shadow-lg active:scale-[0.99] transition duration-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="auth-submit"
           >
             {loading && (
               <svg
@@ -585,17 +585,17 @@ export default function Register() {
 
         {/* Divider */}
         <div className="flex items-center my-6">
-          <div className="flex-1 h-px bg-slate-200" />
-          <span className="px-3 text-xs text-slate-400 font-medium">OR</span>
-          <div className="flex-1 h-px bg-slate-200" />
+          <div className="flex-1 h-px bg-[var(--border-strong)]" />
+          <span className="px-3 text-xs text-theme-muted font-medium">OR</span>
+          <div className="flex-1 h-px bg-[var(--border-strong)]" />
         </div>
 
         {/* Sign In CTA */}
-        <p className="text-center text-sm text-slate-600">
+        <p className="text-center text-sm text-theme-secondary">
           Already have an account?{' '}
           <Link
             to="/login"
-            className="text-indigo-600 font-semibold hover:text-indigo-800 hover:underline transition"
+            className="auth-link"
           >
             Sign In
           </Link>

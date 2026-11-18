@@ -3,6 +3,8 @@ import Modal from '../common/Modal';
 import Button from '../common/Button';
 import { annotationsService } from '../../services/annotations.service';
 import { useToast } from '../../context/ToastContext';
+import { Edit3, Eye } from 'lucide-react';
+import MarkdownMathRenderer from '../research/MarkdownMathRenderer';
 
 export default function AddAnnotationModal({
   isOpen,
@@ -16,6 +18,7 @@ export default function AddAnnotationModal({
   const notifySuccess = onSaved || onCreated;
   const [pageNumber, setPageNumber] = useState(1);
   const [content, setContent] = useState('');
+  const [editorTab, setEditorTab] = useState('write'); // 'write' | 'preview'
   const [useCoords, setUseCoords] = useState(false);
   const [posX, setPosX] = useState('0.15');
   const [posY, setPosY] = useState('0.25');
@@ -107,49 +110,81 @@ export default function AddAnnotationModal({
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
-            Target Page Number <span className="text-rose-500">*</span>
+          <label className="block text-xs font-semibold text-theme-main mb-1">
+            Target Page Number <span className="text-rose-400">*</span>
           </label>
           <input
             type="number"
             min="1"
             value={pageNumber}
             onChange={(e) => setPageNumber(e.target.value)}
-            className="w-28 px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+            className="w-28 px-3 py-1.5 text-xs bg-theme-elevated border border-theme-subtle rounded-xl text-theme-main focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
             required
           />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
-            Annotation Notes / Commentary <span className="text-rose-500">*</span>
-          </label>
-          <textarea
-            rows={4}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="e.g. In Equation 4, verify convergence guarantees under noisy gradients..."
-            className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-y"
-            required
-          />
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-semibold text-theme-main">
+              Annotation Notes / Remarks (Markdown &amp; LaTeX) <span className="text-rose-400">*</span>
+            </label>
+
+            <div className="flex items-center gap-1 bg-theme-elevated p-0.5 rounded-xl border border-theme-subtle text-xs">
+              <button
+                type="button"
+                onClick={() => setEditorTab('write')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer flex items-center gap-1 ${
+                  editorTab === 'write' ? 'bg-violet-600 text-white shadow-xs' : 'text-theme-muted hover:text-theme-main'
+                }`}
+              >
+                <Edit3 className="w-3 h-3" />
+                <span>Write</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditorTab('preview')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer flex items-center gap-1 ${
+                  editorTab === 'preview' ? 'bg-violet-600 text-white shadow-xs' : 'text-theme-muted hover:text-theme-main'
+                }`}
+              >
+                <Eye className="w-3 h-3" />
+                <span>Preview</span>
+              </button>
+            </div>
+          </div>
+
+          {editorTab === 'write' ? (
+            <textarea
+              rows={4}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="e.g. In Equation 4 ($E = mc^2$), verify convergence guarantees under noisy gradients..."
+              className="w-full px-3 py-2 text-xs bg-theme-elevated border border-theme-subtle rounded-xl text-theme-main placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 resize-y font-mono"
+              required
+            />
+          ) : (
+            <div className="w-full min-h-[96px] max-h-[200px] overflow-y-auto px-3 py-2 bg-theme-elevated text-theme-main rounded-xl border border-theme-subtle">
+              <MarkdownMathRenderer content={content || '*Type remarks in the Write tab to see preview.*'} />
+            </div>
+          )}
         </div>
 
         {/* Spatial highlight coordinates toggle */}
-        <div className="pt-2 border-t border-slate-100">
-          <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700 select-none">
+        <div className="pt-2 border-t border-theme-subtle">
+          <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-theme-secondary select-none">
             <input
               type="checkbox"
               checked={useCoords}
               onChange={(e) => setUseCoords(e.target.checked)}
-              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500/20"
+              className="rounded border-theme-strong text-violet-500 focus:ring-violet-500/20 bg-theme-elevated"
             />
             <span>Specify spatial bounding box coordinates (optional)</span>
           </label>
 
           {useCoords && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 p-3 bg-slate-50 rounded-xl border border-slate-200/80">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 p-3 bg-theme-elevated rounded-xl border border-theme-subtle">
               <div>
-                <label className="block text-[10px] text-slate-500 mb-0.5">X (0.0-1.0)</label>
+                <label className="block text-[10px] text-theme-muted mb-0.5">X (0.0-1.0)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -157,11 +192,11 @@ export default function AddAnnotationModal({
                   max="1"
                   value={posX}
                   onChange={(e) => setPosX(e.target.value)}
-                  className="w-full px-2 py-1 text-xs bg-white border border-slate-200 rounded"
+                  className="w-full px-2 py-1 text-xs bg-theme-card border border-theme-subtle rounded text-theme-main"
                 />
               </div>
               <div>
-                <label className="block text-[10px] text-slate-500 mb-0.5">Y (0.0-1.0)</label>
+                <label className="block text-[10px] text-theme-muted mb-0.5">Y (0.0-1.0)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -169,11 +204,11 @@ export default function AddAnnotationModal({
                   max="1"
                   value={posY}
                   onChange={(e) => setPosY(e.target.value)}
-                  className="w-full px-2 py-1 text-xs bg-white border border-slate-200 rounded"
+                  className="w-full px-2 py-1 text-xs bg-theme-card border border-theme-subtle rounded text-theme-main"
                 />
               </div>
               <div>
-                <label className="block text-[10px] text-slate-500 mb-0.5">Width (&gt;0)</label>
+                <label className="block text-[10px] text-theme-muted mb-0.5">Width (&gt;0)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -181,11 +216,11 @@ export default function AddAnnotationModal({
                   max="1"
                   value={width}
                   onChange={(e) => setWidth(e.target.value)}
-                  className="w-full px-2 py-1 text-xs bg-white border border-slate-200 rounded"
+                  className="w-full px-2 py-1 text-xs bg-theme-card border border-theme-subtle rounded text-theme-main"
                 />
               </div>
               <div>
-                <label className="block text-[10px] text-slate-500 mb-0.5">Height (&gt;0)</label>
+                <label className="block text-[10px] text-theme-muted mb-0.5">Height (&gt;0)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -193,14 +228,14 @@ export default function AddAnnotationModal({
                   max="1"
                   value={height}
                   onChange={(e) => setHeight(e.target.value)}
-                  className="w-full px-2 py-1 text-xs bg-white border border-slate-200 rounded"
+                  className="w-full px-2 py-1 text-xs bg-theme-card border border-theme-subtle rounded text-theme-main"
                 />
               </div>
             </div>
           )}
         </div>
 
-        <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
+        <div className="flex justify-end gap-2.5 pt-3 border-t border-theme-subtle">
           <Button variant="outline" size="sm" onClick={onClose} disabled={submitting}>
             Cancel
           </Button>

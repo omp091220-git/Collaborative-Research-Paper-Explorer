@@ -13,9 +13,17 @@ import discussionRoutes from "./routes/discussion.routes.js";
 import invitationRoutes from "./routes/invitation.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import recommendationRoutes from "./routes/recommendation.routes.js";
+import directMessageRoutes from "./routes/directMessage.routes.js";
+import groupRoutes from "./routes/group.routes.js";
+import researcherRoutes from "./routes/researcher.routes.js";
+import postRoutes from "./routes/post.routes.js";
+import userAccountRoutes from "./routes/userAccount.routes.js";
 import errorHandler from "./middleware/errorHandler.js";
 import tagSuggestionRoutes from './routes/tagSuggestion.routes.js';
 
+
+import summaryRoutes from './routes/summary.routes.js';
+import researchExportRoutes from './routes/researchExport.routes.js';
 
 const app = express();
 
@@ -42,6 +50,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/papers/:paperId/collaborators", collaboratorRoutes);
 app.use("/api/papers/:paperId/discussions", discussionRoutes);
 app.use("/api/papers/:paperId", paperAssetRoutes);
+app.use("/api/papers/:paperId", summaryRoutes);
+app.use("/api/papers/:paperId", researchExportRoutes);
 app.use("/api/papers", paperRoutes);
 app.use("/api/annotations", annotationRoutes);
 app.use("/api/admin/monitoring", adminMonitoringRoutes);
@@ -51,6 +61,11 @@ app.use("/api/invitations", invitationRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/recommendations", recommendationRoutes);
 app.use("/api/papers", tagSuggestionRoutes);
+app.use("/api/direct-messages", directMessageRoutes);
+app.use("/api/groups", groupRoutes);
+app.use("/api/researchers", researcherRoutes);
+app.use("/api/posts", postRoutes);
+app.use("/api/users", userAccountRoutes);
 
 // Handle unknown routes
 app.use((req, res) => {

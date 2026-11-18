@@ -3,7 +3,14 @@ import api from './api';
 export const papersService = {
   async getPapers(params = {}) {
     const res = await api.get('/papers', { params });
-    return res.data?.papers || res.data || [];
+    return res.data;
+  },
+
+  async searchUnified(q, type = 'all', limit = 20, topic = '', page = 1) {
+    const res = await api.get('/papers/search', {
+      params: { q, type, limit, topic, page },
+    });
+    return res.data;
   },
 
   async getPaperById(id) {

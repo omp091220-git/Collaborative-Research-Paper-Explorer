@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import Button from './common/Button';
 
 export default function CollaboratorsModal({ paper, isOpen, onClose }) {
   const { user } = useAuth();
@@ -100,9 +101,13 @@ export default function CollaboratorsModal({ paper, isOpen, onClose }) {
       await axios.delete(`/api/papers/${paper.id}/collaborators/${userId}`, {
         withCredentials: true,
       });
-      setSuccess(isSelf ? 'You have left the collaboration.' : 'Collaborator removed.');
+      setSuccess(
+        isSelf
+          ? 'You have left the collaboration.'
+          : 'Collaborator removed successfully.'
+      );
       if (isSelf) {
-        onClose();
+        setTimeout(onClose, 1000);
       } else {
         fetchCollaborators();
       }
@@ -115,10 +120,9 @@ export default function CollaboratorsModal({ paper, isOpen, onClose }) {
     setError(null);
     setSuccess(null);
     try {
-      await axios.delete(
-        `/api/papers/${paper.id}/collaborators/invitations/${invitationId}`,
-        { withCredentials: true }
-      );
+      await axios.delete(`/api/papers/invitations/${invitationId}`, {
+        withCredentials: true,
+      });
       setSuccess('Invitation revoked.');
       fetchCollaborators();
     } catch (err) {
@@ -127,24 +131,24 @@ export default function CollaboratorsModal({ paper, isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-150">
+      <div className="bg-theme-card rounded-2xl shadow-2xl border border-theme-subtle w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-4 bg-slate-50/50">
+        <div className="p-5 border-b border-theme-subtle flex items-start justify-between gap-4 bg-theme-elevated">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xl">👥</span>
-              <h2 className="text-lg font-bold text-slate-800">
+              <h2 className="text-lg font-bold text-theme-main">
                 Paper Collaborators
               </h2>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5 line-clamp-1" title={paper?.title}>
+            <p className="text-xs text-theme-muted mt-0.5 line-clamp-1" title={paper?.title}>
               {paper?.title}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+            className="text-theme-muted hover:text-theme-main p-1.5 rounded-lg hover:bg-theme-card transition cursor-pointer"
           >
             ✕
           </button>
@@ -153,19 +157,19 @@ export default function CollaboratorsModal({ paper, isOpen, onClose }) {
         {/* Content */}
         <div className="p-5 overflow-y-auto space-y-6 flex-1 text-sm">
           {error && (
-            <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-xl text-xs">
+            <div className="p-3 bg-rose-500/10 text-rose-300 border border-rose-500/30 rounded-xl text-xs">
               {error}
             </div>
           )}
 
           {success && (
-            <div className="p-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs">
+            <div className="p-3 bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs">
               {success}
             </div>
           )}
 
           {loading && !data && (
-            <div className="py-12 text-center text-slate-400 text-xs">
+            <div className="py-12 text-center text-theme-muted text-xs">
               Loading collaborator data...
             </div>
           )}
@@ -173,17 +177,17 @@ export default function CollaboratorsModal({ paper, isOpen, onClose }) {
           {data && (
             <>
               {/* Permission Banner */}
-              <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-200">
-                <span className="text-xs text-slate-600">Your Effective Access:</span>
+              <div className="flex items-center justify-between p-3.5 bg-theme-elevated rounded-xl border border-theme-subtle">
+                <span className="text-xs text-theme-secondary">Your Effective Access:</span>
                 <span
                   className={`px-2.5 py-1 text-xs font-bold rounded-full ${
                     data.my_role === 'OWNER'
-                      ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                      ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
                       : data.my_role === 'EDIT'
-                      ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                      ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
                       : data.my_role === 'COMMENT'
-                      ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                      : 'bg-slate-100 text-slate-700 border border-slate-200'
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                      : 'bg-theme-card text-theme-secondary border border-theme-subtle'
                   }`}
                 >
                   {data.my_role || 'VIEW ONLY'}
@@ -192,8 +196,8 @@ export default function CollaboratorsModal({ paper, isOpen, onClose }) {
 
               {/* Invite Form (Owner / Admin only) */}
               {canManage && (
-                <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100 space-y-3">
-                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                <div className="p-4 bg-violet-500/10 rounded-xl border border-violet-500/20 space-y-3">
+                  <h3 className="text-xs font-bold text-theme-main uppercase tracking-wider">
                     Invite Collaborator
                   </h3>
                   <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-2">
@@ -203,26 +207,28 @@ export default function CollaboratorsModal({ paper, isOpen, onClose }) {
                       placeholder="colleague@example.com"
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
-                      className="flex-1 px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-800"
+                      className="flex-1 px-3 py-2 text-xs bg-theme-elevated border border-theme-subtle rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/40 text-theme-main placeholder:text-theme-muted"
                     />
                     <select
                       value={inviteRole}
                       onChange={(e) => setInviteRole(e.target.value)}
-                      className="px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-800 font-medium"
+                      className="px-3 py-2 text-xs bg-theme-elevated border border-theme-subtle rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/40 text-theme-main font-medium cursor-pointer"
                     >
                       <option value="VIEW">View (Read-only)</option>
                       <option value="COMMENT">Comment (Discussions)</option>
                       <option value="EDIT">Edit (Full Collaboration)</option>
                     </select>
-                    <button
+                    <Button
+                      variant="primary"
+                      size="sm"
                       type="submit"
-                      disabled={inviting}
-                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer shrink-0"
+                      loading={inviting}
+                      className="shrink-0"
                     >
-                      {inviting ? 'Inviting...' : 'Invite'}
-                    </button>
+                      Invite
+                    </Button>
                   </form>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-theme-muted">
                     * Invitees without an existing account can accept after registering with the same email.
                   </p>
                 </div>
@@ -230,17 +236,17 @@ export default function CollaboratorsModal({ paper, isOpen, onClose }) {
 
               {/* Paper Owner */}
               <div>
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                <h3 className="text-xs font-bold text-theme-muted uppercase tracking-wider mb-2">
                   Paper Owner
                 </h3>
-                <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                <div className="flex items-center justify-between p-3 bg-theme-elevated rounded-xl border border-theme-subtle shadow-2xs">
                   <div>
-                    <p className="text-xs font-bold text-slate-800">
+                    <p className="text-xs font-bold text-theme-main">
                       {data.owner?.full_name || 'Unknown'}
                     </p>
-                    <p className="text-[11px] text-slate-500">{data.owner?.email}</p>
+                    <p className="text-[11px] text-theme-muted">{data.owner?.email}</p>
                   </div>
-                  <span className="px-2 py-0.5 text-xs font-semibold bg-purple-100 text-purple-700 rounded-md">
+                  <span className="px-2 py-0.5 text-xs font-semibold bg-violet-500/20 text-violet-300 border border-violet-500/30 rounded-md">
                     Owner
                   </span>
                 </div>
@@ -248,11 +254,11 @@ export default function CollaboratorsModal({ paper, isOpen, onClose }) {
 
               {/* Active Collaborators */}
               <div>
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                <h3 className="text-xs font-bold text-theme-muted uppercase tracking-wider mb-2">
                   Collaborators ({data.collaborators?.length || 0})
                 </h3>
                 {data.collaborators?.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic py-2">
+                  <p className="text-xs text-theme-muted italic py-2">
                     No collaborators added yet.
                   </p>
                 ) : (
@@ -260,20 +266,20 @@ export default function CollaboratorsModal({ paper, isOpen, onClose }) {
                     {data.collaborators.map((c) => (
                       <div
                         key={c.id}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-white rounded-xl border border-slate-200 shadow-2xs gap-2"
+                        className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-theme-elevated rounded-xl border border-theme-subtle shadow-2xs gap-2"
                       >
                         <div>
                           <div className="flex items-center gap-2">
-                            <p className="text-xs font-bold text-slate-800">
+                            <p className="text-xs font-bold text-theme-main">
                               {c.full_name}
                             </p>
                             {c.user_id === user?.id && (
-                              <span className="text-[10px] text-indigo-600 font-semibold bg-indigo-50 px-1.5 py-0.2 rounded">
+                              <span className="text-[10px] text-violet-400 font-semibold bg-violet-500/15 px-1.5 py-0.5 rounded">
                                 (You)
                               </span>
                             )}
                           </div>
-                          <p className="text-[11px] text-slate-500">{c.email}</p>
+                          <p className="text-[11px] text-theme-muted">{c.email}</p>
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
@@ -282,7 +288,7 @@ export default function CollaboratorsModal({ paper, isOpen, onClose }) {
                               <select
                                 value={c.role}
                                 onChange={(e) => handleUpdateRole(c.user_id, e.target.value)}
-                                className="px-2 py-1 text-xs border border-slate-300 rounded-md bg-slate-50 font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                                className="px-2 py-1 text-xs border border-theme-subtle rounded-lg bg-theme-card font-medium text-theme-main focus:outline-none focus:ring-1 focus:ring-violet-400 cursor-pointer"
                               >
                                 <option value="VIEW">View</option>
                                 <option value="COMMENT">Comment</option>
@@ -290,7 +296,7 @@ export default function CollaboratorsModal({ paper, isOpen, onClose }) {
                               </select>
                               <button
                                 onClick={() => handleRemoveCollaborator(c.user_id, false)}
-                                className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded transition cursor-pointer"
+                                className="text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 p-1 rounded transition cursor-pointer"
                                 title="Remove Collaborator"
                               >
                                 ✕
@@ -301,10 +307,10 @@ export default function CollaboratorsModal({ paper, isOpen, onClose }) {
                               <span
                                 className={`px-2 py-0.5 text-xs font-semibold rounded-md ${
                                   c.role === 'EDIT'
-                                    ? 'bg-indigo-100 text-indigo-700'
+                                    ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
                                     : c.role === 'COMMENT'
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : 'bg-slate-100 text-slate-700'
+                                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                                    : 'bg-theme-card text-theme-secondary border border-theme-subtle'
                                 }`}
                               >
                                 {c.role}
@@ -312,7 +318,7 @@ export default function CollaboratorsModal({ paper, isOpen, onClose }) {
                               {c.user_id === user?.id && (
                                 <button
                                   onClick={() => handleRemoveCollaborator(c.user_id, true)}
-                                  className="text-xs text-red-500 hover:underline cursor-pointer ml-2"
+                                  className="text-xs text-rose-400 hover:underline cursor-pointer ml-2"
                                 >
                                   Leave
                                 </button>
@@ -329,26 +335,26 @@ export default function CollaboratorsModal({ paper, isOpen, onClose }) {
               {/* Pending Invitations (Manager only) */}
               {canManage && data.pending_invitations?.length > 0 && (
                 <div>
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  <h3 className="text-xs font-bold text-theme-muted uppercase tracking-wider mb-2">
                     Pending Invitations ({data.pending_invitations.length})
                   </h3>
                   <div className="space-y-2">
                     {data.pending_invitations.map((inv) => (
                       <div
                         key={inv.id}
-                        className="flex items-center justify-between p-3 bg-amber-50/50 rounded-xl border border-amber-200/60 shadow-2xs text-xs"
+                        className="flex items-center justify-between p-3 bg-amber-500/10 rounded-xl border border-amber-500/20 shadow-2xs text-xs"
                       >
                         <div>
-                          <p className="font-semibold text-slate-800">
+                          <p className="font-semibold text-theme-main">
                             {inv.invited_email}
                           </p>
-                          <p className="text-[10px] text-slate-500">
-                            Tier: <strong>{inv.role}</strong> • Status: PENDING
+                          <p className="text-[10px] text-theme-muted">
+                            Tier: <strong className="text-amber-400">{inv.role}</strong> • Status: PENDING
                           </p>
                         </div>
                         <button
                           onClick={() => handleRevokeInvitation(inv.id)}
-                          className="px-2 py-1 text-xs text-red-600 hover:bg-red-100 rounded transition cursor-pointer"
+                          className="px-2 py-1 text-xs text-rose-400 hover:bg-rose-500/10 rounded transition cursor-pointer"
                         >
                           Revoke
                         </button>
@@ -362,13 +368,14 @@ export default function CollaboratorsModal({ paper, isOpen, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end">
-          <button
+        <div className="p-4 border-t border-theme-subtle bg-theme-elevated flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
             onClick={onClose}
-            className="px-4 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition cursor-pointer"
           >
             Close
-          </button>
+          </Button>
         </div>
       </div>
     </div>

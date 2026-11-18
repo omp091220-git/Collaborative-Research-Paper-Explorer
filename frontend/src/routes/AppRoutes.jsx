@@ -4,6 +4,7 @@ import ProtectedRoute from './ProtectedRoute';
 import AdminRoute from './AdminRoute';
 import AppLayout from '../components/layout/AppLayout';
 import ScrollToTop from '../components/common/ScrollToTop';
+import ErrorBoundary from '../components/common/ErrorBoundary';
 import { Loader2 } from 'lucide-react';
 
 // Route-level code splitting via React.lazy()
@@ -25,6 +26,8 @@ const TopicTaxonomyPage = lazy(() => import('../pages/TopicTaxonomyPage/TopicTax
 const PaperTaggingPage = lazy(() => import('../pages/PaperTaggingPage/PaperTaggingPage'));
 const ProfilePage = lazy(() => import('../pages/ProfilePage/ProfilePage'));
 const SettingsPage = lazy(() => import('../pages/SettingsPage/SettingsPage'));
+const ResearcherSearchPage = lazy(() => import('../pages/ResearcherSearchPage/ResearcherSearchPage'));
+const ResearcherProfilePage = lazy(() => import('../pages/ResearcherProfilePage/ResearcherProfilePage'));
 const AdminMonitoringPage = lazy(() => import('../pages/AdminMonitoringPage/AdminMonitoringPage'));
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage/NotFoundPage'));
 
@@ -32,8 +35,8 @@ const NotFoundPage = lazy(() => import('../pages/NotFoundPage/NotFoundPage'));
 function PageLoader() {
   return (
     <div className="min-h-[50vh] flex flex-col items-center justify-center">
-      <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-      <span className="mt-3 text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+      <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+      <span className="mt-3 text-sm font-medium text-theme-secondary">
         Loading view...
       </span>
     </div>
@@ -44,54 +47,58 @@ export default function AppRoutes() {
   return (
     <>
       <ScrollToTop />
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <ErrorBoundary title="ScholarSphere Application Error">
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
 
-        {/* Authenticated Workspace Routes */}
-        <Route
-          element={
-            <ProtectedRoute>
-              <AppLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/explore" element={<ExplorePapersPage />} />
-          <Route path="/papers/:id" element={<PaperDetailsPage />} />
-          <Route path="/library" element={<LibraryPage />} />
-          <Route path="/bookmarks" element={<Navigate to="/library" replace />} />
-          <Route path="/collections" element={<CollectionsPage />} />
-          <Route path="/collaborations" element={<CollaborationsPage />} />
-          <Route path="/discussions" element={<DiscussionsPage />} />
-          <Route path="/taxonomy" element={<TopicTaxonomyPage />} />
-          <Route path="/tags" element={<Navigate to="/taxonomy" replace />} />
-          <Route path="/tagging" element={<PaperTaggingPage />} />
-          <Route path="/paper-tags" element={<Navigate to="/tagging" replace />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+            {/* Authenticated Workspace Routes */}
+            <Route
+              element={
+                <ProtectedRoute>
+                  <AppLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/explore" element={<ExplorePapersPage />} />
+              <Route path="/papers/:id" element={<PaperDetailsPage />} />
+              <Route path="/library" element={<LibraryPage />} />
+              <Route path="/bookmarks" element={<Navigate to="/library" replace />} />
+              <Route path="/collections" element={<CollectionsPage />} />
+              <Route path="/collaborations" element={<CollaborationsPage />} />
+              <Route path="/discussions" element={<DiscussionsPage />} />
+              <Route path="/taxonomy" element={<TopicTaxonomyPage />} />
+              <Route path="/tags" element={<Navigate to="/taxonomy" replace />} />
+              <Route path="/tagging" element={<PaperTaggingPage />} />
+              <Route path="/paper-tags" element={<Navigate to="/tagging" replace />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/researchers" element={<ResearcherSearchPage />} />
+              <Route path="/researchers/:id" element={<ResearcherProfilePage />} />
 
-          {/* Admin Protected Routes */}
-          <Route
-            path="/admin/monitoring"
-            element={
-              <AdminRoute>
-                <AdminMonitoringPage />
-              </AdminRoute>
-            }
-          />
+              {/* Admin Protected Routes */}
+              <Route
+                path="/admin/monitoring"
+                element={
+                  <AdminRoute>
+                    <AdminMonitoringPage />
+                  </AdminRoute>
+                }
+              />
 
-          {/* 404 inside layout */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Route>
-      </Routes>
-    </Suspense>
+              {/* 404 inside layout */}
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
     </>
   );
 }

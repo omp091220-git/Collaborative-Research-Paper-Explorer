@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
   BookOpen,
@@ -10,6 +10,7 @@ import {
   User,
   CheckCircle2,
   AlertCircle,
+  Tag,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import papersService from '../../services/papers.service';
@@ -51,12 +52,15 @@ export default function PaperTaggingPage() {
   // Shared Tag Tree
   const [tagTree, setTagTree] = useState([]);
 
+  // Ref to track latest requested paperId and prevent stale responses
+  const activePaperIdRef = useRef(null);
+
   // Fetch all papers from FR-6 backend
   const fetchPapers = useCallback(async () => {
     setLoadingPapers(true);
     setPapersError(null);
     try {
-      const res = await papersService.getPapers({ limit: 50 });
+      const res = await papersService.getPapers({ limit: 100 });
       const paperList = res.papers || res.data || (Array.isArray(res) ? res : []);
       setPapers(paperList);
     } catch (err) {
@@ -84,6 +88,7 @@ export default function PaperTaggingPage() {
       return;
     }
 
+    activePaperIdRef.current = paperId;
     setLoadingAssignments(true);
     setAssignmentError(null);
     try {
@@ -92,6 +97,8 @@ export default function PaperTaggingPage() {
         annotationsService.getAnnotations(paperId),
       ]);
 
+      if (activePaperIdRef.current !== paperId) return;
+
       if (assignmentsRes.status === 'fulfilled') {
         setAssignments(assignmentsRes.value.assignments || []);
       } else {
@@ -99,46 +106,54 @@ export default function PaperTaggingPage() {
       }
 
       if (annotationsRes.status === 'fulfilled') {
-        setAnnotations(annotationsRes.value || []);
+        setAnnotations(Array.isArray(annotationsRes.value) ? annotationsRes.value : []);
       }
     } catch (err) {
-      setAssignmentError(getApiErrorMessage(err, 'Failed to fetch paper tag assignments.'));
+      if (activePaperIdRef.current === paperId) {
+        setAssignmentError(getApiErrorMessage(err, 'Failed to retrieve tag assignments.'));
+      }
     } finally {
-      setLoadingAssignments(false);
+      if (activePaperIdRef.current === paperId) {
+        setLoadingAssignments(false);
+      }
     }
   }, []);
 
-  // Initial loads
+  // Initial data load
   useEffect(() => {
     fetchPapers();
     fetchTagTree();
   }, [fetchPapers, fetchTagTree]);
 
-  // Synchronize selected paper with URL query parameter
+  // Synchronize paper selection with URL parameter
   useEffect(() => {
-    if (papers.length === 0) return;
-    if (selectedPaperIdFromUrl) {
-      const found = papers.find((p) => String(p.id) === String(selectedPaperIdFromUrl));
-      if (found) {
-        if (selectedPaper?.id !== found.id) {
-          setSelectedPaper(found);
-        }
-        return;
-      }
-    }
-    // If no paper selected yet or current selection is not in list, select first
-    if (!selectedPaper || !papers.some((p) => p.id === selectedPaper.id)) {
-      setSelectedPaper(papers[0]);
-    }
-  }, [selectedPaperIdFromUrl, papers, selectedPaper]);
+    if (!papers || papers.length === 0) return;
 
-  // When selected paper changes, fetch its assignments and annotations and sync URL
+    if (selectedPaperIdFromUrl) {
+      const found = papers.find((p) => p.id === selectedPaperIdFromUrl);
+      if (found) {
+        setSelectedPaper(found);
+      } else {
+        papersService
+          .getPaperById(selectedPaperIdFromUrl)
+          .then((directPaper) => {
+            if (directPaper) setSelectedPaper(directPaper);
+          })
+          .catch((err) => console.warn('Could not load paper by URL id:', err));
+      }
+    } else {
+      const first = papers[0];
+      setSelectedPaper(first);
+      setSearchParams({ paperId: first.id }, { replace: true });
+    }
+  }, [selectedPaperIdFromUrl, papers, setSearchParams]);
+
+  // When selected paper ID changes, fetch its assignments and annotations
   useEffect(() => {
     if (selectedPaper?.id) {
       fetchPaperDetailsAndTags(selectedPaper.id);
-      setSearchParams({ paperId: selectedPaper.id }, { replace: true });
     }
-  }, [selectedPaper, fetchPaperDetailsAndTags, setSearchParams]);
+  }, [selectedPaper?.id, fetchPaperDetailsAndTags]);
 
   // Filter papers list by search query
   const filteredPapers = useMemo(() => {
@@ -153,6 +168,10 @@ export default function PaperTaggingPage() {
   }, [papers, paperSearch]);
 
   const handleSelectPaper = (paper) => {
+    if (!paper || paper.id === selectedPaper?.id) return;
+    setAssignments([]);
+    setAnnotations([]);
+    setAssignmentError(null);
     setSelectedPaper(paper);
     setSearchParams({ paperId: paper.id }, { replace: true });
   };
@@ -164,24 +183,24 @@ export default function PaperTaggingPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-7 animate-fadeIn text-theme-main">
       {/* Page Header */}
       <PageHeader
         title="Paper & Annotation Tagging Workspace (FR-11)"
         description="Categorize research papers and specific page annotations with hierarchical topic tags from the verified scientific taxonomy."
         actions={
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <Link to="/taxonomy">
               <Button variant="outline" size="sm" iconLeft={FolderTree} className="gap-1.5">
-                <span>Manage Topic Taxonomy</span>
-                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Manage Taxonomy</span>
+                <ExternalLink className="w-3.5 h-3.5 text-violet-400" />
               </Button>
             </Link>
 
             {selectedPaper && (
               <Link to={`/papers/${selectedPaper.id}?tab=pdf`}>
                 <Button variant="secondary" size="sm" iconLeft={BookOpen} className="gap-1.5">
-                  <span>Open in PDF Viewer</span>
+                  <span>Open PDF Reader</span>
                 </Button>
               </Link>
             )}
@@ -206,39 +225,39 @@ export default function PaperTaggingPage() {
       {/* Main Workspace Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column (4 cols): Paper Selector */}
-        <div className="lg:col-span-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 p-4 shadow-xs space-y-4 flex flex-col h-[780px]">
+        <div className="lg:col-span-4 bg-theme-card rounded-2xl border border-theme-subtle p-4 sm:p-5 shadow-sm space-y-4 flex flex-col h-[780px]">
           <div>
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                <span>Select Research Paper</span>
+            <div className="flex items-center justify-between pb-2.5 border-b border-theme-subtle">
+              <h3 className="text-sm font-bold text-theme-main flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-violet-400" />
+                <span>Select Publication</span>
               </h3>
-              <Badge variant="default" size="xs">
+              <Badge variant="primary" size="xs">
                 {filteredPapers.length} Available
               </Badge>
             </div>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+            <p className="text-xs text-theme-secondary mt-1.5">
               Choose a paper from the repository to inspect and assign hierarchical topics
             </p>
           </div>
 
           {/* Search Papers */}
           <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-theme-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={paperSearch}
               onChange={(e) => setPaperSearch(e.target.value)}
               placeholder="Search by title, author, arXiv ID..."
-              className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+              className="w-full pl-10 pr-3 py-2 text-xs bg-theme-secondary border border-white/10 rounded-xl text-theme-main placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition"
             />
           </div>
 
           {/* Papers Scroll List */}
           <div className="flex-1 overflow-y-auto space-y-2 pr-1">
             {loadingPapers ? (
-              <div className="flex flex-col items-center justify-center py-16 text-xs text-slate-500 space-y-2">
-                <RefreshCw className="w-5 h-5 animate-spin text-indigo-600" />
+              <div className="flex flex-col items-center justify-center py-16 text-xs text-theme-muted space-y-2.5">
+                <RefreshCw className="w-5 h-5 animate-spin text-violet-400" />
                 <span>Loading research library...</span>
               </div>
             ) : papersError ? (
@@ -248,9 +267,9 @@ export default function PaperTaggingPage() {
                 onRetry={fetchPapers}
               />
             ) : filteredPapers.length === 0 ? (
-              <div className="text-center py-12 text-xs text-slate-500 space-y-2">
-                <BookOpen className="w-8 h-8 text-slate-400 mx-auto" />
-                <p className="font-semibold text-slate-700 dark:text-slate-300">No papers found</p>
+              <div className="text-center py-12 text-xs text-theme-muted space-y-2.5">
+                <BookOpen className="w-8 h-8 text-theme-muted mx-auto" />
+                <p className="font-semibold text-theme-main">No papers found</p>
                 <p>Upload a new PDF paper from the Explore tab to start tagging.</p>
               </div>
             ) : (
@@ -260,42 +279,42 @@ export default function PaperTaggingPage() {
                   <div
                     key={paper.id}
                     onClick={() => handleSelectPaper(paper)}
-                    className={`p-3 rounded-xl border transition cursor-pointer select-none ${
+                    className={`p-3.5 rounded-xl border transition-all cursor-pointer select-none ${
                       isSelected
-                        ? 'border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/60 shadow-xs'
-                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+                        ? 'border-violet-500 bg-violet-600/15 shadow-sm shadow-violet-950/20 text-theme-main'
+                        : 'border-theme-subtle hover:border-white/20 bg-theme-secondary/70 text-theme-secondary hover:text-theme-main'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-violet-400">
                         Paper #{paper.id.slice(0, 8)}
                       </span>
                       {paper.arxiv_id && (
-                        <span className="text-[10px] font-mono font-semibold bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 px-1.5 py-0.2 rounded">
+                        <span className="text-[10px] font-mono font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-md">
                           arXiv:{paper.arxiv_id}
                         </span>
                       )}
                     </div>
 
-                    <h4 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-2 leading-snug mb-1">
+                    <h4 className="text-xs sm:text-sm font-bold text-theme-main line-clamp-2 leading-snug mb-1.5">
                       {paper.title}
                     </h4>
 
                     {paper.authors && paper.authors.length > 0 && (
-                      <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate flex items-center gap-1">
-                        <User className="w-3 h-3 shrink-0 text-slate-400" />
+                      <p className="text-[11px] text-theme-secondary truncate flex items-center gap-1.5">
+                        <User className="w-3 h-3 shrink-0 text-theme-muted" />
                         <span>{paper.authors.join(', ')}</span>
                       </p>
                     )}
 
-                    <div className="mt-2 pt-1.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500">
+                    <div className="mt-2.5 pt-2 border-t border-white/[0.06] flex items-center justify-between text-[10px] text-theme-muted">
                       <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-slate-400" />
+                        <Calendar className="w-3 h-3 text-theme-muted" />
                         <span>{formatDate(paper.uploaded_at, { shortMonth: true })}</span>
                       </span>
 
                       {isSelected && (
-                        <span className="text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-0.5">
+                        <span className="text-violet-400 font-bold flex items-center gap-1">
                           <span>Active</span>
                           <CheckCircle2 className="w-3 h-3" />
                         </span>
@@ -313,10 +332,10 @@ export default function PaperTaggingPage() {
           {selectedPaper ? (
             <>
               {/* Active Paper Banner */}
-              <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div className="p-5 bg-theme-card rounded-2xl border border-theme-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
+                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                    <span className="text-xs font-bold uppercase tracking-wider text-violet-400">
                       Active Workspace Target
                     </span>
                     {selectedPaper.arxiv_id && (
@@ -325,26 +344,26 @@ export default function PaperTaggingPage() {
                       </Badge>
                     )}
                   </div>
-                  <h2 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
+                  <h2 className="text-base sm:text-lg font-bold text-theme-main leading-snug">
                     {selectedPaper.title}
                   </h2>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                    Authors: <strong>{selectedPaper.authors?.join(', ') || 'Unknown'}</strong>
+                  <p className="text-xs text-theme-secondary mt-1.5">
+                    Authors: <strong className="text-theme-main">{selectedPaper.authors?.join(', ') || 'Unknown'}</strong>
                   </p>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
                   <Link to={`/papers/${selectedPaper.id}?tab=pdf`}>
-                    <Button variant="outline" size="sm" iconLeft={BookOpen}>
-                      View PDF
+                    <Button variant="secondary" size="sm" iconLeft={BookOpen}>
+                      View PDF Reader
                     </Button>
                   </Link>
                 </div>
               </div>
 
               {assignmentError && (
-                <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 rounded-xl flex items-start gap-2 text-xs text-rose-800 dark:text-rose-200 font-semibold">
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="p-3 bg-rose-500/15 border border-rose-500/25 rounded-xl flex items-start gap-2 text-xs text-rose-300 font-medium">
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                   <span>{assignmentError}</span>
                 </div>
               )}
@@ -379,12 +398,12 @@ export default function PaperTaggingPage() {
               />
             </>
           ) : (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 p-12 text-center text-xs text-slate-500 space-y-3">
-              <BookOpen className="w-12 h-12 text-slate-400 mx-auto" />
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+            <div className="bg-theme-card rounded-2xl border border-dashed border-white/10 p-12 text-center text-xs text-theme-muted space-y-3">
+              <BookOpen className="w-12 h-12 text-theme-muted mx-auto" />
+              <h3 className="text-base font-bold text-theme-main">
                 No Paper Selected
               </h3>
-              <p className="max-w-md mx-auto">
+              <p className="max-w-md mx-auto leading-relaxed">
                 Select a paper from the left panel to review existing topic assignments, assign new hierarchical tags, or tag specific page annotations.
               </p>
             </div>

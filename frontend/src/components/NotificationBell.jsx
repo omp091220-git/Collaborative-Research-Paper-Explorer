@@ -177,13 +177,13 @@ export default function NotificationBell({ onNavigateToPaper }) {
       <button
         type="button"
         onClick={handleToggle}
-        className="relative p-2 text-slate-600 hover:text-indigo-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        className="relative p-2 text-theme-secondary hover:text-violet-400 bg-theme-elevated hover:bg-theme-card rounded-xl transition duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-violet-500/40"
         title="Notifications"
         aria-label="View notifications"
       >
         <span className="text-lg">🔔</span>
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-4 text-center border-2 border-white animate-pulse">
+          <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-4 text-center border-2 border-[var(--bg-main)] animate-pulse">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
@@ -191,13 +191,13 @@ export default function NotificationBell({ onNavigateToPaper }) {
 
       {/* Popover Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-slate-200 z-50 overflow-hidden font-sans">
+        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-theme-card rounded-2xl shadow-2xl border border-theme-subtle z-50 overflow-hidden font-sans animate-scaleUp">
           {/* Header */}
-          <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+          <div className="p-4 border-b border-theme-subtle flex items-center justify-between bg-theme-elevated">
             <div className="flex items-center gap-2">
-              <h3 className="font-bold text-slate-800 text-sm">Notifications</h3>
+              <h3 className="font-bold text-theme-main text-sm">Notifications</h3>
               {unreadCount > 0 && (
-                <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full font-medium">
+                <span className="bg-violet-500/15 text-violet-300 text-xs px-2 py-0.5 rounded-full font-medium">
                   {unreadCount} unread
                 </span>
               )}
@@ -206,7 +206,7 @@ export default function NotificationBell({ onNavigateToPaper }) {
               <button
                 type="button"
                 onClick={handleMarkAllAsRead}
-                className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer"
+                className="text-xs text-violet-400 hover:text-violet-300 font-semibold cursor-pointer"
               >
                 Mark all read
               </button>
@@ -214,14 +214,14 @@ export default function NotificationBell({ onNavigateToPaper }) {
           </div>
 
           {/* Filter Bar */}
-          <div className="flex border-b border-slate-100 text-xs bg-slate-50/30">
+          <div className="flex border-b border-theme-subtle text-xs bg-theme-elevated/40">
             <button
               type="button"
               onClick={() => handleFilterChange(false)}
               className={`flex-1 py-2 text-center font-medium transition cursor-pointer ${
                 !filterUnread
-                  ? 'border-b-2 border-indigo-600 text-indigo-700 font-semibold bg-white'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'border-b-2 border-violet-500 text-violet-400 font-semibold bg-theme-card'
+                  : 'text-theme-muted hover:text-theme-main'
               }`}
             >
               All
@@ -231,8 +231,8 @@ export default function NotificationBell({ onNavigateToPaper }) {
               onClick={() => handleFilterChange(true)}
               className={`flex-1 py-2 text-center font-medium transition cursor-pointer ${
                 filterUnread
-                  ? 'border-b-2 border-indigo-600 text-indigo-700 font-semibold bg-white'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'border-b-2 border-violet-500 text-violet-400 font-semibold bg-theme-card'
+                  : 'text-theme-muted hover:text-theme-main'
               }`}
             >
               Unread only
@@ -240,17 +240,17 @@ export default function NotificationBell({ onNavigateToPaper }) {
           </div>
 
           {/* List Content */}
-          <div className="max-h-96 overflow-y-auto divide-y divide-slate-100">
+          <div className="max-h-96 overflow-y-auto divide-y divide-[var(--border-subtle)]">
             {loading && notifications.length === 0 && (
-              <div className="p-6 text-center text-slate-400 text-xs">
+              <div className="p-6 text-center text-theme-muted text-xs">
                 Loading notifications…
               </div>
             )}
 
             {!loading && notifications.length === 0 && (
-              <div className="p-8 text-center text-slate-400 text-xs space-y-1">
+              <div className="p-8 text-center text-theme-muted text-xs space-y-1">
                 <span className="text-2xl block mb-1">🎉</span>
-                <p className="font-medium text-slate-600">All caught up!</p>
+                <p className="font-medium text-theme-main">All caught up!</p>
                 <p>No {filterUnread ? 'unread ' : ''}notifications at this time.</p>
               </div>
             )}
@@ -259,8 +259,8 @@ export default function NotificationBell({ onNavigateToPaper }) {
               <div
                 key={item.id}
                 onClick={() => handleNotificationClick(item)}
-                className={`p-3.5 flex items-start gap-3 transition cursor-pointer hover:bg-slate-50 ${
-                  !item.is_read ? 'bg-indigo-50/40' : 'bg-white'
+                className={`p-3.5 flex items-start gap-3 transition cursor-pointer hover:bg-theme-elevated ${
+                  !item.is_read ? 'bg-violet-500/10' : 'bg-transparent'
                 }`}
               >
                 <span className="text-lg shrink-0 mt-0.5">{getTypeIcon(item.type)}</span>
@@ -269,21 +269,21 @@ export default function NotificationBell({ onNavigateToPaper }) {
                     <p
                       className={`text-xs leading-snug line-clamp-1 ${
                         !item.is_read
-                          ? 'font-bold text-slate-900'
-                          : 'font-semibold text-slate-700'
+                          ? 'font-bold text-theme-main'
+                          : 'font-semibold text-theme-secondary'
                       }`}
                     >
                       {item.title}
                     </p>
-                    <span className="text-[10px] text-slate-400 shrink-0">
+                    <span className="text-[10px] text-theme-muted shrink-0">
                       {formatTimestamp(item.created_at)}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600 mt-1 line-clamp-2">
+                  <p className="text-xs text-theme-secondary mt-1 line-clamp-2">
                     {item.message}
                   </p>
                   {item.paper_title && (
-                    <span className="inline-block mt-1 text-[11px] font-medium text-indigo-600 truncate max-w-full">
+                    <span className="inline-block mt-1 text-[11px] font-medium text-violet-400 truncate max-w-full">
                       📄 {item.paper_title}
                     </span>
                   )}
@@ -293,7 +293,7 @@ export default function NotificationBell({ onNavigateToPaper }) {
                   <button
                     type="button"
                     onClick={(e) => handleMarkAsRead(item.id, e)}
-                    className="shrink-0 w-2.5 h-2.5 rounded-full bg-indigo-600 hover:bg-indigo-800 transition"
+                    className="shrink-0 w-2.5 h-2.5 rounded-full bg-violet-500 hover:bg-violet-400 transition"
                     title="Mark as read"
                   />
                 )}

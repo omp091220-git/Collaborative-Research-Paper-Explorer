@@ -6,6 +6,8 @@ import { env } from "./config/env.js";
 import { connectDatabase } from "./config/database.js";
 import { createSupervisor } from "./workers/extractionSupervisor.js";
 
+import { createSummaryWorker } from './workers/summaryWorker.js';
+
 const startServer = async () => {
   try {
     await connectDatabase();
@@ -13,6 +15,8 @@ const startServer = async () => {
     // Start the FR-09 background extraction supervisor.
     const supervisor = createSupervisor();
     supervisor.start();
+    const summaryWorker = createSummaryWorker();
+    summaryWorker.start();
 
     const server = app.listen(env.port, () => {
       console.log(`Backend running on port ${env.port}`);
@@ -40,6 +44,7 @@ const startServer = async () => {
         const results = await Promise.allSettled([
           serverClosed,
           supervisor.stop(),
+          serverClosed.then(() => summaryWorker.stop()),
         ]);
 
         const failure = results.find(

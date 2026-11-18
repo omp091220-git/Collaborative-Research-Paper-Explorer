@@ -94,17 +94,21 @@ router.get(
       }
 
       const query = paper_id
-        ? `SELECT id, paper_id, created_by, page_number, content,
-                  position_x, position_y, region_width, region_height,
-                  created_at, updated_at
-           FROM annotations
-           WHERE paper_id = $1
-           ORDER BY created_at DESC`
-        : `SELECT id, paper_id, created_by, page_number, content,
-                  position_x, position_y, region_width, region_height,
-                  created_at, updated_at
-           FROM annotations
-           ORDER BY created_at DESC`;
+        ? `SELECT a.id, a.paper_id, a.created_by, a.page_number, a.content,
+                  a.position_x, a.position_y, a.region_width, a.region_height,
+                  a.created_at, a.updated_at,
+                  u.full_name AS author_name, u.email AS author_email
+           FROM annotations a
+           LEFT JOIN users u ON a.created_by = u.id
+           WHERE a.paper_id = $1
+           ORDER BY a.created_at DESC`
+        : `SELECT a.id, a.paper_id, a.created_by, a.page_number, a.content,
+                  a.position_x, a.position_y, a.region_width, a.region_height,
+                  a.created_at, a.updated_at,
+                  u.full_name AS author_name, u.email AS author_email
+           FROM annotations a
+           LEFT JOIN users u ON a.created_by = u.id
+           ORDER BY a.created_at DESC`;
 
       const result = paper_id
         ? await pool.query(query, [paper_id])
@@ -218,7 +222,166 @@ router.post(
 );
 
 // Admins can edit any annotation; annotators can edit their own.
+const updateAnnotationHandler = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidUUID(id)) {
+      return res.status(400).json({
+        error: "Annotation ID must be a valid UUID.",
+      });
+    }
+
+    const expectedPaperId = req.query.paper_id || req.body?.paper_id || null;
+    if (expectedPaperId && !isValidUUID(expectedPaperId)) {
+      return res.status(400).json({
+        error: "paper_id must be a valid UUID.",
+      });
+    }
+
+    const allowedFields = [
+      "page_number",
+      "content",
+      "position_x",
+      "position_y",
+      "region_width",
+      "region_height",
+    ];
+
+    const suppliedFields = allowedFields.filter(
+      (field) => req.body[field] !== undefined
+    );
+
+    if (suppliedFields.length === 0) {
+      return res.status(400).json({
+        error: "Provide at least one field to update.",
+      });
+    }
+
+    const validationError = validateAnnotation(req.body, true);
+
+    if (validationError) {
+      return res.status(400).json({
+        error: validationError,
+      });
+    }
+
+    const existing = await pool.query(
+      "SELECT id, created_by FROM annotations WHERE id = $1",
+      [id]
+    );
+
+    if (existing.rows.length === 0) {
+      return res.status(404).json({
+        error: "Annotation not found.",
+      });
+    }
+
+    const annotation = existing.rows[0];
+
+    if (expectedPaperId) {
+      try {
+        const paperCheck = await pool.query(
+          "SELECT paper_id FROM annotations WHERE id = $1",
+          [id]
+        );
+        if (paperCheck.rows.length > 0 && paperCheck.rows[0].paper_id !== expectedPaperId) {
+          return res.status(400).json({
+            error: "Annotation does not belong to the specified paper.",
+          });
+        }
+      } catch {
+        // paper check fallback
+      }
+    }
+
+    // Fetch previous content for mention diffing if content is being updated
+    let previousContent = null;
+    if (req.body.content !== undefined) {
+      try {
+        const contentLookup = await pool.query(
+          "SELECT content FROM annotations WHERE id = $1",
+          [id]
+        );
+        previousContent = contentLookup.rows[0]?.content || null;
+      } catch {
+        // Graceful fallback
+      }
+    }
+
+    if (
+      req.user.role !== ROLES.SYSTEM_ADMIN &&
+      annotation.created_by !== req.user.id
+    ) {
+      return res.status(403).json({
+        error: "You can only edit your own annotations.",
+      });
+    }
+
+    const values = [];
+    const assignments = suppliedFields.map((field) => {
+      values.push(
+        field === "content" && typeof req.body[field] === "string"
+          ? req.body[field].trim()
+          : req.body[field]
+      );
+
+      return `${field} = $${values.length}`;
+    });
+
+    values.push(id);
+
+    const result = await pool.query(
+      `UPDATE annotations
+       SET ${assignments.join(", ")}, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $${values.length}
+       RETURNING *`,
+      values
+    );
+
+    const updatedAnnotation = result.rows[0];
+
+    if (req.body.content !== undefined && updatedAnnotation) {
+      try {
+        await notifyMentions({
+          text: req.body.content.trim(),
+          oldText: previousContent || null,
+          actorUser: req.user,
+          paperId: updatedAnnotation.paper_id,
+          sourceType: "annotation",
+          sourceId: updatedAnnotation.id,
+          pageNumber: updatedAnnotation.page_number,
+        });
+      } catch (notifyErr) {
+        console.error("Mention notification error on update:", notifyErr.message);
+      }
+    }
+
+    return res.status(200).json({
+      message: "Annotation updated successfully.",
+      annotation: updatedAnnotation,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 router.patch(
+  "/:id",
+  authenticateToken,
+  authorizeRoles(...EDIT_ROLES),
+  updateAnnotationHandler
+);
+
+router.put(
+  "/:id",
+  authenticateToken,
+  authorizeRoles(...EDIT_ROLES),
+  updateAnnotationHandler
+);
+
+// Admins can delete any annotation; annotators can delete their own.
+router.delete(
   "/:id",
   authenticateToken,
   authorizeRoles(...EDIT_ROLES),
@@ -232,33 +395,48 @@ router.patch(
         });
       }
 
-      const allowedFields = [
-        "page_number",
-        "content",
-        "position_x",
-        "position_y",
-        "region_width",
-        "region_height",
-      ];
-
-      const suppliedFields = allowedFields.filter(
-        (field) => req.body[field] !== undefined
-      );
-
-      if (suppliedFields.length === 0) {
+      const expectedPaperId = req.query.paper_id || req.body?.paper_id || null;
+      if (expectedPaperId && !isValidUUID(expectedPaperId)) {
         return res.status(400).json({
-          error: "Provide at least one field to update.",
+          error: "paper_id must be a valid UUID.",
         });
       }
 
-      const validationError = validateAnnotation(req.body, true);
+      if (expectedPaperId) {
+        try {
+          const paperCheck = await pool.query(
+            "SELECT paper_id FROM annotations WHERE id = $1",
+            [id]
+          );
+          if (paperCheck.rows.length > 0 && paperCheck.rows[0].paper_id !== expectedPaperId) {
+            return res.status(400).json({
+              error: "Annotation does not belong to the specified paper.",
+            });
+          }
+        } catch {
+          // paper check fallback
+        }
+      }
 
-      if (validationError) {
-        return res.status(400).json({
-          error: validationError,
+      if (req.user.role === ROLES.SYSTEM_ADMIN) {
+        const result = await pool.query(
+          "DELETE FROM annotations WHERE id = $1 RETURNING id",
+          [id]
+        );
+
+        if (result.rows.length === 0) {
+          return res.status(404).json({
+            error: "Annotation not found.",
+          });
+        }
+
+        return res.status(200).json({
+          message: "Annotation deleted successfully.",
+          id: result.rows[0].id,
         });
       }
 
+      // Researchers can delete their own annotations or annotations on papers they own
       const existing = await pool.query(
         "SELECT id, created_by FROM annotations WHERE id = $1",
         [id]
@@ -271,91 +449,30 @@ router.patch(
       }
 
       const annotation = existing.rows[0];
-
-      // Fetch previous content for mention diffing if content is being updated
-      let previousContent = null;
-      if (req.body.content !== undefined) {
+      const isAuthor = Boolean(annotation.created_by && annotation.created_by === req.user.id);
+      
+      let isPaperOwner = false;
+      if (!isAuthor) {
         try {
-          const contentLookup = await pool.query(
-            "SELECT content FROM annotations WHERE id = $1",
+          const paperLookup = await pool.query(
+            "SELECT a.paper_id, p.uploader_id FROM papers p JOIN annotations a ON a.paper_id = p.id WHERE a.id = $1",
             [id]
           );
-          previousContent = contentLookup.rows[0]?.content || null;
+          isPaperOwner = Boolean(paperLookup.rows[0]?.uploader_id && paperLookup.rows[0].uploader_id === req.user.id);
         } catch {
-          // Graceful fallback
+          // paper lookup optional
         }
       }
 
-      if (
-        req.user.role !== ROLES.SYSTEM_ADMIN &&
-        annotation.created_by !== req.user.id
-      ) {
-        return res.status(403).json({
-          error: "You can only edit your own annotations.",
-        });
-      }
-
-      const values = [];
-      const assignments = suppliedFields.map((field) => {
-        values.push(
-          field === "content" && typeof req.body[field] === "string"
-            ? req.body[field].trim()
-            : req.body[field]
-        );
-
-        return `${field} = $${values.length}`;
-      });
-
-      values.push(id);
-
-      const result = await pool.query(
-        `UPDATE annotations
-         SET ${assignments.join(", ")}, updated_at = CURRENT_TIMESTAMP
-         WHERE id = $${values.length}
-         RETURNING *`,
-        values
-      );
-
-      const updatedAnnotation = result.rows[0];
-
-      if (req.body.content !== undefined && updatedAnnotation) {
-        try {
-          await notifyMentions({
-            text: req.body.content.trim(),
-            oldText: previousContent || null,
-            actorUser: req.user,
-            paperId: updatedAnnotation.paper_id,
-            sourceType: "annotation",
-            sourceId: updatedAnnotation.id,
-            pageNumber: updatedAnnotation.page_number,
+      if (!isAuthor && !isPaperOwner) {
+        if (!annotation.created_by) {
+          return res.status(403).json({
+            error: "Legacy annotations without ownership metadata can only be deleted by the paper owner or a system administrator.",
           });
-        } catch (notifyErr) {
-          console.error("Mention notification error on update:", notifyErr.message);
         }
-      }
 
-      return res.status(200).json({
-        message: "Annotation updated successfully.",
-        annotation: updatedAnnotation,
-      });
-    } catch (error) {
-      return next(error);
-    }
-  }
-);
-
-// Only system admins can delete annotations.
-router.delete(
-  "/:id",
-  authenticateToken,
-  authorizeRoles(...ADMIN_ROLE),
-  async (req, res, next) => {
-    try {
-      const { id } = req.params;
-
-      if (!isValidUUID(id)) {
-        return res.status(400).json({
-          error: "Annotation ID must be a valid UUID.",
+        return res.status(403).json({
+          error: "You can only delete your own annotations.",
         });
       }
 
@@ -363,12 +480,6 @@ router.delete(
         "DELETE FROM annotations WHERE id = $1 RETURNING id",
         [id]
       );
-
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          error: "Annotation not found.",
-        });
-      }
 
       return res.status(200).json({
         message: "Annotation deleted successfully.",
