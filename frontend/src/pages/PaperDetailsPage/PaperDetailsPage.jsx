@@ -301,7 +301,7 @@ export default function PaperDetailsPage() {
       </div>
 
       {/* Paper Header Card */}
-      <div className="p-6 sm:p-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs">
+      <div className="p-6 sm:p-8 bg-theme-card rounded-3xl border border-theme-subtle shadow-sm text-theme-main">
         <div className="flex flex-wrap items-center gap-2 mb-3">
           {paper.arxiv_id && (
             <Badge variant="purple" size="sm">
@@ -314,18 +314,18 @@ export default function PaperDetailsPage() {
             </Badge>
           )}
           {paper.publication_date && (
-            <span className="text-xs text-slate-500 dark:text-slate-400">
+            <span className="text-xs text-theme-secondary">
               Published {formatDate(paper.publication_date)}
             </span>
           )}
         </div>
 
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-snug mb-3">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-theme-main tracking-tight leading-snug mb-3">
           {paper.title}
         </h1>
 
         {paper.authors && (
-          <p className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-4">
+          <p className="text-sm font-medium text-theme-secondary mb-4">
             {typeof paper.authors === 'string'
               ? paper.authors
               : Array.isArray(paper.authors)
@@ -335,14 +335,14 @@ export default function PaperDetailsPage() {
         )}
 
         {/* Primary external links & action triggers */}
-        <div className="flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800 flex-wrap">
+        <div className="flex items-center gap-3 pt-4 border-t border-theme-subtle flex-wrap">
           <button
             type="button"
             onClick={() => handleTabChange('pdf')}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs ${
+            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-sm ${
               activeTab === 'pdf'
-                ? 'bg-indigo-600 text-white shadow-indigo-500/20 shadow-sm'
-                : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 dark:hover:bg-indigo-900/60'
+                ? 'bg-violet-600 text-white shadow-violet-600/30'
+                : 'bg-violet-500/15 hover:bg-violet-500/25 text-violet-300 border border-violet-500/30'
             }`}
           >
             <FileText className="w-4 h-4" />
@@ -353,7 +353,7 @@ export default function PaperDetailsPage() {
             href={paper.pdf_url || `/api/papers/${paper.id}/pdf`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 transition"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-theme-elevated hover:bg-theme-elevated text-theme-main border border-white/10 transition"
           >
             <FileDown className="w-4 h-4" />
             <span>Download PDF</span>
@@ -364,9 +364,9 @@ export default function PaperDetailsPage() {
               href={`https://arxiv.org/abs/${paper.arxiv_id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-theme-secondary hover:text-theme-main transition"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
+              <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
               <span>View on arXiv.org</span>
             </a>
           )}
@@ -374,7 +374,7 @@ export default function PaperDetailsPage() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="border-b border-slate-300 dark:border-slate-800">
+      <div className="border-b border-theme-subtle">
         <nav className="flex space-x-6 overflow-x-auto scrollbar-none" aria-label="Tabs">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -384,13 +384,13 @@ export default function PaperDetailsPage() {
                 key={tab.id}
                 type="button"
                 onClick={() => handleTabChange(tab.id)}
-                className={`py-3 px-1 border-b-2 text-sm flex items-center gap-2 whitespace-nowrap cursor-pointer transition-colors ${
+                className={`py-3.5 px-1 border-b-2 text-sm flex items-center gap-2 whitespace-nowrap cursor-pointer transition-colors ${
                   isActive
-                    ? 'border-indigo-600 text-indigo-700 dark:text-indigo-400 font-bold'
-                    : 'border-transparent text-slate-700 hover:text-slate-950 hover:border-slate-400 dark:text-slate-300 dark:hover:text-white font-medium'
+                    ? 'border-violet-500 text-violet-400 font-bold'
+                    : 'border-transparent text-theme-muted hover:text-theme-main font-medium'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`} />
+                <Icon className={`w-4 h-4 ${isActive ? 'text-violet-400' : 'text-theme-muted'}`} />
                 <span>{tab.label}</span>
               </button>
             );
@@ -416,11 +416,11 @@ export default function PaperDetailsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
               {/* Abstract */}
-              <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-xs">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-3">
+              <div className="p-6 bg-theme-card rounded-2xl border border-theme-subtle shadow-xs">
+                <h3 className="text-base font-bold text-theme-main mb-3">
                   Abstract
                 </h3>
-                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
+                <p className="text-sm text-theme-secondary leading-relaxed whitespace-pre-line">
                   {paper.abstract || 'No abstract is available for this research paper.'}
                 </p>
               </div>
@@ -437,17 +437,17 @@ export default function PaperDetailsPage() {
 
               {/* Sections / Extracted Text if available */}
               {paper.sections && paper.sections.length > 0 && (
-                <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                <div className="p-6 bg-theme-card rounded-2xl border border-theme-subtle shadow-xs space-y-4">
+                  <h3 className="text-base font-bold text-theme-main">
                     Parsed Paper Sections
                   </h3>
-                  <div className="space-y-4 divide-y divide-slate-100 dark:divide-slate-800">
+                  <div className="space-y-4 divide-y divide-[var(--border-subtle)]">
                     {paper.sections.map((section, idx) => (
                       <div key={section.id || idx} className="pt-4 first:pt-0">
-                        <h4 className="font-semibold text-sm text-slate-800 dark:text-slate-200 mb-1">
+                        <h4 className="font-semibold text-sm text-theme-main mb-1">
                           {section.title || `Section ${idx + 1}`}
                         </h4>
-                        <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                        <p className="text-xs text-theme-secondary leading-relaxed">
                           {section.content || section.text}
                         </p>
                       </div>
@@ -469,10 +469,10 @@ export default function PaperDetailsPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                <h3 className="text-base font-bold text-theme-main">
                   Paper Annotations & Highlights
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-theme-muted">
                   Collaborative page comments, highlights, and margin notes
                 </p>
               </div>
@@ -490,6 +490,7 @@ export default function PaperDetailsPage() {
             <AnnotationList
               key={annotationRefreshKey}
               paperId={paper.id}
+              paperOwnerId={paper.uploader_id}
               canDeleteAll={isAdmin}
             />
           </div>
@@ -497,13 +498,13 @@ export default function PaperDetailsPage() {
 
         {/* Tab 3: Discussions */}
         {activeTab === 'discussions' && (
-          <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="p-6 bg-theme-card rounded-2xl border border-theme-subtle shadow-xs">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                <h3 className="text-base font-bold text-theme-main">
                   Collaborative Discussions
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-theme-muted">
                   Open discussion threads, questions, and peer review remarks
                 </p>
               </div>
@@ -518,7 +519,7 @@ export default function PaperDetailsPage() {
               </Button>
             </div>
 
-            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
+            <p className="text-sm text-theme-secondary leading-relaxed mb-4">
               Collaborative research threads allow you and your invited co-authors to discuss specific
               text highlights, figure captions, or general paper findings in real-time.
             </p>
@@ -536,13 +537,13 @@ export default function PaperDetailsPage() {
 
         {/* Tab 4: Citation Graph */}
         {activeTab === 'citations' && (
-          <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="p-6 bg-theme-card rounded-2xl border border-theme-subtle shadow-xs">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                <h3 className="text-base font-bold text-theme-main">
                   Interactive Citation Graph
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-theme-muted">
                   Visual node network of forward citations, backward references, and co-citation clusters
                 </p>
               </div>
@@ -557,12 +558,12 @@ export default function PaperDetailsPage() {
               </Button>
             </div>
 
-            <div className="h-96 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center p-6 text-center">
-              <GitBranch className="w-12 h-12 text-indigo-500 mb-3 animate-pulse" />
-              <h4 className="text-base font-bold text-slate-800 dark:text-slate-200 mb-1">
+            <div className="h-96 rounded-2xl bg-theme-elevated border border-theme-subtle flex flex-col items-center justify-center p-6 text-center">
+              <GitBranch className="w-12 h-12 text-violet-400 mb-3 animate-pulse" />
+              <h4 className="text-base font-bold text-theme-main mb-1">
                 Explore Connected Research Citations
               </h4>
-              <p className="text-xs text-slate-500 max-w-md mb-4">
+              <p className="text-xs text-theme-muted max-w-md mb-4">
                 Analyze seminal works, citation influence clusters, and direct preprint lineage with D3.js visualization.
               </p>
               <Button

@@ -203,16 +203,31 @@ export const listPapersForTag = async ({ tagId, limit = 50, offset = 0 }) => {
  * @returns {Promise<object>} The deleted assignment.
  * @throws {AssignmentError}
  */
-export const deleteAssignment = async (id, { userId, role }) => {
+export const deleteAssignment = async (id, { userId, role, expectedPaperId = null }) => {
   const assignment = await repo.findAssignmentById(id);
   if (!assignment) {
     throw new AssignmentError('Assignment not found.', 404);
   }
 
-  const isAdmin = role === 'SYSTEM_ADMIN';
-  const isOwner = assignment.assigned_by === userId;
+  // Prevent cross-paper ID manipulation
+  if (expectedPaperId && assignment.paper_id !== expectedPaperId) {
+    throw new AssignmentError(
+      'Assignment does not belong to the specified paper.',
+      400
+    );
+  }
 
-  if (!isAdmin && !isOwner) {
+  const isAdmin = role === 'SYSTEM_ADMIN';
+  const isAuthor = assignment.assigned_by && assignment.assigned_by === userId;
+  const isPaperOwner = assignment.paper_uploader_id && assignment.paper_uploader_id === userId;
+
+  if (!isAdmin && !isAuthor && !isPaperOwner) {
+    if (!assignment.assigned_by) {
+      throw new AssignmentError(
+        'Forbidden. Legacy tag assignments without creator metadata can only be removed by a system administrator.',
+        403
+      );
+    }
     throw new AssignmentError(
       'Forbidden. You can only remove assignments you created.',
       403
@@ -242,16 +257,42 @@ export const deleteAssignment = async (id, { userId, role }) => {
  * Synchronizes tags for a paper (bulk assignment/removal).
  * Computes difference: if same tags are submitted, does NOT generate notifications.
  *
+ * Authorization: SYSTEM_ADMIN, paper uploader/owner, or collaborator with EDIT role.
+ *
  * @param {object} params
  * @param {string} params.paperId
  * @param {string[]} params.tagIds - Desired set of topic tag UUIDs
  * @param {string} params.userId
+ * @param {string} [params.userRole]
  * @returns {Promise<object>}
  */
-export const syncPaperTags = async ({ paperId, tagIds, userId }) => {
-  const paperOk = await repo.paperExists(paperId);
-  if (!paperOk) {
+export const syncPaperTags = async ({ paperId, tagIds, userId, userRole = null }) => {
+  // Fetch paper details to verify existence and uploader ownership
+  const paperRes = await pool.query(
+    `SELECT id, uploader_id FROM papers WHERE id = $1`,
+    [paperId]
+  );
+  if (paperRes.rows.length === 0) {
     throw new AssignmentError('Paper not found.', 404);
+  }
+
+  const paper = paperRes.rows[0];
+  const isAdmin = userRole === 'SYSTEM_ADMIN';
+  const isOwner = Boolean(paper.uploader_id && paper.uploader_id === userId);
+
+  if (!isAdmin && !isOwner) {
+    // Check if user is an approved collaborator with EDIT role on this paper
+    const collabRes = await pool.query(
+      `SELECT role FROM paper_collaborators WHERE paper_id = $1 AND user_id = $2`,
+      [paperId, userId]
+    );
+    const hasEditPermission = collabRes.rows[0]?.role === 'EDIT';
+    if (!hasEditPermission) {
+      throw new AssignmentError(
+        'Forbidden. You do not have permission to modify tags for this paper.',
+        403
+      );
+    }
   }
 
   // Fetch current paper-level assignments

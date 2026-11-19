@@ -238,13 +238,13 @@ export default function TopicTaxonomyPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-7 animate-fadeIn text-theme-main">
       {/* Page Header */}
       <PageHeader
         title="Hierarchical Topic Taxonomy (FR-10)"
         description="Organize, curate, and explore the research classification taxonomy. Tags form a strict tree of subdomains for multi-level categorization."
         actions={
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <Link to="/tagging">
               <Button variant="outline" size="sm" iconLeft={Tag} className="gap-1.5">
                 <span>Paper Tagging Workspace</span>
@@ -279,35 +279,35 @@ export default function TopicTaxonomyPage() {
       />
 
       {/* KPI Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 flex items-center justify-between">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <div className="p-5 bg-theme-card rounded-2xl border border-theme-subtle shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">Total Classified Topics</p>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white mt-0.5">{stats.total}</p>
+            <p className="text-xs font-semibold text-theme-secondary">Total Classified Topics</p>
+            <p className="text-2xl font-extrabold text-theme-main mt-1">{stats.total}</p>
           </div>
-          <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 font-bold">
+          <div className="p-3 rounded-2xl bg-violet-500/15 border border-violet-500/25 text-violet-400 font-bold">
             <Tag className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 flex items-center justify-between">
+        <div className="p-5 bg-theme-card rounded-2xl border border-theme-subtle shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">Root Domains</p>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white mt-0.5">{stats.roots}</p>
+            <p className="text-xs font-semibold text-theme-secondary">Root Domains</p>
+            <p className="text-2xl font-extrabold text-theme-main mt-1">{stats.roots}</p>
           </div>
-          <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-400 font-bold">
+          <div className="p-3 rounded-2xl bg-purple-500/15 border border-purple-500/25 text-purple-400 font-bold">
             <FolderTree className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 flex items-center justify-between">
+        <div className="p-5 bg-theme-card rounded-2xl border border-theme-subtle shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">Maximum Subtree Depth</p>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white mt-0.5">
+            <p className="text-xs font-semibold text-theme-secondary">Maximum Subtree Depth</p>
+            <p className="text-2xl font-extrabold text-theme-main mt-1">
               {stats.maxDepth > 0 ? `${stats.maxDepth + 1} Tiers` : '1 Tier'}
             </p>
           </div>
-          <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-bold">
+          <div className="p-3 rounded-2xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 font-bold">
             <Layers className="w-5 h-5" />
           </div>
         </div>
@@ -316,17 +316,17 @@ export default function TopicTaxonomyPage() {
       {/* Main Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Interactive Taxonomy Tree */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 p-5 shadow-xs space-y-4 flex flex-col">
+        <div className="lg:col-span-2 bg-theme-card rounded-2xl border border-theme-subtle p-5 sm:p-6 shadow-sm space-y-5 flex flex-col">
           {/* Search & Tree Controls */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-theme-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search taxonomy by topic name, slug, or path..."
-                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                className="w-full pl-10 pr-3 py-2 text-xs bg-theme-secondary border border-white/10 rounded-xl text-theme-main placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition"
               />
             </div>
 
@@ -343,8 +343,8 @@ export default function TopicTaxonomyPage() {
           {/* Tree Rendering Area */}
           <div className="flex-1 min-h-[350px]">
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-16 text-xs text-slate-500 space-y-2">
-                <RefreshCw className="w-5 h-5 animate-spin text-indigo-600" />
+              <div className="flex flex-col items-center justify-center py-16 text-xs text-theme-muted space-y-3">
+                <RefreshCw className="w-5 h-5 animate-spin text-violet-400" />
                 <span>Loading hierarchical taxonomy...</span>
               </div>
             ) : error ? (
@@ -391,21 +391,21 @@ export default function TopicTaxonomyPage() {
         {/* Right Column: Selected Tag Inspector */}
         <div className="space-y-4">
           {selectedTag ? (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 p-5 shadow-xs space-y-4 sticky top-6">
-              <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
+            <div className="bg-theme-card rounded-2xl border border-theme-subtle p-5 sm:p-6 shadow-sm space-y-4 sticky top-20">
+              <div className="flex items-start justify-between gap-2 pb-3.5 border-b border-theme-subtle">
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 mb-1">
-                    <Tag className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <Tag className="w-4 h-4 text-violet-400" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-theme-secondary">
                       Topic Inspector
                     </span>
                   </div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white truncate">
+                  <h3 className="text-base sm:text-lg font-bold text-theme-main truncate">
                     {selectedTag.name}
                   </h3>
                 </div>
 
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0">
                   {canEdit && (
                     <Button
                       variant="outline"
@@ -418,10 +418,9 @@ export default function TopicTaxonomyPage() {
                   )}
                   {canDelete && (
                     <Button
-                      variant="ghost"
+                      variant="dangerOutline"
                       size="xs"
                       onClick={() => setTagToDelete(selectedTag)}
-                      className="text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50"
                       iconLeft={Trash2}
                     >
                       Delete
@@ -431,46 +430,46 @@ export default function TopicTaxonomyPage() {
               </div>
 
               {/* Tag Details */}
-              <div className="space-y-3 text-xs">
+              <div className="space-y-3.5 text-xs">
                 <div>
-                  <span className="font-bold text-slate-700 dark:text-slate-300 block mb-0.5">
+                  <span className="font-semibold text-theme-secondary block mb-1">
                     Hierarchical Path
                   </span>
-                  <div className="font-mono text-indigo-700 dark:text-indigo-400 bg-indigo-50/70 dark:bg-indigo-950/60 p-2 rounded-lg border border-indigo-200 dark:border-indigo-800/60 break-all">
+                  <div className="font-mono text-violet-300 bg-theme-elevated p-2.5 rounded-xl border border-white/10 break-all">
                     {selectedTag.canonicalPath || selectedTag.slug}
                   </div>
                 </div>
 
                 <div>
-                  <span className="font-bold text-slate-700 dark:text-slate-300 block mb-0.5">
+                  <span className="font-semibold text-theme-secondary block mb-1">
                     Identifier Slug
                   </span>
-                  <span className="font-mono text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                  <span className="font-mono text-theme-main bg-theme-elevated px-2.5 py-1 rounded-lg border border-white/10">
                     {selectedTag.slug}
                   </span>
                 </div>
 
                 <div>
-                  <span className="font-bold text-slate-700 dark:text-slate-300 block mb-0.5">
+                  <span className="font-semibold text-theme-secondary block mb-0.5">
                     Domain Hierarchy Tier
                   </span>
-                  <span className="text-slate-800 dark:text-slate-200">
+                  <span className="text-theme-main font-medium">
                     Level {(selectedTag.depth || 0) + 1}{' '}
                     {selectedTag.depth === 0 ? '(Root Domain)' : '(Nested Subtopic)'}
                   </span>
                 </div>
 
                 <div>
-                  <span className="font-bold text-slate-700 dark:text-slate-300 block mb-0.5">
+                  <span className="font-semibold text-theme-secondary block mb-1">
                     Description & Scope
                   </span>
-                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800">
+                  <p className="text-theme-secondary leading-relaxed bg-theme-secondary p-3 rounded-xl border border-theme-subtle">
                     {selectedTag.description || 'No scientific scope description provided for this topic.'}
                   </p>
                 </div>
 
                 <div>
-                  <span className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  <span className="font-semibold text-theme-secondary block mb-1.5">
                     Child Subtopics ({selectedTag.children?.length || 0})
                   </span>
                   {selectedTag.children && selectedTag.children.length > 0 ? (
@@ -480,20 +479,20 @@ export default function TopicTaxonomyPage() {
                           key={child.id}
                           type="button"
                           onClick={() => setSelectedTag(child)}
-                          className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 text-slate-800 dark:text-slate-200 text-xs font-semibold border border-slate-300 dark:border-slate-700 hover:border-indigo-400 transition cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg bg-theme-elevated hover:bg-violet-600/20 text-theme-main text-xs font-medium border border-white/10 hover:border-violet-500/40 transition cursor-pointer"
                         >
                           ↳ {child.name}
                         </button>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-slate-500 italic">Leaf topic node (no sub-categories)</p>
+                    <p className="text-theme-muted italic">Leaf topic node (no sub-categories)</p>
                   )}
                 </div>
               </div>
 
               {/* Quick Actions */}
-              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2">
+              <div className="pt-4 border-t border-theme-subtle flex flex-col gap-2.5">
                 {canEdit && (
                   <Button
                     variant="outline"
@@ -514,10 +513,10 @@ export default function TopicTaxonomyPage() {
               </div>
             </div>
           ) : (
-            <div className="p-8 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 text-center text-xs text-slate-500 dark:text-slate-400 space-y-2">
-              <FolderTree className="w-8 h-8 text-slate-400 mx-auto" />
-              <p className="font-bold text-slate-800 dark:text-slate-200">No Topic Selected</p>
-              <p>Click on any topic tag in the taxonomy tree to inspect its canonical path, child subtopics, and metadata.</p>
+            <div className="p-8 rounded-2xl border border-dashed border-white/10 bg-theme-card text-center text-xs text-theme-muted space-y-2.5">
+              <FolderTree className="w-8 h-8 text-theme-muted mx-auto" />
+              <p className="font-bold text-theme-main">No Topic Selected</p>
+              <p className="leading-relaxed">Click on any topic tag in the taxonomy tree to inspect its canonical path, child subtopics, and metadata.</p>
             </div>
           )}
         </div>

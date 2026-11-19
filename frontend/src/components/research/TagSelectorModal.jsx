@@ -86,17 +86,17 @@ export default function TagSelectorModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="md">
       <div className="space-y-3">
-        <p className="text-xs text-slate-500 dark:text-slate-400">{description}</p>
+        <p className="text-xs text-theme-secondary">{description}</p>
 
         {/* Selected Tags Chips Bar */}
         {multiSelect && selectedTags.length > 0 && (
-          <div className="p-2.5 bg-purple-50 dark:bg-purple-950/40 rounded-xl border border-purple-200 dark:border-purple-800/60 space-y-1.5">
-            <div className="text-[11px] font-bold text-purple-900 dark:text-purple-300 flex items-center justify-between">
+          <div className="p-2.5 bg-violet-500/10 rounded-xl border border-violet-500/25 space-y-1.5">
+            <div className="text-[11px] font-bold text-violet-300 flex items-center justify-between">
               <span>Selected for Assignment ({selectedTags.length})</span>
               <button
                 type="button"
                 onClick={() => setSelectedTags([])}
-                className="text-[10px] text-purple-600 dark:text-purple-400 hover:underline"
+                className="text-[10px] text-violet-400 hover:underline cursor-pointer"
               >
                 Clear all
               </button>
@@ -105,13 +105,13 @@ export default function TagSelectorModal({
               {selectedTags.map((tag) => (
                 <span
                   key={tag.id}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-600 text-white text-[11px] font-semibold shadow-xs"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-violet-600 text-white text-[11px] font-semibold shadow-xs"
                 >
                   <span>{tag.name}</span>
                   <button
                     type="button"
                     onClick={() => handleRemoveSelectedChip(tag.id)}
-                    className="hover:text-purple-200"
+                    className="hover:text-violet-200 cursor-pointer"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -123,20 +123,20 @@ export default function TagSelectorModal({
 
         {/* Search input */}
         <div className="relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-theme-muted absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search topic tags by name, slug, or hierarchy..."
-            className="w-full pl-9 pr-8 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+            className="w-full pl-9 pr-8 py-2 text-xs bg-theme-elevated border border-theme-subtle rounded-xl text-theme-main placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
             autoFocus
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-theme-muted hover:text-theme-main"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -144,9 +144,9 @@ export default function TagSelectorModal({
         </div>
 
         {/* Tags List */}
-        <div className="max-h-72 overflow-y-auto space-y-1.5 divide-y divide-slate-100 dark:divide-slate-800 pr-1">
+        <div className="max-h-72 overflow-y-auto space-y-1.5 divide-y divide-[var(--border-subtle)] pr-1">
           {filteredTags.length === 0 ? (
-            <div className="text-center py-8 text-xs text-slate-500">
+            <div className="text-center py-8 text-xs text-theme-muted">
               No matching topic tags found in the taxonomy.
             </div>
           ) : (
@@ -165,41 +165,41 @@ export default function TagSelectorModal({
                   onClick={() => !isAssigned && !loading && handleToggleTag(tag)}
                   className={`pt-1.5 first:pt-0 flex items-center justify-between p-2.5 rounded-xl transition ${
                     isAssigned
-                      ? 'bg-slate-100/70 dark:bg-slate-800/30 opacity-60 cursor-not-allowed'
+                      ? 'bg-theme-elevated/40 opacity-60 cursor-not-allowed'
                       : isSelected
-                      ? 'bg-purple-100/80 dark:bg-purple-950/60 border border-purple-400 dark:border-purple-600 shadow-2xs cursor-pointer'
-                      : 'hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-transparent cursor-pointer'
+                      ? 'bg-violet-500/15 border border-violet-500/40 shadow-2xs cursor-pointer'
+                      : 'hover:bg-theme-elevated border border-transparent cursor-pointer'
                   }`}
                 >
                   <div className="flex items-start gap-2.5 min-w-0 flex-1">
                     {multiSelect && !isAssigned ? (
-                      <div className="mt-0.5 text-purple-600 dark:text-purple-400 shrink-0">
+                      <div className="mt-0.5 text-violet-400 shrink-0">
                         {isSelected ? (
-                          <CheckSquare className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                          <CheckSquare className="w-4 h-4 text-violet-400" />
                         ) : (
-                          <Square className="w-4 h-4 text-slate-400" />
+                          <Square className="w-4 h-4 text-theme-muted" />
                         )}
                       </div>
                     ) : (
-                      <div className="w-7 h-7 rounded-lg bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0 mt-0.5">
+                      <div className="w-7 h-7 rounded-lg bg-violet-500/15 text-violet-300 flex items-center justify-center shrink-0 mt-0.5">
                         <Tag className="w-3.5 h-3.5" />
                       </div>
                     )}
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                        <span className="text-xs font-bold text-theme-main truncate">
                           {tag.name}
                         </span>
-                        <span className="text-[10px] font-mono text-slate-500">
+                        <span className="text-[10px] font-mono text-theme-muted">
                           ({tag.slug})
                         </span>
                       </div>
-                      <p className="text-[10px] font-mono text-purple-600 dark:text-purple-400 truncate mt-0.5">
+                      <p className="text-[10px] font-mono text-violet-400 truncate mt-0.5">
                         {pathDisplay}
                       </p>
                       {tag.description && (
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5 font-sans">
+                        <p className="text-[11px] text-theme-secondary line-clamp-1 mt-0.5 font-sans">
                           {tag.description}
                         </p>
                       )}
@@ -208,15 +208,15 @@ export default function TagSelectorModal({
 
                   <div className="ml-2 shrink-0">
                     {isAssigned ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-theme-muted">
                         <Check className="w-3.5 h-3.5" /> Already Assigned
                       </span>
                     ) : multiSelect ? (
                       <span
                         className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
                           isSelected
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                            ? 'bg-violet-600 text-white'
+                            : 'bg-theme-elevated text-theme-secondary'
                         }`}
                       >
                         {isSelected ? 'Selected' : 'Select'}
@@ -243,7 +243,7 @@ export default function TagSelectorModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-800">
+        <div className="flex items-center justify-between pt-3 border-t border-theme-subtle">
           <Button variant="outline" size="sm" onClick={onClose} disabled={loading}>
             Cancel
           </Button>
@@ -255,7 +255,7 @@ export default function TagSelectorModal({
               size="sm"
               disabled={loading || selectedTags.length === 0}
               onClick={handleConfirmMultiSelect}
-              className="bg-purple-600 hover:bg-purple-700 text-white gap-1.5"
+              className="gap-1.5"
             >
               <Tag className="w-3.5 h-3.5" />
               <span>
