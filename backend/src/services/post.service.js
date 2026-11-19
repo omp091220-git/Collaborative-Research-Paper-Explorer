@@ -1,7 +1,7 @@
+import publicFeedService, { toPublicPost } from "./publicFeed.service.js";
 import {
   insertPost,
   findPostById,
-  findPublicPosts,
   findPostsByAuthor,
   updatePostRecord,
   deletePostRecord,
@@ -112,8 +112,8 @@ export const getPostByIdService = async (postId, viewerUser = null) => {
   }
 
   // 1. Public posts can be viewed by anyone
-  if (post.visibility === "PUBLIC") {
-    return post;
+  if (post.visibility === "PUBLIC" && post.author_account_type === "PUBLIC") {
+    return toPublicPost(post);
   }
 
   // 2. Private post access enforcement
@@ -150,26 +150,7 @@ export const getPostByIdService = async (postId, viewerUser = null) => {
  * @param {Object} queryOptions
  * @returns {Promise<{ posts: Object[], total: number, limit: number, offset: number }>}
  */
-export const listPublicPostsService = async (queryOptions = {}) => {
-  const limit = Math.min(Math.max(parseInt(queryOptions.limit || 20, 10), 1), 100);
-  const offset = Math.max(parseInt(queryOptions.offset || 0, 10), 0);
-  const tag = queryOptions.tag ? String(queryOptions.tag).trim().toLowerCase() : null;
-  const paperId = queryOptions.paperId || null;
-
-  const result = await findPublicPosts({
-    limit,
-    offset,
-    tag,
-    paperId,
-  });
-
-  return {
-    posts: result.posts,
-    total: result.total,
-    limit,
-    offset,
-  };
-};
+export const listPublicPostsService = options => publicFeedService.list(options);
 
 /**
  * Lists posts by a specific author respecting privacy filters based on who is viewing.
@@ -196,7 +177,7 @@ export const listPostsByAuthorService = async (authorId, viewerUser = null, quer
   });
 
   return {
-    posts: result.posts,
+    posts: canViewPrivate ? result.posts : result.posts.map(toPublicPost),
     total: result.total,
     limit,
     offset,

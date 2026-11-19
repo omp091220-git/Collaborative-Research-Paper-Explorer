@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
   GraduationCap,
+  Globe,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLibrary } from '../../context/LibraryContext';
@@ -55,6 +56,7 @@ export default function Sidebar({ isOpen, onClose, collapsed, onCollapsedChange 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Explore Papers', href: '/explore', icon: Compass },
+    { name: 'Public Feed', href: '/feed', icon: Globe },
     {
       name: 'Library & Bookmarks',
       href: '/library',

@@ -1,3 +1,13 @@
+import publicFeedService from "../services/publicFeed.service.js";
+import { isPgConnectionError } from "../utils/pgClientErrors.js";
+
+const publicFeedFailure = (error, res, next) => {
+  if (isPgConnectionError(error) || ["42P01", "42703", "57014"].includes(error.code)) {
+    console.error("Public feed unavailable:", error.code);
+    return res.status(503).json({ error: "Public feed is temporarily unavailable. Please try again later." });
+  }
+  return next(error);
+};
 import {
   createPostService,
   getPostByIdService,
@@ -59,14 +69,14 @@ export const getPostById = async (req, res, next) => {
  */
 export const listPublicPosts = async (req, res, next) => {
   try {
-    const { limit, offset, tag, paperId } = req.query;
-    const feed = await listPublicPostsService({ limit, offset, tag, paperId });
+    res.set("Cache-Control", "no-store");
+    const feed = await listPublicPostsService(req.query);
     return res.status(200).json({
       success: true,
       ...feed,
     });
   } catch (error) {
-    return next(error);
+    return publicFeedFailure(error, res, next);
   }
 };
 
@@ -162,4 +172,13 @@ export const updateMyAccountType = async (req, res, next) => {
   } catch (error) {
     return next(error);
   }
+};
+
+// Public detail views never use owner/admin access to reveal private posts.
+export const getPublicPost = async (req,res,next) => {
+ try {
+  res.set("Cache-Control","no-store");
+  const post=await publicFeedService.detail(req.params.id);
+  return res.json({success:true,post});
+ } catch(error) {return publicFeedFailure(error,res,next);}
 };
