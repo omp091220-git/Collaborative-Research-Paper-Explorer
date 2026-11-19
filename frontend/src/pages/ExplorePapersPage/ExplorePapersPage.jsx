@@ -258,20 +258,20 @@ export default function ExplorePapersPage() {
       />
 
       {/* Discovery Navigation Tabs */}
-      <div className="border-b border-slate-200 dark:border-slate-800">
+      <div className="border-b border-theme-subtle">
         <nav className="flex space-x-2 sm:space-x-4 overflow-x-auto scrollbar-none" aria-label="Explorer Tabs">
           <button
             type="button"
             onClick={() => handleTabChange('papers')}
-            className={`py-3 px-3 border-b-2 text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap cursor-pointer transition-colors ${
+            className={`py-3.5 px-3 border-b-2 text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap cursor-pointer transition-colors ${
               activeTab === 'papers'
-                ? 'border-indigo-600 text-indigo-700 dark:text-indigo-400 font-bold'
-                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'
+                ? 'border-violet-500 text-violet-400 font-bold'
+                : 'border-transparent text-theme-muted hover:text-theme-main font-medium'
             }`}
           >
             <BookOpen className="w-4 h-4" />
             <span>Papers Explorer</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-theme-elevated text-theme-secondary border border-white/10">
               {totalPapers}
             </span>
           </button>
@@ -279,20 +279,18 @@ export default function ExplorePapersPage() {
           <button
             type="button"
             onClick={() => handleTabChange('topics')}
-            className={`py-3 px-3 border-b-2 text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap cursor-pointer transition-colors ${
+            className={`py-3.5 px-3 border-b-2 text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap cursor-pointer transition-colors ${
               activeTab === 'topics'
-                ? 'border-purple-600 text-purple-700 dark:text-purple-400 font-bold'
-                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'
+                ? 'border-cyan-400 text-cyan-300 font-bold'
+                : 'border-transparent text-theme-muted hover:text-theme-main font-medium'
             }`}
           >
-            <FolderTree className="w-4 h-4 text-purple-500" />
+            <FolderTree className="w-4 h-4 text-cyan-400" />
             <span>Topic Explorer (FR-10)</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300">
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
               {flatTags.length} Topics
             </span>
           </button>
-
-
         </nav>
       </div>
 
@@ -376,7 +374,7 @@ export default function ExplorePapersPage() {
                   ))}
                 </div>
               ) : (
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800 shadow-xs">
+                <div className="space-y-3">
                   {papers.map((paper) => (
                     <PaperListItem
                       key={paper.id}
@@ -411,13 +409,13 @@ export default function ExplorePapersPage() {
       {activeTab === 'topics' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Column (4 cols): Topic Hierarchy Selector */}
-          <div className="lg:col-span-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-xs space-y-3 h-[750px] flex flex-col">
-            <div className="border-b border-slate-200 dark:border-slate-800 pb-2">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <FolderTree className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+          <div className="lg:col-span-4 bg-theme-card rounded-2xl border border-theme-subtle p-4 shadow-xs space-y-3 h-[750px] flex flex-col">
+            <div className="border-b border-theme-subtle pb-2">
+              <h3 className="text-sm font-bold text-theme-main flex items-center gap-2">
+                <FolderTree className="w-4 h-4 text-violet-400" />
                 <span>Taxonomy Topic Selector</span>
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs text-theme-muted mt-0.5">
                 Select a topic to explore its research papers and child subtopics
               </p>
             </div>
@@ -432,25 +430,25 @@ export default function ExplorePapersPage() {
                     onClick={() => setActiveTopicForExplorer(t)}
                     className={`p-2.5 rounded-xl border transition cursor-pointer text-left select-none ${
                       isSelected
-                        ? 'bg-purple-50 dark:bg-purple-950/60 border-purple-500 shadow-xs'
-                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+                        ? 'bg-violet-500/15 border-violet-500 shadow-xs'
+                        : 'border-theme-subtle hover:border-theme-strong bg-theme-elevated'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">
+                      <span className="text-xs font-bold text-theme-main">
                         {t.name}
                       </span>
                       {isSelected && (
-                        <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/60 px-1.5 py-0.2 rounded-full">
+                        <span className="text-[10px] font-bold text-violet-300 bg-violet-500/20 px-1.5 py-0.5 rounded-full">
                           Active
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] font-mono text-purple-600 dark:text-purple-400 truncate mt-1">
+                    <p className="text-[10px] font-mono text-violet-400 truncate mt-1">
                       {t.canonicalPath}
                     </p>
                     {t.description && (
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">
+                      <p className="text-[11px] text-theme-muted line-clamp-1 mt-0.5">
                         {t.description}
                       </p>
                     )}
@@ -465,25 +463,25 @@ export default function ExplorePapersPage() {
             {activeTopicForExplorer ? (
               <>
                 {/* Active Topic Banner */}
-                <div className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-2">
+                <div className="p-5 bg-theme-card rounded-2xl border border-theme-subtle shadow-xs space-y-2">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400">
+                    <span className="text-xs font-bold uppercase tracking-wider text-violet-400">
                       Topic Hierarchy Path
                     </span>
-                    <Badge variant="purple" size="xs">
+                    <Badge variant="violet" size="xs">
                       {activeTopicForExplorer.slug}
                     </Badge>
                   </div>
-                  <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">
+                  <h2 className="text-xl font-extrabold text-theme-main">
                     {activeTopicForExplorer.canonicalPath}
                   </h2>
                   {activeTopicForExplorer.description && (
-                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                    <p className="text-xs text-theme-secondary">
                       {activeTopicForExplorer.description}
                     </p>
                   )}
-                  <div className="pt-2 flex items-center gap-3 text-xs text-slate-500">
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  <div className="pt-2 flex items-center gap-3 text-xs text-theme-muted">
+                    <span className="font-semibold text-theme-main">
                       {topicExplorerPapers.length} Research Paper{topicExplorerPapers.length === 1 ? '' : 's'} Categorized
                     </span>
                   </div>
@@ -493,9 +491,9 @@ export default function ExplorePapersPage() {
                 {loadingTopicPapers ? (
                   <LoadingSkeletonGrid count={4} />
                 ) : topicExplorerPapers.length === 0 ? (
-                  <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs text-slate-500 space-y-2">
-                    <Tag className="w-8 h-8 text-slate-400 mx-auto" />
-                    <p className="font-bold text-slate-700 dark:text-slate-300">
+                  <div className="p-12 text-center bg-theme-card rounded-2xl border border-theme-subtle text-xs text-theme-muted space-y-2">
+                    <Tag className="w-8 h-8 text-theme-muted mx-auto" />
+                    <p className="font-bold text-theme-main">
                       No papers tagged under "{activeTopicForExplorer.name}" yet
                     </p>
                     <p>Open any paper in the workspace or tagging tool to assign this topic tag.</p>
@@ -513,7 +511,7 @@ export default function ExplorePapersPage() {
                 )}
               </>
             ) : (
-              <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-500">
+              <div className="p-12 text-center bg-theme-card rounded-2xl border border-theme-subtle text-theme-muted">
                 Select a topic from the left to view categorized research papers.
               </div>
             )}

@@ -215,9 +215,15 @@ export const deleteAssignment = async (req, res, next) => {
       return res.status(400).json({ error: paramError });
     }
 
+    const expectedPaperId = req.query.paper_id || req.body?.paper_id || null;
+    if (expectedPaperId && !isValidUUID(expectedPaperId)) {
+      return res.status(400).json({ error: 'paper_id must be a valid UUID.' });
+    }
+
     const deleted = await service.deleteAssignment(req.params.id, {
       userId: req.user.id,
       role: req.user.role,
+      expectedPaperId,
     });
 
     return res.status(200).json({
@@ -260,6 +266,7 @@ export const syncPaperTags = async (req, res, next) => {
       paperId: req.params.paperId,
       tagIds: tag_ids,
       userId: req.user.id,
+      userRole: req.user.role,
     });
 
     return res.status(200).json(result);

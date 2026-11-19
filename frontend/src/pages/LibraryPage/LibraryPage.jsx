@@ -70,15 +70,15 @@ export default function LibraryPage() {
       />
 
       {/* Tabs */}
-      <div className="border-b border-slate-200 dark:border-slate-800">
+      <div className="border-b border-theme-subtle">
         <nav className="flex space-x-8" aria-label="Library Tabs">
           <button
             type="button"
             onClick={() => setActiveTab('bookmarks')}
             className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 cursor-pointer transition-colors ${
               activeTab === 'bookmarks'
-                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'
+                ? 'border-violet-500 text-violet-400 font-semibold'
+                : 'border-transparent text-theme-muted hover:text-theme-secondary'
             }`}
           >
             <Bookmark className="w-4 h-4" />
@@ -93,8 +93,8 @@ export default function LibraryPage() {
             onClick={() => setActiveTab('queue')}
             className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 cursor-pointer transition-colors ${
               activeTab === 'queue'
-                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'
+                ? 'border-violet-500 text-violet-400 font-semibold'
+                : 'border-transparent text-theme-muted hover:text-theme-secondary'
             }`}
           >
             <Clock className="w-4 h-4" />
@@ -131,7 +131,7 @@ export default function LibraryPage() {
                       e.stopPropagation();
                       handleRemove(paper.id, paper.title);
                     }}
-                    className="absolute top-4 right-14 p-1.5 rounded-lg bg-white/90 dark:bg-slate-800/90 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 shadow-xs opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    className="absolute top-4 right-14 p-1.5 rounded-lg bg-theme-card text-theme-muted hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 shadow-xs opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                     title="Remove from library"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -154,8 +154,8 @@ export default function LibraryPage() {
                 onClick={() => setStatusFilter(status)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors ${
                   statusFilter === status
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                    ? 'bg-violet-600 text-white shadow-xs'
+                    : 'bg-theme-elevated text-theme-secondary border border-theme-subtle hover:bg-theme-card'
                 }`}
               >
                 {status.replace(/_/g, ' ')}
@@ -181,16 +181,16 @@ export default function LibraryPage() {
                 return (
                   <div
                     key={paperId}
-                    className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    className="p-4 bg-theme-card rounded-2xl border border-theme-subtle shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                   >
                     <div>
                       <Link
                         to={`/papers/${paperId}`}
-                        className="font-bold text-sm text-slate-900 dark:text-white hover:text-indigo-600 hover:underline"
+                        className="font-bold text-sm text-theme-main hover:text-violet-400 hover:underline"
                       >
                         {item.title || `Paper #${paperId}`}
                       </Link>
-                      <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+                      <div className="flex items-center gap-2 mt-1 text-xs text-theme-muted">
                         <span>Updated {formattedDate}</span>
                       </div>
                     </div>
@@ -201,7 +201,7 @@ export default function LibraryPage() {
                         onChange={(e) =>
                           setReadingStatus && setReadingStatus(paperId, e.target.value, item.title)
                         }
-                        className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer"
+                        className="px-3 py-1.5 text-xs font-medium rounded-lg border border-theme-subtle bg-theme-elevated text-theme-main cursor-pointer focus:outline-none focus:ring-1 focus:ring-violet-500"
                       >
                         <option value="WANT_TO_READ">Want to read</option>
                         <option value="READING">Reading</option>

@@ -42,17 +42,17 @@ export default function PaperExportModal({paper, isOpen, onClose}) {
       </Button>
     }>
       <fieldset disabled={busy} className="space-y-3">
-        <legend className="text-sm font-semibold text-slate-900 dark:text-white mb-3">Choose a format</legend>
+        <legend className="text-sm font-semibold text-theme-main mb-3">Choose a format</legend>
         {formats.map(option => (
-          <label key={option.id} className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${format === option.id ? 'border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-950/40' : 'border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-900'}`}>
-            <input type="radio" name="export-format" value={option.id} checked={format === option.id} onChange={() => {setFormat(option.id); setSuccess(false); setError('');}} className="mt-1 h-4 w-4 shrink-0 accent-indigo-600 dark:accent-indigo-400" />
-            <span className="min-w-0"><span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">{option.label}</span><span className="block text-xs mt-1 text-slate-600 dark:text-slate-300">{option.description}</span></span>
+          <label key={option.id} className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${format === option.id ? 'border-violet-500 bg-violet-500/10' : 'border-theme-subtle bg-theme-elevated hover:border-theme-strong'}`}>
+            <input type="radio" name="export-format" value={option.id} checked={format === option.id} onChange={() => {setFormat(option.id); setSuccess(false); setError('');}} className="mt-1 h-4 w-4 shrink-0 accent-violet-500" />
+            <span className="min-w-0"><span className="block text-sm font-semibold text-theme-main">{option.label}</span><span className="block text-xs mt-1 text-theme-secondary">{option.description}</span></span>
           </label>
         ))}
       </fieldset>
-      <p className="mt-4 text-xs text-slate-600 dark:text-slate-300">Exports include saved content visible in this paper’s shared library. Generating an export does not call AI.</p>
-      {error && <p role="alert" className="mt-4 text-sm text-red-700 dark:text-red-300">{error}</p>}
-      {success && <p role="status" className="mt-4 text-sm text-emerald-700 dark:text-emerald-300">{format === 'pdf' ? 'PDF downloaded. Your research report follows the original paper pages.' : 'Export downloaded.'}</p>}
+      <p className="mt-4 text-xs text-theme-muted">Exports include saved content visible in this paper’s shared library. Generating an export does not call AI.</p>
+      {error && <p role="alert" className="mt-4 text-sm text-rose-400">{error}</p>}
+      {success && <p role="status" className="mt-4 text-sm text-emerald-400">{format === 'pdf' ? 'PDF downloaded. Your research report follows the original paper pages.' : 'Export downloaded.'}</p>}
     </Modal>
   );
 }

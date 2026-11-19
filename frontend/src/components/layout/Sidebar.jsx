@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -13,6 +14,8 @@ import {
   Sparkles,
   FolderTree,
   Tag,
+  ChevronLeft,
+  ChevronRight,
   GraduationCap,
   Globe,
 } from 'lucide-react';
@@ -20,9 +23,35 @@ import { useAuth } from '../../context/AuthContext';
 import { useLibrary } from '../../context/LibraryContext';
 import Badge from '../common/Badge';
 
-export default function Sidebar({ isOpen, onClose }) {
+export default function Sidebar({ isOpen, onClose, collapsed, onCollapsedChange }) {
   const { user, isAdmin } = useAuth();
   const { bookmarks, collections } = useLibrary();
+
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof collapsed === 'boolean') return collapsed;
+    try {
+      return localStorage.getItem('crpe_sidebar_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    if (typeof collapsed === 'boolean') setIsCollapsed(collapsed);
+  }, [collapsed]);
+
+  const toggleCollapse = () => {
+    setIsCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('crpe_sidebar_collapsed', String(next));
+      } catch {
+        // storage disabled or quota reached
+      }
+      onCollapsedChange?.(next);
+      return next;
+    });
+  };
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -52,41 +81,67 @@ export default function Sidebar({ isOpen, onClose }) {
       {/* Mobile Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs md:hidden"
+          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm md:hidden animate-fadeIn"
           onClick={onClose}
         />
       )}
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-40 w-64 bg-white dark:bg-slate-950 border-r border-slate-300 dark:border-slate-800 flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 z-40 bg-theme-secondary border-r border-theme-subtle flex flex-col transition-all duration-300 ease-in-out md:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        } ${isCollapsed ? 'md:w-20' : 'md:w-64'} w-64`}
       >
-        {/* Top Header on Mobile */}
-        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200 dark:border-slate-800 md:hidden">
-          <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
+        {/* Top Header */}
+        <div className="h-16 flex items-center justify-between px-4 sm:px-5 border-b border-theme-subtle">
+          <div className="flex items-center gap-2.5 font-bold text-theme-main">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-white shrink-0 shadow-sm shadow-violet-600/30">
               <FileText className="w-4 h-4" />
             </div>
-            <span>ScholarSphere</span>
+            {!isCollapsed && (
+              <span className="font-extrabold text-sm tracking-tight truncate text-theme-main">
+                Scholar<span className="text-violet-400">Sphere</span>
+              </span>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+
+          <div className="flex items-center">
+            {/* Collapse toggle (desktop only) */}
+            <button
+              type="button"
+              onClick={toggleCollapse}
+              className="hidden md:flex p-1.5 text-theme-muted hover:text-theme-main rounded-lg hover:bg-white/5 transition cursor-pointer"
+              title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {isCollapsed ? (
+                <ChevronRight className="w-4 h-4" />
+              ) : (
+                <ChevronLeft className="w-4 h-4" />
+              )}
+            </button>
+
+            {/* Close button (mobile only) */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="md:hidden p-1.5 text-theme-muted hover:text-theme-main rounded-lg hover:bg-white/5 transition cursor-pointer"
+              aria-label="Close menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Navigation Items */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
-          {/* Main workspace navigation */}
+        <div className="flex-1 overflow-y-auto px-3 py-5 space-y-6">
+          {/* Main Workspace Section */}
           <div>
-            <div className="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-              Workspace
-            </div>
+            {!isCollapsed && (
+              <div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-theme-muted">
+                Workspace
+              </div>
+            )}
             <nav className="space-y-1">
               {navigation.map((item) => {
                 const Icon = item.icon;
@@ -95,30 +150,40 @@ export default function Sidebar({ isOpen, onClose }) {
                     key={item.name}
                     to={item.href}
                     onClick={onClose}
+                    title={isCollapsed ? item.name : undefined}
                     className={({ isActive }) =>
-                      `flex items-center justify-between px-3 py-2.5 text-sm font-semibold rounded-xl transition-all ${
+                      `relative flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group ${
                         isActive
-                          ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/20'
-                          : 'text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
+                          ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm shadow-violet-600/30'
+                          : 'text-theme-secondary hover:text-theme-main hover:bg-white/[0.06]'
                       }`
                     }
                   >
                     {({ isActive }) => (
                       <>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
                           <Icon
-                            className={`w-4 h-4 ${
-                              isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400'
+                            className={`w-4 h-4 shrink-0 transition-colors ${
+                              isActive
+                                ? 'text-white'
+                                : 'text-theme-muted group-hover:text-violet-400'
                             }`}
                           />
-                          <span>{item.name}</span>
+                          {!isCollapsed && (
+                            <span className="truncate">{item.name}</span>
+                          )}
                         </div>
-                        {item.count !== undefined && item.count > 0 && (
+                        {isCollapsed && (
+                          <span className="pointer-events-none hidden md:block absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-lg border border-theme-subtle bg-theme-elevated px-2.5 py-1 text-xs font-medium text-theme-main opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100">
+                            {item.name}
+                          </span>
+                        )}
+                        {!isCollapsed && item.count !== undefined && item.count > 0 && (
                           <span
-                            className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                               isActive
-                                ? 'bg-indigo-700 text-white'
-                                : 'bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700'
+                                ? 'bg-white/20 text-white'
+                                : 'bg-theme-elevated text-theme-secondary border border-white/10'
                             }`}
                           >
                             {item.count}
@@ -135,64 +200,73 @@ export default function Sidebar({ isOpen, onClose }) {
           {/* Admin Section (Conditional) */}
           {isAdmin && (
             <div>
-              <div className="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-500">
-                System Administration
-              </div>
+              {!isCollapsed && (
+                <div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-amber-400">
+                  Administration
+                </div>
+              )}
               <nav className="space-y-1">
                 <NavLink
                   to="/admin/monitoring"
                   onClick={onClose}
+                  title={isCollapsed ? 'Monitoring & Metrics' : undefined}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-xl transition-all ${
+                    `flex items-center gap-3 px-3 py-2.5 text-xs font-semibold rounded-xl transition-all ${
                       isActive
-                        ? 'bg-amber-600 text-white shadow-sm'
-                        : 'text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40'
+                        ? 'bg-amber-600 text-white shadow-sm shadow-amber-600/25 font-bold'
+                        : 'text-amber-400/90 hover:text-amber-300 hover:bg-amber-500/10'
                     }`
                   }
                 >
-                  <ShieldAlert className="w-4 h-4" />
-                  <span>Monitoring & Metrics</span>
+                  <ShieldAlert className="w-4 h-4 shrink-0" />
+                  {!isCollapsed && <span>Monitoring & Metrics</span>}
                 </NavLink>
               </nav>
             </div>
           )}
 
-          {/* AI Features Notice */}
-          <div className="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/20 border border-indigo-100 dark:border-indigo-900/50">
-            <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400 text-xs font-bold mb-1">
-              <Sparkles className="w-4 h-4 text-indigo-500" />
-              <span>AI Multi-Perspective</span>
+          {/* AI Features Notice (Expanded mode only) */}
+          {!isCollapsed && (
+            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-violet-950/40 to-indigo-950/30 border border-violet-500/20 text-theme-main">
+              <div className="flex items-center gap-2 text-violet-300 text-xs font-bold mb-1">
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <span>AI Multi-Perspective</span>
+              </div>
+              <p className="text-[11px] text-theme-secondary leading-relaxed">
+                Synthesize Layman, Executive, or Deep Technical breakdowns for any paper.
+              </p>
             </div>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              Generate Layman, Executive, or Technical summaries for any paper instantly.
-            </p>
-          </div>
+          )}
         </div>
 
         {/* User Footer */}
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+        <div className="p-3.5 border-t border-theme-subtle">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-cyan-400 flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm">
               {user?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
-                {user?.full_name || 'Scholar'}
-              </p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <Badge variant="indigo" size="sm">
-                  {user?.role || 'STUDENT'}
-                </Badge>
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-theme-main truncate">
+                  {user?.full_name || 'Scholar'}
+                </p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <Badge variant="primary" size="xs">
+                    {user?.role || 'STUDENT'}
+                  </Badge>
+                </div>
               </div>
-            </div>
-            <NavLink
-              to="/settings"
-              onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-              title="Settings"
-            >
-              <Settings className="w-4 h-4" />
-            </NavLink>
+            )}
+            {!isCollapsed && (
+              <NavLink
+                to="/settings"
+                onClick={onClose}
+                className="p-1.5 text-theme-muted hover:text-theme-main rounded-lg hover:bg-white/5 transition"
+                title="Settings"
+              >
+                <Settings className="w-4 h-4" />
+              </NavLink>
+            )}
           </div>
         </div>
       </aside>

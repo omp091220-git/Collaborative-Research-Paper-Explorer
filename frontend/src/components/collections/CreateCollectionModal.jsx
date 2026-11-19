@@ -35,35 +35,35 @@ export default function CreateCollectionModal({ isOpen, onClose, onCreate }) {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
-            Collection Name <span className="text-rose-600">*</span>
+          <label className="block text-xs font-bold text-theme-main mb-1">
+            Collection Name <span className="text-rose-400">*</span>
           </label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. LLM Reasoning & Verification"
-            className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+            className="w-full px-3 py-2 text-xs bg-theme-elevated border border-theme-subtle rounded-xl text-theme-main placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
             required
             autoFocus
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
-            Description <span className="text-slate-500 font-normal">(optional)</span>
+          <label className="block text-xs font-bold text-theme-main mb-1">
+            Description <span className="text-theme-muted font-normal">(optional)</span>
           </label>
           <textarea
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="What is the objective or scope of this collection?"
-            className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 resize-y"
+            className="w-full px-3 py-2 text-xs bg-theme-elevated border border-theme-subtle rounded-xl text-theme-main placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 resize-y"
           />
         </div>
 
         <div className="pt-2">
-          <span className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-2">
+          <span className="block text-xs font-bold text-theme-main mb-2">
             Visibility & Sharing
           </span>
           <div className="grid grid-cols-2 gap-2">
@@ -71,14 +71,14 @@ export default function CreateCollectionModal({ isOpen, onClose, onCreate }) {
               onClick={() => setIsPublic(false)}
               className={`p-3 rounded-xl border flex items-center gap-2.5 cursor-pointer transition ${
                 !isPublic
-                  ? 'border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/40 shadow-xs'
-                  : 'border-slate-300 dark:border-slate-700 hover:border-slate-400'
+                  ? 'border-violet-500 bg-violet-500/10 shadow-xs'
+                  : 'border-theme-subtle hover:border-theme-strong hover:bg-theme-elevated'
               }`}
             >
-              <Lock className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+              <Lock className="w-4 h-4 text-theme-secondary" />
               <div>
-                <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Private</p>
-                <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">Only you</p>
+                <p className="text-xs font-bold text-theme-main">Private</p>
+                <p className="text-[11px] text-theme-secondary font-medium">Only you</p>
               </div>
             </div>
 
@@ -86,20 +86,20 @@ export default function CreateCollectionModal({ isOpen, onClose, onCreate }) {
               onClick={() => setIsPublic(true)}
               className={`p-3 rounded-xl border flex items-center gap-2.5 cursor-pointer transition ${
                 isPublic
-                  ? 'border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/40 shadow-xs'
-                  : 'border-slate-300 dark:border-slate-700 hover:border-slate-400'
+                  ? 'border-violet-500 bg-violet-500/10 shadow-xs'
+                  : 'border-theme-subtle hover:border-theme-strong hover:bg-theme-elevated'
               }`}
             >
-              <Globe className="w-4 h-4 text-indigo-700 dark:text-indigo-400" />
+              <Globe className="w-4 h-4 text-violet-400" />
               <div>
-                <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Public</p>
-                <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">Visible to team</p>
+                <p className="text-xs font-bold text-theme-main">Public</p>
+                <p className="text-[11px] text-theme-secondary font-medium">Visible to team</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+        <div className="flex justify-end gap-2.5 pt-3 border-t border-theme-subtle">
           <Button variant="outline" size="sm" onClick={onClose}>
             Cancel
           </Button>

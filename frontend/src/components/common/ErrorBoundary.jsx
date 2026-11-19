@@ -60,21 +60,21 @@ export default class ErrorBoundary extends React.Component {
 
       if (isCompact) {
         return (
-          <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-900 dark:text-rose-200 my-2 space-y-2 select-none">
+          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 my-2 space-y-2 select-none">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
               <span className="text-xs font-bold">
                 {this.props.title || 'Component Error'}
               </span>
             </div>
-            <p className="text-[11px] text-rose-700 dark:text-rose-300 font-mono">
+            <p className="text-[11px] text-rose-300 font-mono">
               {this.state.error?.message || 'An unexpected rendering error occurred.'}
             </p>
             <div className="pt-1">
               <button
                 type="button"
                 onClick={this.handleReset}
-                className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-400 hover:underline cursor-pointer"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>Retry Component</span>
@@ -86,28 +86,28 @@ export default class ErrorBoundary extends React.Component {
 
       return (
         <div className="min-h-[380px] w-full flex items-center justify-center p-6 select-none animate-fadeIn">
-          <div className="max-w-lg w-full bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-xl text-center space-y-4">
-            <div className="w-14 h-14 rounded-2xl bg-rose-100 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto shadow-sm">
+          <div className="max-w-lg w-full bg-theme-card rounded-2xl border border-theme-subtle p-6 sm:p-8 shadow-2xl text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto shadow-sm">
               <AlertTriangle className="w-7 h-7" />
             </div>
 
             <div className="space-y-1.5">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+              <h2 className="text-lg font-bold text-theme-main">
                 {this.props.title || 'Something went wrong in this section'}
               </h2>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              <p className="text-xs text-theme-secondary leading-relaxed">
                 {this.props.description ||
                   'A runtime error prevented this component from displaying correctly. You can try recovering this view or reloading the page.'}
               </p>
             </div>
 
             {this.state.error && (
-              <div className="text-left bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800 overflow-x-auto max-h-36 overflow-y-auto">
-                <p className="text-[11px] font-mono text-rose-600 dark:text-rose-400 font-semibold break-words">
+              <div className="text-left bg-theme-elevated p-3 rounded-xl border border-theme-subtle overflow-x-auto max-h-36 overflow-y-auto">
+                <p className="text-[11px] font-mono text-rose-400 font-semibold break-words">
                   {this.state.error.name}: {this.state.error.message}
                 </p>
                 {this.state.errorInfo?.componentStack && (
-                  <pre className="text-[10px] font-mono text-slate-400 mt-1 whitespace-pre-wrap">
+                  <pre className="text-[10px] font-mono text-theme-muted mt-1 whitespace-pre-wrap">
                     {this.state.errorInfo.componentStack.slice(0, 300)}
                   </pre>
                 )}

@@ -10,9 +10,9 @@ import { Loader2 } from 'lucide-react';
 
 function ContentLoader() {
   return (
-    <div className="min-h-[50vh] flex flex-col items-center justify-center animate-fadeIn">
-      <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-      <span className="mt-3 text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+    <div className="min-h-[50vh] flex flex-col items-center justify-center animate-fadeIn text-theme-main">
+      <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+      <span className="mt-3 text-xs font-bold text-theme-secondary uppercase tracking-widest">
         Loading view...
       </span>
     </div>
@@ -21,6 +21,13 @@ function ContentLoader() {
 
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('crpe_sidebar_collapsed') === 'true';
+    } catch (_) {
+      return false;
+    }
+  });
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const { addToast } = useToast();
   const location = useLocation();
@@ -36,7 +43,6 @@ export default function AppLayout() {
       title: 'Paper Added Successfully',
       message: `"${paper?.title || 'Paper'}" is now available in the explorer.`,
     });
-    // Trigger global custom event so pages can refresh if needed
     window.dispatchEvent(new CustomEvent('paper:created', { detail: paper }));
   };
 
@@ -48,7 +54,7 @@ export default function AppLayout() {
 
   if (isReadingWorkspace) {
     return (
-      <div className="h-screen w-screen overflow-hidden bg-slate-950 text-slate-100 antialiased flex flex-col">
+      <div className="h-screen w-screen overflow-hidden bg-theme-main text-theme-main antialiased flex flex-col">
         <main className="flex-1 flex flex-col min-w-0 h-full w-full overflow-hidden p-0 m-0">
           <ErrorBoundary title="ScholarSphere Research Workspace Error">
             <Suspense fallback={<ContentLoader />}>
@@ -61,7 +67,7 @@ export default function AppLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100/60 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased flex flex-col">
+    <div className="min-h-screen bg-theme-main text-theme-main antialiased flex flex-col selection:bg-violet-500/30 selection:text-theme-main">
       {/* Top Navbar */}
       <Navbar
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
@@ -74,11 +80,17 @@ export default function AppLayout() {
         <Sidebar
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
+          collapsed={sidebarCollapsed}
+          onCollapsedChange={setSidebarCollapsed}
         />
 
         {/* Content Area */}
-        <main className="flex-1 md:pl-64 flex flex-col min-w-0 pb-16 md:pb-6 transition-all">
-          <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main
+          className={`flex-1 flex flex-col min-w-0 pb-20 md:pb-6 transition-[padding] duration-300 ease-out ${
+            sidebarCollapsed ? 'md:pl-20' : 'md:pl-64'
+          }`}
+        >
+          <div key={location.pathname} className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto animate-fadeIn">
             <ErrorBoundary title="ScholarSphere View Error">
               <Suspense fallback={<ContentLoader />}>
                 <Outlet />
