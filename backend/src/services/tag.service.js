@@ -77,7 +77,28 @@ export const createTag = async ({
   }
 
   // Pre-check for duplicate sibling / root slug to return a clear 409
-  const existing = await tagRepo.findTagBySlugAndParent(effectiveSlug, parentId);
+  // Scoped duplicate check respecting privacy (global + user's private tags)
+  const existing = await tagRepo.findTagBySlugAndParentScoped(effectiveSlug, parentId, createdBy);
+  if (existing) {
+    const scope = parentId ? 'under this parent tag' : 'at root level';
+    throw new TagError(
+      `A tag with slug '${effectiveSlug}' already exists ${scope}.`,
+      409
+    );
+  }
+  // Privacy invariant: Global tags cannot have a private parent
+  if (!createdBy && parentId) {
+    const parent = await tagRepo.findTagById(parentId);
+    if (parent && parent.is_private) {
+      throw new TagError('A global tag cannot have a private parent.', 400);
+    }
+  }
+  // Private tag must have creator
+  if (createdBy && !createdBy) {
+    // This condition redundant, kept for clarity.
+    throw new TagError('Private tags must have a creator ID.', 400);
+  }
+
   if (existing) {
     const scope = parentId ? 'under this parent tag' : 'at root level';
     throw new TagError(

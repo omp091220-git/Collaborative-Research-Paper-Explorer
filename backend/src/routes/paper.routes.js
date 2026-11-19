@@ -29,6 +29,10 @@ import { ROLES, PERMISSIONS } from "../utils/roles.js";
 import { isValidPdf } from "../utils/pdfValidator.js";
 import pool from "../config/database.js";
 import * as paperStarRepo from "../repositories/paperStar.repository.js";
+import * as paperRepo from "../repositories/paper.repository.js";
+import * as paperAuditRepo from "../repositories/paperAudit.repository.js";
+import { resolveEffectivePaperPermission, checkPaperAccess } from "../services/paperPermission.service.js";
+import { normalizeRole } from "../utils/roles.js";
 import {
   notifyStarrersMetadataChange,
   notifyMentions,
@@ -138,6 +142,50 @@ const drainBody = (req, res, next) => {
 // ROUTES
 // =============================================================================
 
+// ─── GET /api/papers/my ───────────────────────────────────────────────────────
+// Returns all papers uploaded by the logged-in user with dashboard statistics
+router.get(
+  "/my",
+  authenticateToken,
+  authorizeRoles(...ALL_ROLES),
+  async (req, res, next) => {
+    try {
+      const {
+        search,
+        q,
+        visibility,
+        sort = "newest",
+        page = "1",
+        limit = "20",
+      } = req.query;
+
+      const result = await paperRepo.findMyPapers({
+        uploaderId: req.user.id,
+        search: search || q,
+        visibility: visibility && visibility !== "all" ? visibility.toUpperCase() : null,
+        sort,
+        page,
+        limit,
+      });
+
+      const papers = result.papers.map((p) => ({
+        ...p,
+        pdf_url: `/api/papers/${p.id}/pdf`,
+        is_owner: true,
+        user_permission: "OWNER",
+        can_annotate: true,
+      }));
+
+      return res.status(200).json({
+        ...result,
+        papers,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+);
+
 // ─── GET /api/papers ──────────────────────────────────────────────────────────
 router.get(
   "/",
@@ -161,9 +209,23 @@ router.get(
       const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
       const offset = (pageNum - 1) * limitNum;
 
+      const userRole = normalizeRole(req.user.role);
+      const isSysAdmin = userRole === ROLES.SYSTEM_ADMIN;
+
       const conditions = [];
-      const values = [req.user.id]; // $1 is user id for starring
+      const values = [req.user.id]; // $1 is user id
       let valIdx = 2;
+
+      // Visibility filter: Public papers are open to all; Private papers require owner, admin, or collaborator
+      if (!isSysAdmin) {
+        conditions.push(
+          `(p.visibility = 'PUBLIC' OR p.uploader_id = $1 OR EXISTS (
+             SELECT 1 FROM paper_collaborators pc
+             WHERE pc.paper_id = p.id AND pc.user_id = $1 AND pc.status <> 'REVOKED'
+           ))`
+        );
+      }
+      conditions.push(`p.is_archived = FALSE`);
 
       // Search term across title, abstract, authors, arxiv_id, publication_year
       const searchTerm = (search || q || "").trim();
@@ -217,32 +279,56 @@ router.get(
 
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
-      // Sort ordering
-      let orderBy = "p.uploaded_at DESC";
-      if (sort === "oldest") orderBy = "p.uploaded_at ASC";
-      else if (sort === "title_asc") orderBy = "p.title ASC";
-      else if (sort === "title_desc") orderBy = "p.title DESC";
-      else if (sort === "size_desc") orderBy = "p.file_size_bytes DESC";
-      else if (sort === "year_desc") orderBy = "p.publication_year DESC NULLS LAST, p.uploaded_at DESC";
+      // Sort ordering with stable secondary id tie-breaker
+      let orderBy = "p.uploaded_at DESC, p.id DESC";
+      if (sort === "oldest") orderBy = "p.uploaded_at ASC, p.id ASC";
+      else if (sort === "title_asc") orderBy = "p.title ASC, p.id ASC";
+      else if (sort === "title_desc") orderBy = "p.title DESC, p.id DESC";
+      else if (sort === "size_desc") orderBy = "p.file_size_bytes DESC, p.id DESC";
+      else if (sort === "year_desc") orderBy = "p.publication_year DESC NULLS LAST, p.uploaded_at DESC, p.id DESC";
 
       // 1. Total count query
       const countQuery = `SELECT COUNT(*)::int AS total FROM papers p ${whereClause}`;
-      // Count query parameters do not need $1 (req.user.id) since $1 was only for left join
-      const countValues = values.slice(1);
-      // Re-index placeholders for count query safely in one pass without cascading
-      const countSql = countQuery.replace(/\$(\d+)/g, (_, num) => `$${parseInt(num, 10) - 1}`);
-      const countRes = await pool.query(countSql, countValues);
+      const countRes = await pool.query(countQuery, values);
       const total = countRes.rows[0]?.total || 0;
 
       // 2. Papers list query
       const dataQuery = `
         SELECT p.id, p.title, p.abstract, p.authors, p.arxiv_id,
                p.publication_year, p.doi, p.file_size_bytes, p.mime_type,
-               p.uploader_id, p.uploaded_at, p.updated_at,
+               p.uploader_id, p.visibility, p.is_archived,
+               p.uploaded_at, p.updated_at,
+               u.full_name AS owner_name, u.email AS owner_email, u.affiliation AS owner_affiliation,
                COALESCE(s.star_count, 0)::int AS star_count,
                COALESCE(us.is_starred, false) AS is_starred,
-               COALESCE(pt.tags, '[]'::json) AS tags
+               COALESCE(pt.tags, '[]'::json) AS tags,
+               COALESCE(collab_cnt.count, 0)::int AS collaborator_count,
+               COALESCE(
+                 CASE
+                   WHEN p.uploader_id = $1 THEN 'OWNER'
+                   WHEN ${isSysAdmin ? 'TRUE' : 'FALSE'} THEN 'OWNER'
+                   WHEN my_collab.permission IS NOT NULL THEN
+                     CASE WHEN my_collab.permission = 'COMMENT' THEN 'ANNOTATE' ELSE my_collab.permission END
+                   WHEN my_collab.role IS NOT NULL THEN
+                     CASE WHEN my_collab.role = 'COMMENT' THEN 'ANNOTATE' ELSE my_collab.role END
+                   WHEN p.visibility = 'PUBLIC' THEN 'VIEW'
+                   ELSE NULL
+                 END,
+                 'VIEW'
+               ) AS user_permission
         FROM papers p
+        JOIN users u ON u.id = p.uploader_id
+        LEFT JOIN (
+          SELECT paper_id, COUNT(*)::int AS count
+          FROM paper_collaborators
+          WHERE status <> 'REVOKED'
+          GROUP BY paper_id
+        ) collab_cnt ON collab_cnt.paper_id = p.id
+        LEFT JOIN (
+          SELECT paper_id, role, permission
+          FROM paper_collaborators
+          WHERE user_id = $1 AND status <> 'REVOKED'
+        ) my_collab ON my_collab.paper_id = p.id
         LEFT JOIN (
           SELECT paper_id, COUNT(*)::int AS star_count
           FROM paper_stars
@@ -280,14 +366,40 @@ router.get(
         ...p,
         tags: p.tags || [],
         pdf_url: `/api/papers/${p.id}/pdf`,
+        is_owner: p.uploader_id === req.user.id || isSysAdmin,
+        can_annotate: isSysAdmin || p.uploader_id === req.user.id || p.user_permission === 'ANNOTATE' || p.user_permission === 'EDIT' || p.user_permission === 'OWNER',
       }));
 
+      const totalPages = Math.ceil(total / limitNum);
+      const hasNextPage = pageNum < totalPages;
+      const hasPrevPage = pageNum > 1;
+
       return res.status(200).json({
+        success: true,
         papers,
         total,
         page: pageNum,
         limit: limitNum,
-        totalPages: Math.ceil(total / limitNum),
+        totalPages,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages,
+          hasNextPage,
+          hasPrevPage,
+        },
+        data: {
+          papers,
+          pagination: {
+            page: pageNum,
+            limit: limitNum,
+            total,
+            totalPages,
+            hasNextPage,
+            hasPrevPage,
+          },
+        },
       });
     } catch (error) {
       return next(error);
@@ -310,6 +422,9 @@ router.get(
       const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || (type === "paragraphs" ? 30 : 15)));
       const offset = (page - 1) * limit;
 
+      const userRole = normalizeRole(req.user.role);
+      const isSysAdmin = userRole === ROLES.SYSTEM_ADMIN;
+
       // When q is empty and type is NOT paragraphs, return empty results
       if (!q && type !== "paragraphs" && type !== "paragraph") {
         return res.status(200).json({
@@ -324,7 +439,6 @@ router.get(
       }
 
       const searchPattern = `%${q}%`;
-      const isYear = /^\d{4}$/.test(q);
 
       let papersResults = [];
       let topicsResults = [];
@@ -336,9 +450,19 @@ router.get(
         const paperSql = `
           SELECT p.id, p.title, p.abstract, p.authors, p.arxiv_id,
                  p.publication_year, p.doi, p.file_size_bytes, p.uploaded_at,
+                 p.visibility, p.is_archived, p.uploader_id,
+                 u.full_name AS owner_name, u.email AS owner_email,
                  COALESCE(s.star_count, 0)::int AS star_count,
-                 COALESCE(pt.tags, '[]'::json) AS tags
+                 COALESCE(pt.tags, '[]'::json) AS tags,
+                 COALESCE(collab_cnt.count, 0)::int AS collaborator_count
           FROM papers p
+          JOIN users u ON u.id = p.uploader_id
+          LEFT JOIN (
+            SELECT paper_id, COUNT(*)::int AS count
+            FROM paper_collaborators
+            WHERE status <> 'REVOKED'
+            GROUP BY paper_id
+          ) collab_cnt ON collab_cnt.paper_id = p.id
           LEFT JOIN (
             SELECT paper_id, COUNT(*)::int AS star_count
             FROM paper_stars GROUP BY paper_id
@@ -351,20 +475,32 @@ router.get(
             WHERE pta.annotation_id IS NULL
             GROUP BY pta.paper_id
           ) pt ON pt.paper_id = p.id
-          WHERE p.title ILIKE $1
-             OR p.abstract ILIKE $1
-             OR p.arxiv_id ILIKE $1
-             OR p.authors::text ILIKE $1
-             OR p.publication_year::text ILIKE $1
-             OR EXISTS (
-               SELECT 1 FROM paper_tag_assignments pta2
-               JOIN topic_tags tt2 ON tt2.id = pta2.tag_id
-               WHERE pta2.paper_id = p.id AND (tt2.name ILIKE $1 OR tt2.slug ILIKE $1)
-             )
+          WHERE (
+            p.title ILIKE $1
+            OR p.abstract ILIKE $1
+            OR p.arxiv_id ILIKE $1
+            OR p.authors::text ILIKE $1
+            OR p.publication_year::text ILIKE $1
+            OR EXISTS (
+              SELECT 1 FROM paper_tag_assignments pta2
+              JOIN topic_tags tt2 ON tt2.id = pta2.tag_id
+              WHERE pta2.paper_id = p.id AND (tt2.name ILIKE $1 OR tt2.slug ILIKE $1)
+            )
+          )
+          AND p.is_archived = FALSE
+          AND (
+            p.visibility = 'PUBLIC'
+            OR p.uploader_id = $2
+            OR $3 = TRUE
+            OR EXISTS (
+              SELECT 1 FROM paper_collaborators pc
+              WHERE pc.paper_id = p.id AND pc.user_id = $2 AND pc.status <> 'REVOKED'
+            )
+          )
           ORDER BY p.uploaded_at DESC
-          LIMIT $2
+          LIMIT $4
         `;
-        const paperVals = [searchPattern, limit];
+        const paperVals = [searchPattern, req.user.id, isSysAdmin, limit];
 
         const pRes = await pool.query(paperSql, paperVals);
         papersResults = pRes.rows.map((p) => ({
@@ -435,6 +571,21 @@ router.get(
           pIdx++;
         }
 
+        // Enforce paper visibility on paragraph search
+        paraConditions.push(`p.is_archived = FALSE`);
+        if (!isSysAdmin) {
+          paraConditions.push(`(
+            p.visibility = 'PUBLIC'
+            OR p.uploader_id = $${pIdx}
+            OR EXISTS (
+              SELECT 1 FROM paper_collaborators pc
+              WHERE pc.paper_id = p.id AND pc.user_id = $${pIdx} AND pc.status <> 'REVOKED'
+            )
+          )`);
+          paraVals.push(req.user.id);
+          pIdx++;
+        }
+
         const paraWhere = paraConditions.length > 0 ? `WHERE ${paraConditions.join(" AND ")}` : "";
 
         // Total count for pagination in Paragraph Explorer
@@ -452,6 +603,7 @@ router.get(
                  a.position_x, a.position_y, a.region_width, a.region_height,
                  a.created_at,
                  p.title AS paper_title, p.authors AS paper_authors, p.publication_year, p.arxiv_id,
+                 p.visibility,
                  COALESCE(
                    json_agg(
                      json_build_object('id', tt.id, 'name', tt.name, 'slug', tt.slug)
@@ -463,7 +615,7 @@ router.get(
           LEFT JOIN paper_tag_assignments pta ON pta.annotation_id = a.id
           LEFT JOIN topic_tags tt ON tt.id = pta.tag_id
           ${paraWhere}
-          GROUP BY a.id, p.id, p.title, p.authors, p.publication_year, p.arxiv_id
+          GROUP BY a.id, p.id, p.title, p.authors, p.publication_year, p.arxiv_id, p.visibility
           ORDER BY a.created_at DESC
           LIMIT $${pIdx} OFFSET $${pIdx + 1}
         `;
@@ -515,58 +667,233 @@ router.get(
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      let paper = null;
-
-      try {
-        const result = await pool.query(
-          `SELECT p.id, p.title, p.abstract, p.authors, p.arxiv_id,
-                  p.file_size_bytes, p.mime_type,
-                  p.uploader_id, p.uploaded_at, p.updated_at,
-                  COALESCE(s.star_count, 0)::int AS star_count,
-                  COALESCE(us.is_starred, false) AS is_starred
-           FROM papers p
-           LEFT JOIN (
-             SELECT paper_id, COUNT(*)::int AS star_count
-             FROM paper_stars
-             GROUP BY paper_id
-           ) s ON s.paper_id = p.id
-           LEFT JOIN (
-             SELECT paper_id, true AS is_starred
-             FROM paper_stars
-             WHERE user_id = $2
-           ) us ON us.paper_id = p.id
-           WHERE p.id = $1`,
-          [id, req.user.id]
-        );
-
-        if (result.rows.length === 0) {
-          return res.status(404).json({ error: "Paper not found." });
-        }
-        paper = result.rows[0];
-      } catch {
-        const result = await pool.query(
-          `SELECT id, title, abstract, authors, arxiv_id,
-                  file_size_bytes, mime_type,
-                  uploader_id, uploaded_at, updated_at,
-                  0 AS star_count, false AS is_starred
-           FROM papers
-           WHERE id = $1`,
-          [id]
-        );
-
-        if (result.rows.length === 0) {
-          return res.status(404).json({ error: "Paper not found." });
-        }
-        paper = result.rows[0];
+      if (!isValidUUID(id)) {
+        return res.status(400).json({ error: "Paper ID must be a valid UUID." });
       }
 
-      return res.status(200).json({ paper: { ...paper, pdf_url: `/api/papers/${paper.id}/pdf` } });
+      const { effectivePermission, isOwner, isSysAdmin, paper: resolvedPaper } =
+        await resolveEffectivePaperPermission(id, req.user);
+
+      if (!resolvedPaper) {
+        return res.status(404).json({ error: "Paper not found." });
+      }
+
+      if (!effectivePermission) {
+        let pendingRequest = null;
+        try {
+          const prRes = await pool.query(
+            "SELECT id, requested_permission, status, created_at FROM paper_access_requests WHERE paper_id = $1 AND requester_id = $2 AND status = 'PENDING' LIMIT 1",
+            [id, req.user.id]
+          );
+          pendingRequest = prRes.rows[0] || null;
+        } catch (_) {}
+
+        return res.status(403).json({
+          error: "This paper is private. You do not have permission to view it.",
+          is_private: true,
+          paper_id: id,
+          pending_request: pendingRequest,
+        });
+      }
+
+      const result = await pool.query(
+        `SELECT p.id, p.title, p.abstract, p.authors, p.arxiv_id,
+                p.publication_year, p.doi, p.file_size_bytes, p.mime_type,
+                p.uploader_id, p.visibility, p.is_archived,
+                p.uploaded_at, p.updated_at,
+                u.full_name AS owner_name, u.email AS owner_email, u.affiliation AS owner_affiliation,
+                COALESCE(s.star_count, 0)::int AS star_count,
+                COALESCE(us.is_starred, false) AS is_starred,
+                COALESCE(collab_cnt.count, 0)::int AS collaborator_count
+         FROM papers p
+         JOIN users u ON u.id = p.uploader_id
+         LEFT JOIN (
+           SELECT paper_id, COUNT(*)::int AS star_count
+           FROM paper_stars
+           GROUP BY paper_id
+         ) s ON s.paper_id = p.id
+         LEFT JOIN (
+           SELECT paper_id, true AS is_starred
+           FROM paper_stars
+           WHERE user_id = $2
+         ) us ON us.paper_id = p.id
+         LEFT JOIN (
+           SELECT paper_id, COUNT(*)::int AS count
+           FROM paper_collaborators
+           WHERE status <> 'REVOKED'
+           GROUP BY paper_id
+         ) collab_cnt ON collab_cnt.paper_id = p.id
+         WHERE p.id = $1`,
+        [id, req.user.id]
+      );
+
+      const paperData = result.rows[0] || resolvedPaper;
+
+      let pendingRequest = null;
+      try {
+        const prRes = await pool.query(
+          "SELECT id, requested_permission, status, created_at FROM paper_access_requests WHERE paper_id = $1 AND requester_id = $2 AND status = 'PENDING' LIMIT 1",
+          [id, req.user.id]
+        );
+        pendingRequest = prRes.rows[0] || null;
+      } catch (_) {}
+
+      return res.status(200).json({
+        paper: {
+          ...paperData,
+          pdf_url: `/api/papers/${paperData.id}/pdf`,
+          user_permission: effectivePermission,
+          is_owner: isOwner,
+          pending_request: pendingRequest,
+          permissions: {
+            canView: true,
+            canAnnotate: effectivePermission === "ANNOTATE" || effectivePermission === "EDIT" || effectivePermission === "OWNER",
+            canEdit: effectivePermission === "EDIT" || effectivePermission === "OWNER",
+            canManage: effectivePermission === "OWNER",
+          },
+        },
+      });
     } catch (error) {
       return next(error);
     }
   }
 );
 
+// ─── PATCH /api/papers/:id/visibility ─────────────────────────────────────────
+// Updates paper visibility (PUBLIC / PRIVATE). Paper Owner or System Admin only.
+router.patch(
+  "/:id/visibility",
+  authenticateToken,
+  authorizeRoles(...UPLOAD_ROLES),
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      if (!isValidUUID(id)) {
+        return res.status(400).json({ error: "Paper ID must be a valid UUID." });
+      }
+
+      const { visibility } = req.body;
+      const targetVis = typeof visibility === "string" ? visibility.trim().toUpperCase() : "";
+      if (targetVis !== "PUBLIC" && targetVis !== "PRIVATE") {
+        return res.status(400).json({
+          error: 'Visibility must be either "PUBLIC" or "PRIVATE".',
+        });
+      }
+
+      // Check ownership or admin
+      const paperRes = await pool.query(
+        "SELECT id, title, uploader_id, visibility, is_archived FROM papers WHERE id = $1",
+        [id]
+      );
+      if (paperRes.rows.length === 0) {
+        return res.status(404).json({ error: "Paper not found." });
+      }
+
+      const existingPaper = paperRes.rows[0];
+      const isSysAdmin = normalizeRole(req.user.role) === ROLES.SYSTEM_ADMIN;
+      const isOwner = existingPaper.uploader_id === req.user.id;
+
+      if (!isSysAdmin && !isOwner) {
+        return res.status(403).json({
+          error: "Only the paper owner or an administrator can change paper visibility.",
+        });
+      }
+
+      if (existingPaper.visibility === targetVis) {
+        return res.status(200).json({
+          message: `Paper is already ${targetVis}.`,
+          visibility: targetVis,
+          paper: existingPaper,
+        });
+      }
+
+      const updated = await paperRepo.updatePaperVisibility(id, targetVis);
+
+      // Log audit event
+      await paperAuditRepo.logAuditEvent({
+        paperId: id,
+        actorId: req.user.id,
+        eventType: paperAuditRepo.AUDIT_EVENTS.VISIBILITY_CHANGED,
+        eventData: {
+          previousVisibility: existingPaper.visibility,
+          newVisibility: targetVis,
+        },
+      });
+
+      return res.status(200).json({
+        message: `Paper visibility changed to ${targetVis}.`,
+        visibility: targetVis,
+        paper: updated,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+);
+
+// ─── DELETE /api/papers/:id ───────────────────────────────────────────────────
+// Delete or archive a paper. Paper Owner or System Admin only.
+router.delete(
+  "/:id",
+  authenticateToken,
+  authorizeRoles(...UPLOAD_ROLES),
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      if (!isValidUUID(id)) {
+        return res.status(400).json({ error: "Paper ID must be a valid UUID." });
+      }
+
+      const paperRes = await pool.query(
+        "SELECT id, title, uploader_id, is_archived FROM papers WHERE id = $1",
+        [id]
+      );
+      if (paperRes.rows.length === 0) {
+        return res.status(404).json({ error: "Paper not found." });
+      }
+
+      const paper = paperRes.rows[0];
+      const isSysAdmin = normalizeRole(req.user.role) === ROLES.SYSTEM_ADMIN;
+      const isOwner = paper.uploader_id === req.user.id;
+
+      if (!isSysAdmin && !isOwner) {
+        return res.status(403).json({
+          error: "Only the paper owner or an administrator can delete or archive this paper.",
+        });
+      }
+
+      const { archive = false } = req.query;
+      if (archive === "true" || req.body?.archive) {
+        const updated = await paperRepo.setPaperArchived(id, true);
+        await paperAuditRepo.logAuditEvent({
+          paperId: id,
+          actorId: req.user.id,
+          eventType: paperAuditRepo.AUDIT_EVENTS.PAPER_ARCHIVED,
+          eventData: { title: paper.title },
+        });
+        return res.status(200).json({
+          message: "Paper archived successfully.",
+          paper: updated,
+        });
+      }
+
+      await paperRepo.deletePaperById(id);
+      await paperAuditRepo.logAuditEvent({
+        paperId: id,
+        actorId: req.user.id,
+        eventType: paperAuditRepo.AUDIT_EVENTS.PAPER_DELETED,
+        eventData: { title: paper.title },
+      });
+
+      return res.status(200).json({
+        message: "Paper deleted successfully.",
+        id,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+);
 
 // ─── GET /api/papers/:id/pdf ──────────────────────────────────────────────────
 // Streams the PDF binary file; falls back to automated arXiv caching or synthesis
@@ -579,6 +906,17 @@ router.get(
       const { id } = req.params;
       if (!isValidUUID(id)) {
         return res.status(400).json({ error: "Paper ID must be a valid UUID." });
+      }
+
+      // Enforce paper-level visibility & permission check
+      const { allowed, reason, paper: authPaper } = await checkPaperAccess(id, req.user, 'VIEW');
+      if (!allowed) {
+        if (reason === 'not_found') {
+          return res.status(404).json({ error: "Paper not found." });
+        }
+        return res.status(403).json({
+          error: "This paper is private. You do not have permission to access the PDF file.",
+        });
       }
 
       const result = await pool.query(
@@ -830,7 +1168,7 @@ router.patch(
       }
 
       const existingRes = await pool.query(
-        "SELECT id, title, abstract, authors, uploader_id FROM papers WHERE id = $1",
+        "SELECT id, title, abstract, authors, uploader_id, visibility FROM papers WHERE id = $1",
         [id]
       );
       if (existingRes.rows.length === 0) {
@@ -848,10 +1186,21 @@ router.patch(
         });
       }
 
-      const { title, abstract, authors } = req.body;
+      const { title, abstract, authors, visibility } = req.body;
       const changedFields = [];
       const updates = [];
       const values = [];
+
+      if (visibility !== undefined) {
+        const targetVis = typeof visibility === "string" ? visibility.trim().toUpperCase() : "";
+        if (targetVis === "PUBLIC" || targetVis === "PRIVATE") {
+          if (targetVis !== existing.visibility) {
+            changedFields.push("visibility");
+            values.push(targetVis);
+            updates.push(`visibility = $${values.length}`);
+          }
+        }
+      }
 
       if (title !== undefined) {
         const trimmedTitle = typeof title === "string" ? title.trim() : "";
@@ -918,6 +1267,14 @@ router.patch(
 
       const result = await pool.query(updateQuery, values);
       const updatedPaper = result.rows[0];
+
+      // Log audit event
+      await paperAuditRepo.logAuditEvent({
+        paperId: id,
+        actorId: req.user.id,
+        eventType: paperAuditRepo.AUDIT_EVENTS.PAPER_METADATA_UPDATED,
+        eventData: { changedFields },
+      });
 
       // Dispatch metadata change notification to starrers (excluding actor)
       try {

@@ -1,8 +1,8 @@
 import api from './api';
 
 export const papersService = {
-  async getPapers(params = {}) {
-    const res = await api.get('/papers', { params });
+  async getPapers(params = {}, options = {}) {
+    const res = await api.get('/papers', { params, ...options });
     return res.data;
   },
 
@@ -32,8 +32,25 @@ export const papersService = {
     return res.data;
   },
 
-  async importArxiv(arxivId) {
-    const res = await api.post('/papers/import', { arxiv_id: arxivId });
+  async importArxiv(arxivId, visibility = 'PUBLIC') {
+    const res = await api.post('/papers/import', { arxiv_id: arxivId, visibility });
+    return res.data;
+  },
+
+  async getMyPapers(params = {}) {
+    const res = await api.get('/papers/my', { params });
+    return res.data;
+  },
+
+  async updateVisibility(paperId, visibility) {
+    const res = await api.patch(`/papers/${paperId}/visibility`, { visibility });
+    return res.data;
+  },
+
+  async deletePaper(paperId, archive = false) {
+    const res = await api.delete(`/papers/${paperId}`, {
+      params: archive ? { archive: true } : {},
+    });
     return res.data;
   },
 };

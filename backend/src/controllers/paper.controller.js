@@ -38,6 +38,7 @@ import {
 } from "../services/paper.service.js";
 
 import { isValidPdf } from "../utils/pdfValidator.js";
+import * as paperAuditRepo from "../repositories/paperAudit.repository.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -131,6 +132,9 @@ export const uploadPaper = async (req, res, next) => {
       return next(connError);
     }
 
+    const rawVis = typeof req.body.visibility === "string" ? req.body.visibility.trim().toUpperCase() : "PUBLIC";
+    const visibility = rawVis === "PRIVATE" ? "PRIVATE" : "PUBLIC";
+
     let paper;
     let extractionJob;
     try {
@@ -148,11 +152,20 @@ export const uploadPaper = async (req, res, next) => {
           fileSizeBytes: req.file.size,
           mimeType: "application/pdf",
           uploaderId: req.user.id,
+          visibility,
         },
       });
       await client.query("COMMIT");
       paper = result.paper;
       extractionJob = result.job;
+
+      // Log audit event
+      await paperAuditRepo.logAuditEvent({
+        paperId: paper.id,
+        actorId: req.user.id,
+        eventType: paperAuditRepo.AUDIT_EVENTS.PAPER_UPLOADED,
+        eventData: { title: paper.title, visibility: paper.visibility },
+      });
     } catch (dbError) {
       await client.query("ROLLBACK").catch(() => {});
       safeUnlink(uploadedFilePath);
@@ -270,6 +283,9 @@ export const importPaper = async (req, res, next) => {
       return next(connError);
     }
 
+    const rawVis = typeof req.body.visibility === "string" ? req.body.visibility.trim().toUpperCase() : "PUBLIC";
+    const visibility = rawVis === "PRIVATE" ? "PRIVATE" : "PUBLIC";
+
     let paper;
     let extractionJob;
     try {
@@ -287,11 +303,20 @@ export const importPaper = async (req, res, next) => {
           fileSizeBytes: fileSize,
           mimeType: "application/pdf",
           uploaderId: req.user.id,
+          visibility,
         },
       });
       await client.query("COMMIT");
       paper = result.paper;
       extractionJob = result.job;
+
+      // Log audit event
+      await paperAuditRepo.logAuditEvent({
+        paperId: paper.id,
+        actorId: req.user.id,
+        eventType: paperAuditRepo.AUDIT_EVENTS.PAPER_UPLOADED,
+        eventData: { title: paper.title, arxivId, visibility: paper.visibility },
+      });
     } catch (dbError) {
       await client.query("ROLLBACK").catch(() => {});
       safeUnlink(destPath);

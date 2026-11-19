@@ -7,6 +7,17 @@ export const isValidUUID = (val) => typeof val === "string" && UUID_REGEX.test(v
 
 /**
  * Resolves paper access permissions for the current user.
+ *
+ * Permission hierarchy:
+ *   VIEW < ANNOTATE (COMMENT) < EDIT < OWNER
+ *
+ * For PUBLIC papers:
+ *   - Any authenticated user has at least VIEW permission.
+ *   - Annotate/Edit requires explicit collaborator role or ownership.
+ *
+ * For PRIVATE papers:
+ *   - Only owner, SYSTEM_ADMIN, or active collaborators can access.
+ *   - Unauthorized users receive 403 forbidden.
  */
 export async function resolvePaperPermission(paperId, user) {
   if (!isValidUUID(paperId)) {
@@ -14,12 +25,15 @@ export async function resolvePaperPermission(paperId, user) {
   }
 
   const paperRes = await pool.query(
-  `SELECT id, title, abstract, authors, arxiv_id, uploader_id,
-          uploaded_at AS created_at, updated_at
-   FROM papers
-   WHERE id = $1`,
-  [paperId]
-);
+    `SELECT p.id, p.title, p.abstract, p.authors, p.arxiv_id, p.uploader_id,
+            p.visibility, p.is_archived, p.file_path, p.file_size_bytes, p.mime_type,
+            p.uploaded_at AS created_at, p.updated_at,
+            u.full_name AS owner_name, u.email AS owner_email
+     FROM papers p
+     JOIN users u ON u.id = p.uploader_id
+     WHERE p.id = $1`,
+    [paperId]
+  );
 
   if (paperRes.rows.length === 0) {
     return { status: 404, error: "Paper not found." };
@@ -35,9 +49,11 @@ export async function resolvePaperPermission(paperId, user) {
       status: 200,
       paper,
       role: "OWNER",
+      permission: "OWNER",
       permissions: {
         canView: true,
         canComment: true,
+        canAnnotate: true,
         canEdit: true,
         canManage: true,
       },
@@ -49,35 +65,68 @@ export async function resolvePaperPermission(paperId, user) {
       status: 403,
       paper,
       role: null,
-      error: "Authentication required to access paper collaboration.",
+      permission: null,
+      error: "Authentication required to access paper.",
     };
   }
 
+  // Check collaborator table (ignoring revoked)
   const collabRes = await pool.query(
-    `SELECT role FROM paper_collaborators WHERE paper_id = $1 AND user_id = $2`,
+    `SELECT role, permission, status
+     FROM paper_collaborators
+     WHERE paper_id = $1 AND user_id = $2`,
     [paperId, user.id]
   );
 
-  if (collabRes.rows.length === 0) {
+  const collabRow = collabRes.rows[0] || null;
+
+  if (collabRow && collabRow.status !== 'REVOKED') {
+    const rawRole = (collabRow.permission || collabRow.role || '').toUpperCase();
+    const isAnnotate = rawRole === 'COMMENT' || rawRole === 'ANNOTATE';
+    const isEdit = rawRole === 'EDIT';
+
+    // Students are strictly read-only and must never gain ANNOTATE, COMMENT or EDIT
+    const isStudentUser = userRole === ROLES.STUDENT;
+
     return {
-      status: 403,
+      status: 200,
       paper,
-      role: null,
-      error: "You do not have permission to access discussions or collaborator settings for this paper.",
+      role: isStudentUser ? 'VIEW' : rawRole,
+      permission: isStudentUser ? 'VIEW' : (isAnnotate ? 'ANNOTATE' : rawRole),
+      permissions: {
+        canView: true,
+        canComment: !isStudentUser && (isAnnotate || isEdit),
+        canAnnotate: !isStudentUser && (isAnnotate || isEdit),
+        canEdit: !isStudentUser && isEdit,
+        canManage: false,
+      },
     };
   }
 
-  const role = collabRes.rows[0].role; // 'VIEW', 'COMMENT', or 'EDIT'
+  // If paper is PUBLIC, all authenticated users have VIEW access
+  if (paper.visibility === 'PUBLIC') {
+    return {
+      status: 200,
+      paper,
+      role: 'VIEW',
+      permission: 'VIEW',
+      permissions: {
+        canView: true,
+        canComment: false,
+        canAnnotate: false,
+        canEdit: false,
+        canManage: false,
+      },
+    };
+  }
+
+  // Private paper and user has no active collaborator status
   return {
-    status: 200,
-    paper,
-    role,
-    permissions: {
-      canView: true,
-      canComment: role === "COMMENT" || role === "EDIT",
-      canEdit: role === "EDIT",
-      canManage: false,
-    },
+    status: 403,
+    paper: null, // do not leak private paper details to unauthorized users
+    role: null,
+    permission: null,
+    error: "This paper is private. You do not have permission to view it.",
   };
 }
 
@@ -86,7 +135,7 @@ export async function resolvePaperPermission(paperId, user) {
  */
 export const paperAccessResolver = async (req, res, next) => {
   const paperId =
-    req.params.paperId || req.params.id || req.body.paper_id || req.query.paper_id;
+    req.params.paperId || req.params.id || req.body?.paper_id || req.query?.paper_id;
 
   if (!paperId) {
     return res.status(400).json({ error: "Paper ID is required." });
@@ -115,7 +164,7 @@ export const requirePaperView = [
   (req, res, next) => {
     if (!req.paperPermissions?.canView) {
       return res.status(403).json({
-        error: "You do not have permission to view discussions on this paper.",
+        error: "You do not have permission to view this paper.",
       });
     }
     next();
@@ -123,19 +172,21 @@ export const requirePaperView = [
 ];
 
 /**
- * Middleware: Requires COMMENT permission or higher
+ * Middleware: Requires ANNOTATE / COMMENT permission or higher
  */
-export const requirePaperComment = [
+export const requirePaperAnnotate = [
   paperAccessResolver,
   (req, res, next) => {
-    if (!req.paperPermissions?.canComment) {
+    if (!req.paperPermissions?.canAnnotate) {
       return res.status(403).json({
-        error: "You have view-only access and cannot comment or create discussions on this paper.",
+        error: "You do not have permission to annotate or comment on this paper. Please request access.",
       });
     }
     next();
   },
 ];
+
+export const requirePaperComment = requirePaperAnnotate;
 
 /**
  * Middleware: Requires EDIT permission or higher
@@ -160,7 +211,7 @@ export const requirePaperOwner = [
   (req, res, next) => {
     if (!req.paperPermissions?.canManage) {
       return res.status(403).json({
-        error: "Only the paper owner or an administrator can manage collaborators.",
+        error: "Only the paper owner or an administrator can perform this action.",
       });
     }
     next();

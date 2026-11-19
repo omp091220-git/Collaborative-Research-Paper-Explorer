@@ -1,4 +1,5 @@
 import pool from "../config/database.js";
+import publicFeedRepository from "./publicFeed.repository.js";
 
 /**
  * ============================================================================
@@ -113,74 +114,7 @@ export const findPostById = async (postId) => {
  * @param {string} [options.paperId]
  * @returns {Promise<{ posts: Object[], total: number }>}
  */
-export const findPublicPosts = async ({
-  limit = 20,
-  offset = 0,
-  tag = null,
-  paperId = null,
-} = {}) => {
-  const conditions = [`p.visibility = 'PUBLIC'`];
-  const values = [];
-
-  if (tag) {
-    values.push(tag);
-    conditions.push(`$${values.length} = ANY(p.tags)`);
-  }
-
-  if (paperId) {
-    values.push(paperId);
-    conditions.push(`p.paper_id = $${values.length}`);
-  }
-
-  const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-
-  values.push(limit);
-  const limitPlaceholder = `$${values.length}`;
-
-  values.push(offset);
-  const offsetPlaceholder = `$${values.length}`;
-
-  const query = `
-    SELECT 
-      p.id,
-      p.author_id,
-      p.paper_id,
-      p.title,
-      p.content,
-      p.visibility,
-      p.tags,
-      p.like_count,
-      p.comment_count,
-      p.created_at,
-      p.updated_at,
-      u.full_name AS author_name,
-      u.email AS author_email,
-      u.role AS author_role,
-      pap.title AS paper_title
-    FROM posts p
-    INNER JOIN users u ON p.author_id = u.id
-    LEFT JOIN papers pap ON p.paper_id = pap.id
-    ${whereClause}
-    ORDER BY p.created_at DESC
-    LIMIT ${limitPlaceholder} OFFSET ${offsetPlaceholder};
-  `;
-
-  const countQuery = `
-    SELECT COUNT(*) AS total
-    FROM posts p
-    ${whereClause};
-  `;
-
-  const [postsRes, countRes] = await Promise.all([
-    pool.query(query, values),
-    pool.query(countQuery, values.slice(0, values.length - 2)),
-  ]);
-
-  return {
-    posts: postsRes.rows,
-    total: parseInt(countRes.rows[0]?.total || 0, 10),
-  };
-};
+export const findPublicPosts = options => publicFeedRepository.list(options);
 
 /**
  * Retrieves posts created by a specific author.
@@ -205,7 +139,7 @@ export const findPostsByAuthor = async ({
   const values = [authorId];
 
   if (!canViewPrivate) {
-    conditions.push(`p.visibility = 'PUBLIC'`);
+    conditions.push(`p.visibility = 'PUBLIC' AND u.account_type = 'PUBLIC'`);
   }
 
   const whereClause = `WHERE ${conditions.join(" AND ")}`;
@@ -244,6 +178,7 @@ export const findPostsByAuthor = async ({
   const countQuery = `
     SELECT COUNT(*) AS total
     FROM posts p
+    INNER JOIN users u ON p.author_id = u.id
     ${whereClause};
   `;
 

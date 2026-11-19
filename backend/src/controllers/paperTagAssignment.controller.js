@@ -5,6 +5,7 @@
 
 import * as service from '../services/paperTagAssignment.service.js';
 import { AssignmentError } from '../services/paperTagAssignment.service.js';
+import { checkPaperAccess } from '../services/paperPermission.service.js';
 import {
   validateCreateAssignment,
   validateUUIDParam,
@@ -45,6 +46,16 @@ export const createAssignment = async (req, res, next) => {
     }
 
     const { paper_id, tag_id, annotation_id = null } = req.body;
+
+    const access = await checkPaperAccess(paper_id, req.user, 'ANNOTATE');
+    if (!access.allowed) {
+      if (access.reason === 'not_found') {
+        return res.status(404).json({ error: 'Paper not found.' });
+      }
+      return res.status(403).json({
+        error: 'You do not have permission to assign tags on this paper.',
+      });
+    }
 
     const assignment = await service.createAssignment({
       paperId: paper_id,
@@ -126,6 +137,16 @@ export const listAssignments = async (req, res, next) => {
       return res
         .status(400)
         .json({ error: 'paper_id is required.' });
+    }
+
+    const access = await checkPaperAccess(paper_id, req.user, 'VIEW');
+    if (!access.allowed) {
+      if (access.reason === 'not_found') {
+        return res.status(404).json({ error: 'Paper not found.' });
+      }
+      return res.status(403).json({
+        error: 'You do not have permission to view tag assignments on this private paper.',
+      });
     }
     if (!isValidUUID(paper_id)) {
       return res.status(400).json({ error: 'paper_id must be a valid UUID.' });
@@ -260,6 +281,16 @@ export const syncPaperTags = async (req, res, next) => {
       if (!isValidUUID(tagId)) {
         return res.status(400).json({ error: `Invalid tag ID: ${tagId}` });
       }
+    }
+
+    const access = await checkPaperAccess(req.params.paperId, req.user, 'EDIT');
+    if (!access.allowed) {
+      if (access.reason === 'not_found') {
+        return res.status(404).json({ error: 'Paper not found.' });
+      }
+      return res.status(403).json({
+        error: 'You do not have permission to edit or sync tags on this paper.',
+      });
     }
 
     const result = await service.syncPaperTags({

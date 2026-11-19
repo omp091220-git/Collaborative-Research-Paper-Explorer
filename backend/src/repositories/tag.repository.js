@@ -368,3 +368,36 @@ export const deleteTag = async (id, client = pool) => {
   );
   return result.rows[0] || null;
 };
+
+// ===== Privacy‑scoped utilities (FR‑23) =====
+/**
+ * List tags visible to a specific user (global tags + the user's private tags).
+ */
+export const listTagsForUser = async (userId, client = pool) => {
+  const result = await client.query(
+    `SELECT * FROM topic_tags WHERE is_private = FALSE OR (is_private = TRUE AND created_by = $1)`,
+    [userId]
+  );
+  return result.rows;
+};
+
+/**
+ * Find tag by slug and parent, scoped for duplicate checks respecting privacy.
+ * If userId is provided, the query limits to tags that are either global or private owned by that user.
+ */
+export const findTagBySlugAndParentScoped = async (slug, parentId = null, userId = null, client = pool) => {
+  let query = '';
+  const params = [slug];
+  if (parentId === null) {
+    query = `SELECT id FROM topic_tags WHERE slug = $1 AND parent_id IS NULL`;
+  } else {
+    query = `SELECT id FROM topic_tags WHERE slug = $1 AND parent_id = $2`;
+    params.push(parentId);
+  }
+  if (userId !== null) {
+    query += ` AND (is_private = FALSE OR (is_private = TRUE AND created_by = $${params.length + 1}))`;
+    params.push(userId);
+  }
+  const result = await client.query(query, params);
+  return result.rows[0] || null;
+};

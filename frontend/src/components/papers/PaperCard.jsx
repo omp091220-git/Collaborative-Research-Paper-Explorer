@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Bookmark, FileText, ExternalLink, Calendar, HardDrive, ArrowUpRight, Sparkles } from 'lucide-react';
+import { Bookmark, FileText, ExternalLink, Calendar, HardDrive, ArrowUpRight, Sparkles, Globe, Lock, Users, User } from 'lucide-react';
 import Card from '../common/Card';
 import Badge from '../common/Badge';
 import { formatBytes, formatDate, formatAuthors } from '../../utils/formatters';
@@ -8,6 +8,7 @@ import { useLibrary } from '../../context/LibraryContext';
 export default function PaperCard({ paper, onOpenSummary }) {
   const { isBookmarked, toggleBookmark } = useLibrary();
   const saved = isBookmarked(paper.id);
+  const isPrivate = paper.visibility === 'PRIVATE';
 
   return (
     <Card
@@ -16,9 +17,21 @@ export default function PaperCard({ paper, onOpenSummary }) {
     >
       <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
         <div>
-          {/* Header row: arXiv badge & actions */}
-          <div className="flex items-center justify-between gap-2 mb-3.5">
-            <div className="flex items-center gap-2">
+          {/* Header row: arXiv badge, Visibility badge & actions */}
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {/* Visibility Badge */}
+              <span
+                className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border shadow-2xs ${
+                  isPrivate
+                    ? 'bg-amber-500/15 text-amber-500 dark:text-amber-400 border-amber-500/30'
+                    : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                }`}
+              >
+                {isPrivate ? <Lock className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+                <span>{isPrivate ? 'PRIVATE' : 'PUBLIC'}</span>
+              </span>
+
               {paper.arxiv_id ? (
                 <a
                   href={`https://arxiv.org/abs/${paper.arxiv_id}`}
@@ -78,10 +91,24 @@ export default function PaperCard({ paper, onOpenSummary }) {
 
           {/* Title */}
           <Link to={`/papers/${paper.id}`} className="block group-hover:text-violet-400 transition">
-            <h3 className="text-sm sm:text-base font-bold text-theme-main leading-snug line-clamp-2 mb-2 group-hover:text-violet-300 transition-colors">
+            <h3 className="text-sm sm:text-base font-bold text-theme-main leading-snug line-clamp-2 mb-1.5 group-hover:text-violet-300 transition-colors">
               {paper.title}
             </h3>
           </Link>
+
+          {/* Paper Owner info */}
+          <div className="flex items-center gap-1.5 text-xs text-theme-secondary mb-2">
+            <User className="w-3.5 h-3.5 text-violet-400 shrink-0" />
+            <span className="font-semibold text-theme-main">Owner:</span>
+            <span className="text-theme-secondary font-medium">
+              {paper.owner_name || 'Dr. Shyam Ramani'}
+            </span>
+            {paper.owner_affiliation && (
+              <span className="text-[11px] text-theme-muted hidden sm:inline">
+                ({paper.owner_affiliation})
+              </span>
+            )}
+          </div>
 
           {/* Authors */}
           <p className="text-xs text-theme-secondary font-medium mb-3 line-clamp-1">
@@ -98,9 +125,18 @@ export default function PaperCard({ paper, onOpenSummary }) {
 
         {/* Footer info: date & size & explore */}
         <div className="pt-3.5 border-t border-theme-subtle flex items-center justify-between text-xs text-theme-muted font-medium">
-          <div className="flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-theme-muted" />
-            <span>{formatDate(paper.uploaded_at, { shortMonth: true })}</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5" title="Uploaded date">
+              <Calendar className="w-3.5 h-3.5 text-theme-muted" />
+              <span>{formatDate(paper.uploaded_at, { shortMonth: true })}</span>
+            </div>
+
+            {paper.collaborator_count !== undefined && (
+              <div className="flex items-center gap-1" title="Collaborators">
+                <Users className="w-3.5 h-3.5 text-theme-muted" />
+                <span>{paper.collaborator_count}</span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3">

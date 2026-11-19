@@ -6,6 +6,7 @@ import EmptyState from '../common/EmptyState';
 import ErrorState from '../common/ErrorState';
 import { MessageSquarePlus, MessageSquare, RefreshCw } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 import { annotationsService } from '../../services/annotations.service';
 import paperTagsService from '../../services/paperTags.service';
 import { getApiErrorMessage } from '../../services/api';
@@ -16,8 +17,11 @@ export default function AnnotationList({
   annotations: initialAnnotations,
   loading: initialLoading,
   onAddAnnotation,
+  isReadOnly = false,
 }) {
   const { addToast } = useToast();
+  const { isStudent } = useAuth();
+  const effectiveReadOnly = Boolean(isReadOnly || isStudent);
 
   const [annotations, setAnnotations] = useState(initialAnnotations || []);
   const [annotationTagsMap, setAnnotationTagsMap] = useState({});
@@ -72,6 +76,7 @@ export default function AnnotationList({
   }, [paperId, initialAnnotations, fetchAnnotations]);
 
   const handleOpenAdd = () => {
+    if (effectiveReadOnly) return;
     if (onAddAnnotation) {
       onAddAnnotation();
     } else {
@@ -81,6 +86,7 @@ export default function AnnotationList({
   };
 
   const handleEdit = (annot) => {
+    if (effectiveReadOnly) return;
     setAnnotationToEdit(annot);
     setModalOpen(true);
   };
@@ -170,14 +176,16 @@ export default function AnnotationList({
             </Button>
           )}
 
-          <Button
-            variant="primary"
-            size="xs"
-            onClick={handleOpenAdd}
-            iconLeft={MessageSquarePlus}
-          >
-            Add Note
-          </Button>
+          {!effectiveReadOnly && (
+            <Button
+              variant="primary"
+              size="xs"
+              onClick={handleOpenAdd}
+              iconLeft={MessageSquarePlus}
+            >
+              Add Note
+            </Button>
+          )}
         </div>
       </div>
 
@@ -200,10 +208,14 @@ export default function AnnotationList({
         <EmptyState
           icon={MessageSquare}
           title={selectedPage === 'all' ? 'No annotations yet' : `No annotations on Page ${selectedPage}`}
-          description="Add comments, highlight passages, or record mathematical insights on this preprint."
-          actionLabel="Add First Annotation"
-          onAction={handleOpenAdd}
-          actionIcon={MessageSquarePlus}
+          description={
+            effectiveReadOnly
+              ? 'No annotations yet. You can explore annotations added by researchers when they become available.'
+              : 'Add comments, highlight passages, or record mathematical insights on this preprint.'
+          }
+          actionLabel={!effectiveReadOnly ? 'Add First Annotation' : undefined}
+          onAction={!effectiveReadOnly ? handleOpenAdd : undefined}
+          actionIcon={!effectiveReadOnly ? MessageSquarePlus : undefined}
         />
       ) : (
         <div className="space-y-3.5">
@@ -221,7 +233,7 @@ export default function AnnotationList({
       )}
 
       {/* Modal for adding/editing */}
-      {modalOpen && (
+      {!effectiveReadOnly && modalOpen && (
         <AddAnnotationModal
           paperId={paperId}
           isOpen={modalOpen}

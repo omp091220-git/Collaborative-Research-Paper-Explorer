@@ -239,7 +239,8 @@ export default function DiscussionPanel({ paper, isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  const isViewOnly = myRole === 'VIEW';
+  const isStudent = user?.role === 'STUDENT';
+  const isViewOnly = isStudent || myRole === 'VIEW' || !myRole;
 
   const filteredThreads = threads.filter((t) => {
     if (statusFilter !== 'ALL' && t.status !== statusFilter) return false;
@@ -624,7 +625,7 @@ export default function DiscussionPanel({ paper, isOpen, onClose }) {
                           )}
                         </div>
 
-                        {(th.created_by === user?.id || myRole === 'OWNER') && (
+                        {!isStudent && (th.created_by === user?.id || myRole === 'OWNER') && (
                           <button
                             onClick={() => handleDeleteThread(th.id)}
                             className="text-xs text-rose-400 hover:text-rose-300 hover:underline cursor-pointer"
@@ -688,7 +689,7 @@ export default function DiscussionPanel({ paper, isOpen, onClose }) {
                                       Reply
                                     </button>
                                   )}
-                                  {(m.user_id === user?.id || myRole === 'OWNER') && (
+                                  {!isStudent && (m.user_id === user?.id || myRole === 'OWNER') && (
                                     <button
                                       onClick={() => handleDeleteMessage(th.id, m.id)}
                                       className="text-rose-400 hover:underline cursor-pointer"

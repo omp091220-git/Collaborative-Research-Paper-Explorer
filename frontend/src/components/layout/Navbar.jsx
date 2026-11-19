@@ -20,7 +20,7 @@ import Badge from '../common/Badge';
 import Button from '../common/Button';
 import { ROLE_LABELS, ROLE_COLORS } from '../../utils/constants';
 
-export default function Navbar({ onToggleSidebar, onOpenUpload }) {
+export default function Navbar({ onToggleSidebar, onOpenUpload, sidebarCollapsed = false }) {
   const { user, logout, isAdmin, hasPermission } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -38,9 +38,11 @@ export default function Navbar({ onToggleSidebar, onOpenUpload }) {
   };
 
   return (
-    <header className="sticky top-0 z-30 h-16 glass-nav transition-colors">
+    <header className={`sticky top-0 z-30 h-16 glass-nav transition-[padding] duration-300 ease-out ${
+      sidebarCollapsed ? 'md:pl-20' : 'md:pl-64'
+    }`}>
       <div className="h-full px-4 sm:px-6 flex items-center justify-between gap-4">
-        {/* Left: Mobile hamburger & Logo */}
+        {/* Left: Mobile hamburger & Mobile Logo */}
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -53,12 +55,12 @@ export default function Navbar({ onToggleSidebar, onOpenUpload }) {
 
           <Link
             to="/dashboard"
-            className="flex items-center gap-2.5 font-bold text-lg text-theme-main group"
+            className="flex md:hidden items-center gap-2.5 font-bold text-lg text-theme-main group"
           >
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-cyan-400 flex items-center justify-center text-white shadow-md shadow-violet-600/30 group-hover:scale-105 transition-transform">
               <BookOpen className="w-5 h-5" />
             </div>
-            <div className="hidden sm:flex flex-col">
+            <div className="flex flex-col">
               <span className="leading-tight text-theme-main font-extrabold tracking-tight text-base">
                 Scholar<span className="text-violet-400">Sphere</span>
               </span>
@@ -157,7 +159,7 @@ export default function Navbar({ onToggleSidebar, onOpenUpload }) {
                 <div className="absolute right-0 mt-2 w-64 bg-theme-card rounded-2xl shadow-2xl shadow-black/70 border border-white/10 py-2 z-50 animate-scaleUp text-sm text-theme-main">
                   <div className="px-4 py-3 border-b border-theme-subtle">
                     <p className="font-semibold text-theme-main truncate">
-                      {user?.full_name || 'Research Scholar'}
+                      {user?.full_name || (user?.role === 'STUDENT' ? 'Student Scholar' : 'Research Scholar')}
                     </p>
                     <p className="text-xs text-theme-secondary truncate mt-0.5">
                       {user?.email}

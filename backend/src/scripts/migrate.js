@@ -26,12 +26,15 @@ async function runMigrations() {
     '20261027_citations.sql',
     '20261027_paper_sections_and_recommendations.sql',
     '20261106_paper_assets_and_extraction_jobs.sql',
+    '20261114_tag_suggestions_and_private_tags.sql',
     '20261108_direct_messaging.sql',
     '20261113_external_publications.sql',
     '20261114_group_membership.sql',
     '20261114_messaging_groups.sql',
     '20261116_unify_group_participant_roles.sql',
     '20261116_structured_summaries.sql',
+    '20261117_legacy_annotation_and_tag_audit.sql',
+    '20261118_paper_ownership_visibility_access.sql',
     '20261118_account_type_and_posts.sql',
   ];
   // Optionally run only one explicitly selected migration.
