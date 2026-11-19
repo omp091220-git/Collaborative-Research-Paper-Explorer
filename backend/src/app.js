@@ -19,6 +19,8 @@ import researcherRoutes from "./routes/researcher.routes.js";
 import postRoutes from "./routes/post.routes.js";
 import userAccountRoutes from "./routes/userAccount.routes.js";
 import errorHandler from "./middleware/errorHandler.js";
+import tagSuggestionRoutes from './routes/tagSuggestion.routes.js';
+
 
 import summaryRoutes from './routes/summary.routes.js';
 import researchExportRoutes from './routes/researchExport.routes.js';
@@ -58,6 +60,7 @@ app.use("/api/paper-tags", paperTagAssignmentRoutes);
 app.use("/api/invitations", invitationRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/recommendations", recommendationRoutes);
+app.use("/api/papers", tagSuggestionRoutes);
 app.use("/api/direct-messages", directMessageRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/researchers", researcherRoutes);
@@ -75,3 +78,4 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 export default app;
+

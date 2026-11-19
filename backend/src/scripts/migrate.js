@@ -26,6 +26,7 @@ async function runMigrations() {
     '20261027_citations.sql',
     '20261027_paper_sections_and_recommendations.sql',
     '20261106_paper_assets_and_extraction_jobs.sql',
+    '20261114_tag_suggestions_and_private_tags.sql',
     '20261108_direct_messaging.sql',
     '20261113_external_publications.sql',
     '20261114_group_membership.sql',

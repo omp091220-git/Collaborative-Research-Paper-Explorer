@@ -71,7 +71,7 @@ CREATE INDEX IF NOT EXISTS idx_discussion_messages_thread_id ON discussion_messa
 CREATE INDEX IF NOT EXISTS idx_discussion_messages_parent_id ON discussion_messages (parent_id);
 CREATE INDEX IF NOT EXISTS idx_discussion_messages_user_id ON discussion_messages (user_id);
 
--- 5. Notifications
+/* -- 5. Notifications
 CREATE TABLE IF NOT EXISTS notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -85,4 +85,4 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications (user_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications (user_id, is_read);
+CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications (user_id, is_read); */
