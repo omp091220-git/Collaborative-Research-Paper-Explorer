@@ -51,6 +51,7 @@ export const createPost = async (req, res, next) => {
  */
 export const getPostById = async (req, res, next) => {
   try {
+    res.set("Cache-Control", "no-store");
     const { id } = req.params;
     const viewer = req.user || null;
     const post = await getPostByIdService(id, viewer);

@@ -55,12 +55,13 @@ export default function Navbar({ onToggleSidebar, onOpenUpload, sidebarCollapsed
 
           <Link
             to="/dashboard"
+            aria-label="ScholarSphere dashboard"
             className="flex md:hidden items-center gap-2.5 font-bold text-lg text-theme-main group"
           >
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-cyan-400 flex items-center justify-center text-white shadow-md shadow-violet-600/30 group-hover:scale-105 transition-transform">
               <BookOpen className="w-5 h-5" />
             </div>
-            <div className="flex flex-col">
+            <div className="hidden min-[400px]:flex flex-col">
               <span className="leading-tight text-theme-main font-extrabold tracking-tight text-base">
                 Scholar<span className="text-violet-400">Sphere</span>
               </span>
@@ -113,15 +114,16 @@ export default function Navbar({ onToggleSidebar, onOpenUpload, sidebarCollapsed
           </button>
 
           {canUpload && (
+            <div className="hidden sm:block">
             <Button
               variant="primary"
               size="sm"
               onClick={onOpenUpload}
               iconLeft={Upload}
-              className="hidden sm:inline-flex"
             >
               Upload Paper
             </Button>
+            </div>
           )}
 
           {/* Notification Bell */}

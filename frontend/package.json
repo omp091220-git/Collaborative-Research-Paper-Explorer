@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:fr26": "playwright test --config playwright.fr26.config.js"
+    "test:fr26": "playwright test --config playwright.fr26.config.js",
+    "test:fr30": "playwright test --config playwright.fr30.config.js"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
