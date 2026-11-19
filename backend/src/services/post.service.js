@@ -1,11 +1,10 @@
+import privatePostService from "./privatePost.service.js";
 import publicFeedService, { toPublicPost } from "./publicFeed.service.js";
 import {
   insertPost,
   findPostById,
   findPostsByAuthor,
-  updatePostRecord,
   deletePostRecord,
-  checkPostPermission,
 } from "../repositories/post.repository.js";
 
 import {
@@ -15,7 +14,6 @@ import {
 
 import {
   validateCreatePostInput,
-  validateUpdatePostInput,
   validateAccountTypeInput,
 } from "../utils/postValidation.js";
 
@@ -68,7 +66,7 @@ export const createPostService = async (userId, rawInput) => {
     if (visibility === "PUBLIC") {
       const error = new Error(
         "Forbidden: Private-account users are only permitted to create private posts. " +
-        "To publish public posts, switch your account type to PUBLIC in your profile settings."
+          "To publish public posts, switch your account type to PUBLIC in your profile settings.",
       );
       error.statusCode = 403;
       throw error;
@@ -118,30 +116,23 @@ export const getPostByIdService = async (postId, viewerUser = null) => {
 
   // 2. Private post access enforcement
   if (!viewerUser || !viewerUser.id) {
-    const error = new Error("Access denied. Please log in to view this private post.");
+    const error = new Error(
+      "Access denied. Please log in to view this private post.",
+    );
     error.statusCode = 401;
     throw error;
   }
 
-  // Author can always view their own private posts
-  if (post.author_id === viewerUser.id) {
-    return post;
+  try {
+    return await privatePostService.detail(postId, viewerUser.id);
+  } catch (error) {
+    if (error.statusCode === 404) {
+      error.statusCode = 403;
+      error.message =
+        "Access denied. This is a private post and you do not have permission to view it.";
+    }
+    throw error;
   }
-
-  // System Administrator can view for moderation/auditing
-  if (viewerUser.role === "SYSTEM_ADMIN" || viewerUser.role === "SYSTEM ADMIN") {
-    return post;
-  }
-
-  // FR-30 check: Check explicit user permission on this post
-  const hasPermission = await checkPostPermission(postId, viewerUser.id, "READ");
-  if (hasPermission) {
-    return post;
-  }
-
-  const error = new Error("Access denied. This is a private post and you do not have permission to view it.");
-  error.statusCode = 403;
-  throw error;
 };
 
 /**
@@ -150,7 +141,8 @@ export const getPostByIdService = async (postId, viewerUser = null) => {
  * @param {Object} queryOptions
  * @returns {Promise<{ posts: Object[], total: number, limit: number, offset: number }>}
  */
-export const listPublicPostsService = options => publicFeedService.list(options);
+export const listPublicPostsService = (options) =>
+  publicFeedService.list(options);
 
 /**
  * Lists posts by a specific author respecting privacy filters based on who is viewing.
@@ -160,13 +152,22 @@ export const listPublicPostsService = options => publicFeedService.list(options)
  * @param {Object} queryOptions - Pagination options.
  * @returns {Promise<{ posts: Object[], total: number, limit: number, offset: number }>}
  */
-export const listPostsByAuthorService = async (authorId, viewerUser = null, queryOptions = {}) => {
-  const limit = Math.min(Math.max(parseInt(queryOptions.limit || 20, 10), 1), 100);
+export const listPostsByAuthorService = async (
+  authorId,
+  viewerUser = null,
+  queryOptions = {},
+) => {
+  const limit = Math.min(
+    Math.max(parseInt(queryOptions.limit || 20, 10), 1),
+    100,
+  );
   const offset = Math.max(parseInt(queryOptions.offset || 0, 10), 0);
 
   // Author themselves or an admin can see their own private posts
   const isAuthor = viewerUser && viewerUser.id === authorId;
-  const isAdmin = viewerUser && (viewerUser.role === "SYSTEM_ADMIN" || viewerUser.role === "SYSTEM ADMIN");
+  const actor = viewerUser ? await getUserAccountType(viewerUser.id) : null;
+  const isAdmin =
+    actor && (actor.role === "SYSTEM_ADMIN" || actor.role === "SYSTEM ADMIN");
   const canViewPrivate = isAuthor || isAdmin;
 
   const result = await findPostsByAuthor({
@@ -193,45 +194,13 @@ export const listPostsByAuthorService = async (authorId, viewerUser = null, quer
  * @param {Object} updatePayload - Requested updates.
  * @returns {Promise<Object>} Updated post.
  */
-export const updatePostService = async (postId, userId, userRole, updatePayload) => {
-  const post = await findPostById(postId);
-  if (!post) {
-    const error = new Error("Post not found.");
-    error.statusCode = 404;
-    throw error;
-  }
-
-  // Authorization check: only author or SYSTEM_ADMIN can update
-  const isAuthor = post.author_id === userId;
-  const isAdmin = userRole === "SYSTEM_ADMIN" || userRole === "SYSTEM ADMIN";
-
-  if (!isAuthor && !isAdmin) {
-    const error = new Error("Forbidden: You are not authorized to update this post.");
-    error.statusCode = 403;
-    throw error;
-  }
-
-  const validation = validateUpdatePostInput(updatePayload);
-  if (!validation.isValid) {
-    const error = new Error(validation.errors.join(" "));
-    error.statusCode = 400;
-    throw error;
-  }
-
-  // If changing visibility to PUBLIC, check author account type
-  if (validation.sanitized.visibility === "PUBLIC") {
-    const author = await getUserAccountType(post.author_id);
-    if (author && author.account_type === "PRIVATE") {
-      const error = new Error(
-        "Forbidden: Cannot change post visibility to PUBLIC because the author has a PRIVATE account."
-      );
-      error.statusCode = 403;
-      throw error;
-    }
-  }
-
-  const updated = await updatePostRecord(postId, validation.sanitized);
-  return updated;
+export const updatePostService = async (
+  postId,
+  userId,
+  userRole,
+  updatePayload,
+) => {
+  return privatePostService.edit(postId, userId, updatePayload);
 };
 
 /**
@@ -251,10 +220,14 @@ export const deletePostService = async (postId, userId, userRole) => {
   }
 
   const isAuthor = post.author_id === userId;
-  const isAdmin = userRole === "SYSTEM_ADMIN" || userRole === "SYSTEM ADMIN";
+  const actor = await getUserAccountType(userId);
+  const isAdmin =
+    actor?.role === "SYSTEM_ADMIN" || actor?.role === "SYSTEM ADMIN";
 
   if (!isAuthor && !isAdmin) {
-    const error = new Error("Forbidden: You are not authorized to delete this post.");
+    const error = new Error(
+      "Forbidden: You are not authorized to delete this post.",
+    );
     error.statusCode = 403;
     throw error;
   }

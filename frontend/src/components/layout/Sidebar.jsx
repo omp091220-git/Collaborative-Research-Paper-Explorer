@@ -57,6 +57,7 @@ export default function Sidebar({ isOpen, onClose, collapsed, onCollapsedChange 
 
   const studentNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'My & shared posts', href: '/posts', icon: FileText },
     { name: 'Explore Papers', href: '/explore', icon: Compass },
     { name: 'Public Feed', href: '/feed', icon: Globe },
     {
@@ -78,6 +79,7 @@ export default function Sidebar({ isOpen, onClose, collapsed, onCollapsedChange 
 
   const researcherNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'My & shared posts', href: '/posts', icon: FileText },
     { name: 'Explore Papers', href: '/explore', icon: Compass },
     { name: 'My Papers', href: '/my-papers', icon: FolderArchive },
     { name: 'Access Requests', href: '/access-requests', icon: KeyRound },

@@ -28,6 +28,7 @@ describe("FR-25: Account Type and Post Visibility Test Suite", () => {
   let server;
   let baseUrl;
   let originalPoolQuery;
+  let originalPoolConnect;
 
   // Mock Users
   const publicUser = {
@@ -114,6 +115,8 @@ describe("FR-25: Account Type and Post Visibility Test Suite", () => {
 
     // Mock PostgreSQL Query Interceptor
     originalPoolQuery = pool.query;
+    originalPoolConnect = pool.connect;
+    pool.connect = async () => ({ query: (...args) => pool.query(...args), release() {} });
     pool.query = async (text, params) => {
       const q = text.trim();
 
@@ -139,7 +142,7 @@ describe("FR-25: Account Type and Post Visibility Test Suite", () => {
       if (q.includes("INSERT INTO posts")) {
         const [author_id, title, content, paper_id, visibility, tags] = params;
         const newPost = {
-          id: `post-0000-0000-0000-${String(mockPosts.length + 1).padStart(12, "0")}`,
+          id: `00000000-0000-4000-8000-${String(mockPosts.length + 1).padStart(12, "0")}`,
           author_id,
           paper_id: paper_id || null,
           title,
@@ -268,7 +271,7 @@ describe("FR-25: Account Type and Post Visibility Test Suite", () => {
     // Pre-populate with standard posts
     mockPosts = [
       {
-        id: "post-0000-0000-0000-000000000001",
+        id: "00000000-0000-4000-8000-000000000001",
         author_id: publicUser.id,
         paper_id: null,
         title: "Introduction to Quantum Graph Neural Networks",
@@ -281,7 +284,7 @@ describe("FR-25: Account Type and Post Visibility Test Suite", () => {
         updated_at: new Date(Date.now() - 3600000),
       },
       {
-        id: "post-0000-0000-0000-000000000002",
+        id: "00000000-0000-4000-8000-000000000002",
         author_id: publicUser.id,
         paper_id: null,
         title: "Confidential Lab Scratchpad",
@@ -294,7 +297,7 @@ describe("FR-25: Account Type and Post Visibility Test Suite", () => {
         updated_at: new Date(Date.now() - 1800000),
       },
       {
-        id: "post-0000-0000-0000-000000000003",
+        id: "00000000-0000-4000-8000-000000000003",
         author_id: privateUser.id,
         paper_id: null,
         title: "Private Account Research Diary",
@@ -311,6 +314,7 @@ describe("FR-25: Account Type and Post Visibility Test Suite", () => {
 
   after(async () => {
     pool.query = originalPoolQuery;
+    pool.connect = originalPoolConnect;
     if (server) {
       await new Promise((resolve) => server.close(resolve));
     }
@@ -420,10 +424,10 @@ describe("FR-25: Account Type and Post Visibility Test Suite", () => {
 
     it("2.5 Author can retrieve their own private post", async () => {
       const post = await postService.getPostByIdService(
-        "post-0000-0000-0000-000000000002",
+        "00000000-0000-4000-8000-000000000002",
         { id: publicUser.id, role: publicUser.role }
       );
-      assert.strictEqual(post.id, "post-0000-0000-0000-000000000002");
+      assert.strictEqual(post.id, "00000000-0000-4000-8000-000000000002");
       assert.strictEqual(post.visibility, "PRIVATE");
     });
 
@@ -431,7 +435,7 @@ describe("FR-25: Account Type and Post Visibility Test Suite", () => {
       await assert.rejects(
         async () => {
           await postService.getPostByIdService(
-            "post-0000-0000-0000-000000000002",
+            "00000000-0000-4000-8000-000000000002",
             { id: otherUser.id, role: otherUser.role }
           );
         },
@@ -445,10 +449,10 @@ describe("FR-25: Account Type and Post Visibility Test Suite", () => {
 
     it("2.7 SYSTEM_ADMIN can view private post for moderation and auditing", async () => {
       const post = await postService.getPostByIdService(
-        "post-0000-0000-0000-000000000002",
+        "00000000-0000-4000-8000-000000000002",
         { id: adminUser.id, role: adminUser.role }
       );
-      assert.strictEqual(post.id, "post-0000-0000-0000-000000000002");
+      assert.strictEqual(post.id, "00000000-0000-4000-8000-000000000002");
     });
   });
 
@@ -537,7 +541,7 @@ describe("FR-25: Account Type and Post Visibility Test Suite", () => {
     });
 
     it("3.6 GET /api/posts/:id: returns 200 for PUBLIC post even to anonymous or third party", async () => {
-      const res = await fetch(`${baseUrl}/api/posts/post-0000-0000-0000-000000000001`);
+      const res = await fetch(`${baseUrl}/api/posts/00000000-0000-4000-8000-000000000001`);
       assert.strictEqual(res.status, 200);
       const data = await res.json();
       assert.strictEqual(data.success, true);
@@ -545,19 +549,19 @@ describe("FR-25: Account Type and Post Visibility Test Suite", () => {
     });
 
     it("3.7 GET /api/posts/:id: returns 403 for unauthorized user accessing PRIVATE post", async () => {
-      const res = await fetch(`${baseUrl}/api/posts/post-0000-0000-0000-000000000002`, {
+      const res = await fetch(`${baseUrl}/api/posts/00000000-0000-4000-8000-000000000002`, {
         headers: authHeaders(otherToken),
       });
       assert.strictEqual(res.status, 403);
     });
 
     it("3.8 GET /api/posts/:id: returns 200 when author accesses their own PRIVATE post", async () => {
-      const res = await fetch(`${baseUrl}/api/posts/post-0000-0000-0000-000000000002`, {
+      const res = await fetch(`${baseUrl}/api/posts/00000000-0000-4000-8000-000000000002`, {
         headers: authHeaders(publicToken),
       });
       assert.strictEqual(res.status, 200);
       const data = await res.json();
-      assert.strictEqual(data.post.id, "post-0000-0000-0000-000000000002");
+      assert.strictEqual(data.post.id, "00000000-0000-4000-8000-000000000002");
     });
 
     it("3.9 GET /api/posts: public feed excludes all private posts", async () => {

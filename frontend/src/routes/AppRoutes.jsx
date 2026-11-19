@@ -19,6 +19,9 @@ const PublicFeedLayout = lazy(() => import('../pages/PublicFeedPage/PublicFeedLa
 const PublicFeedPage = lazy(() => import('../pages/PublicFeedPage/PublicFeedPage'));
 const PublicPostPage = lazy(() => import('../pages/PublicFeedPage/PublicPostPage'));
 
+const MyPostsPage = lazy(() => import('../pages/PrivatePostsPage/MyPostsPage'));
+const PrivatePostPage = lazy(() => import('../pages/PrivatePostsPage/PrivatePostPage'));
+
 const DashboardPage = lazy(() => import('../pages/DashboardPage/DashboardPage'));
 const ExplorePapersPage = lazy(() => import('../pages/ExplorePapersPage/ExplorePapersPage'));
 const MyPapersPage = lazy(() => import('../pages/MyPapersPage/MyPapersPage'));
@@ -78,6 +81,8 @@ export default function AppRoutes() {
               }
             >
               <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/posts" element={<MyPostsPage />} />
+              <Route path="/posts/:postId" element={<PrivatePostPage />} />
               <Route path="/explore" element={<ExplorePapersPage />} />
               <Route path="/my-papers" element={<MyPapersPage />} />
               <Route path="/access-requests" element={<AccessRequestsPage />} />

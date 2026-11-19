@@ -4,8 +4,9 @@ let fixture;
 test.beforeAll(async ({ request }) => {
   fixture = await (await request.get(api + '/__fr26/fixture')).json();
 });
-test.beforeEach(async ({ request }) => {
+test.beforeEach(async ({ request, page }, testInfo) => {
   await request.post(api + '/__fr26/reset');
+  await page.addInitScript(theme => localStorage.setItem('crpe_theme', theme), testInfo.project.name.endsWith('light') ? 'light' : 'dark');
 });
 const login = async (context, kind) =>
   context.addCookies([

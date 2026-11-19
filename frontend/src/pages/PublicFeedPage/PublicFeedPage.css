@@ -1,28 +1,22 @@
-/* The app's global form colors are outside Tailwind's utility layer. Keep
-   discovery controls readable in the same system theme as their backgrounds. */
+/* Match the app's selected theme, including the global form backgrounds. */
+.public-feed-form {
+  background: var(--bg-card);
+  border-color: var(--border-strong);
+}
 .public-feed-form label,
 .public-feed-form input,
 .public-feed-form select {
-  color: #1e293b;
+  color: var(--text-main);
 }
 .public-feed-form input,
 .public-feed-form select {
+  background: var(--bg-main);
   color-scheme: light;
 }
 .public-feed-form input::placeholder {
-  color: #64748b !important;
+  color: var(--text-secondary) !important;
 }
-@media (prefers-color-scheme: dark) {
-  .public-feed-form label,
-  .public-feed-form input,
-  .public-feed-form select {
-    color: #e2e8f0;
-  }
-  .public-feed-form input,
-  .public-feed-form select {
-    color-scheme: dark;
-  }
-  .public-feed-form input::placeholder {
-    color: #94a3b8 !important;
-  }
+.dark .public-feed-form input,
+.dark .public-feed-form select {
+  color-scheme: dark;
 }

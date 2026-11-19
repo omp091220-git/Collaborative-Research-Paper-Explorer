@@ -12,7 +12,27 @@ import {
   deletePost,
 } from "../controllers/post.controller.js";
 
+import {
+  listAccessiblePosts,
+  getAccessiblePost,
+  editAccessiblePost,
+  listPostPermissions,
+  grantPostPermission,
+  revokePostPermission,
+} from "../controllers/privatePost.controller.js";
+import { validateSessionSync } from "../services/session.service.js";
+
 const router = Router();
+router.get("/workspace", authenticateToken, listAccessiblePosts);
+router.get("/workspace/:id", authenticateToken, getAccessiblePost);
+router.patch("/workspace/:id", authenticateToken, editAccessiblePost);
+router.get("/:id/permissions", authenticateToken, listPostPermissions);
+router.put("/:id/permissions", authenticateToken, grantPostPermission);
+router.delete(
+  "/:id/permissions/:userId",
+  authenticateToken,
+  revokePostPermission,
+);
 
 /**
  * Optional authentication middleware for public/hybrid endpoints.
@@ -33,7 +53,12 @@ export const optionalAuthenticate = (req, res, next) => {
   try {
     const secret = getValidatedJwtSecret();
     const decoded = jwt.verify(token, secret);
-    if (decoded && typeof decoded === "object" && (decoded.id || decoded._id)) {
+    if (
+      decoded &&
+      typeof decoded === "object" &&
+      (decoded.id || decoded._id) &&
+      validateSessionSync(token, decoded).valid
+    ) {
       req.user = decoded;
       if (!req.user.id && req.user._id) req.user.id = req.user._id;
     } else {

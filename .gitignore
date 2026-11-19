@@ -15,3 +15,7 @@ uploads/*
 # FR-26 browser test artifacts
 frontend/test-results-fr26/
 frontend/playwright-report-fr26/
+
+# FR-30 browser test artifacts
+frontend/test-results-fr30/
+frontend/playwright-report-fr30/

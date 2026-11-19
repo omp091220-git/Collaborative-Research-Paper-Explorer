@@ -1,0 +1,57 @@
+.private-posts {
+  color: var(--text-main);
+  overflow-wrap: anywhere;
+}
+.private-posts input,
+.private-posts textarea,
+.private-posts select {
+  color: var(--text-main);
+  background: var(--bg-main);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.65rem;
+  padding: 0.7rem;
+  width: 100%;
+  min-height: 44px;
+  font: inherit;
+}
+.private-posts label {
+  display: block;
+  color: var(--text-main);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.private-posts label > input,
+.private-posts label > textarea,
+.private-posts label > select {
+  margin-top: 0.4rem;
+}
+.private-posts button,
+.private-posts a.post-action {
+  min-height: 44px;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.65rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.private-posts button {
+  cursor: pointer;
+  background: var(--bg-elevated);
+  color: var(--text-main);
+}
+.private-posts button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.private-posts .post-primary {
+  background: #4f35e8;
+  color: #fff;
+  border-color: #4f35e8;
+}
+.private-posts :focus-visible {
+  outline: 3px solid #8b7aff;
+  outline-offset: 3px;
+}

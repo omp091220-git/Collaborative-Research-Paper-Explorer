@@ -55,6 +55,8 @@ test('public feed query validation rejects malformed filters before querying sto
 test('FR-26 real PostgreSQL feed, search and detail preserve privacy for every viewer', async (t) => {
   const fixture = await prepareFr26Fixture();
   const original = pool.query;
+  const originalConnect = pool.connect;
+  pool.connect = (...args) => fixture.db.connect(...args);
   pool.query = (...args) => fixture.db.query(...args);
   const repo = createPublicFeedRepository(fixture.db),
     service = createPublicFeedService(repo);
@@ -322,6 +324,7 @@ test('FR-26 real PostgreSQL feed, search and detail preserve privacy for every v
     );
   } finally {
     pool.query = original;
+    pool.connect = originalConnect;
     await fixture.cleanup();
   }
 });
