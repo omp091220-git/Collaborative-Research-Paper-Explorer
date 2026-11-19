@@ -50,7 +50,7 @@ export default function AppLayout() {
   const searchParams = new URLSearchParams(location.search);
   const isReadingWorkspace =
     location.pathname.startsWith('/papers/') &&
-    (!searchParams.get('tab') || searchParams.get('tab') === 'pdf');
+    searchParams.get('tab') === 'pdf';
 
   if (isReadingWorkspace) {
     return (
@@ -72,6 +72,7 @@ export default function AppLayout() {
       <Navbar
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         onOpenUpload={() => setUploadModalOpen(true)}
+        sidebarCollapsed={sidebarCollapsed}
       />
 
       {/* Main Container */}

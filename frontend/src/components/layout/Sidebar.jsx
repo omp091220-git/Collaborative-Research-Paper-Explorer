@@ -16,6 +16,8 @@ import {
   Tag,
   ChevronLeft,
   ChevronRight,
+  FolderArchive,
+  KeyRound,
   GraduationCap,
   Globe,
 } from 'lucide-react';
@@ -24,7 +26,7 @@ import { useLibrary } from '../../context/LibraryContext';
 import Badge from '../common/Badge';
 
 export default function Sidebar({ isOpen, onClose, collapsed, onCollapsedChange }) {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isStudent } = useAuth();
   const { bookmarks, collections } = useLibrary();
 
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -53,10 +55,32 @@ export default function Sidebar({ isOpen, onClose, collapsed, onCollapsedChange 
     });
   };
 
-  const navigation = [
+  const studentNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Explore Papers', href: '/explore', icon: Compass },
     { name: 'Public Feed', href: '/feed', icon: Globe },
+    {
+      name: 'My Library',
+      href: '/library',
+      icon: Bookmark,
+      count: bookmarks?.length || 0,
+    },
+    {
+      name: 'Collections',
+      href: '/collections',
+      icon: FolderKanban,
+      count: collections?.length || 0,
+    },
+    { name: 'Discussions', href: '/discussions', icon: MessageSquare },
+    { name: 'My Requests', href: '/access-requests', icon: KeyRound },
+    { name: 'Settings', href: '/settings', icon: Settings },
+  ];
+
+  const researcherNavigation = [
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Explore Papers', href: '/explore', icon: Compass },
+    { name: 'My Papers', href: '/my-papers', icon: FolderArchive },
+    { name: 'Access Requests', href: '/access-requests', icon: KeyRound },
     {
       name: 'Library & Bookmarks',
       href: '/library',
@@ -75,6 +99,8 @@ export default function Sidebar({ isOpen, onClose, collapsed, onCollapsedChange 
     { name: 'Topic Taxonomy', href: '/taxonomy', icon: FolderTree },
     { name: 'Paper Tagging', href: '/tagging', icon: Tag },
   ];
+
+  const navigation = isStudent ? studentNavigation : researcherNavigation;
 
   return (
     <>
@@ -251,9 +277,15 @@ export default function Sidebar({ isOpen, onClose, collapsed, onCollapsedChange 
                   {user?.full_name || 'Scholar'}
                 </p>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <Badge variant="primary" size="xs">
-                    {user?.role || 'STUDENT'}
-                  </Badge>
+                  {isStudent ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">
+                      STUDENT
+                    </span>
+                  ) : (
+                    <Badge variant="primary" size="xs">
+                      {user?.role || 'RESEARCHER'}
+                    </Badge>
+                  )}
                 </div>
               </div>
             )}

@@ -1,16 +1,29 @@
 import { Link } from 'react-router-dom';
-import { Bookmark, ExternalLink, Calendar, HardDrive, ArrowUpRight } from 'lucide-react';
+import { Bookmark, ExternalLink, Calendar, HardDrive, ArrowUpRight, Globe, Lock, User, Users } from 'lucide-react';
 import { formatBytes, formatDate, formatAuthors } from '../../utils/formatters';
 import { useLibrary } from '../../context/LibraryContext';
 
 export default function PaperListItem({ paper }) {
   const { isBookmarked, toggleBookmark } = useLibrary();
   const saved = isBookmarked(paper.id);
+  const isPrivate = paper.visibility === 'PRIVATE';
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl border border-theme-subtle bg-theme-card hover:border-violet-500/40 hover:bg-theme-elevated hover:shadow-lg hover:shadow-violet-950/20 transition-all duration-200 group">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-2 flex-wrap">
+          {/* Visibility badge */}
+          <span
+            className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border shadow-2xs ${
+              isPrivate
+                ? 'bg-amber-500/15 text-amber-500 dark:text-amber-400 border-amber-500/30'
+                : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+            }`}
+          >
+            {isPrivate ? <Lock className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+            <span>{isPrivate ? 'PRIVATE' : 'PUBLIC'}</span>
+          </span>
+
           {paper.arxiv_id ? (
             <a
               href={`https://arxiv.org/abs/${paper.arxiv_id}`}
@@ -28,10 +41,23 @@ export default function PaperListItem({ paper }) {
             </span>
           )}
 
+          {/* Owner info */}
+          <span className="text-xs text-theme-secondary font-medium flex items-center gap-1">
+            <User className="w-3 h-3 text-violet-400" />
+            <span>{paper.owner_name || 'Dr. Shyam Ramani'}</span>
+          </span>
+
           <span className="text-xs text-theme-muted font-medium flex items-center gap-1">
             <Calendar className="w-3.5 h-3.5 text-theme-muted" />
             {formatDate(paper.uploaded_at, { shortMonth: true })}
           </span>
+
+          {paper.collaborator_count !== undefined && (
+            <span className="text-xs text-theme-muted font-medium flex items-center gap-1">
+              <Users className="w-3 h-3 text-theme-muted" />
+              <span>{paper.collaborator_count}</span>
+            </span>
+          )}
 
           {paper.file_size_bytes && (
             <span className="text-xs text-theme-muted font-medium flex items-center gap-1">
