@@ -42,6 +42,69 @@ export const MAX_SPLIT_HORIZONTAL_GAP = 20.0;
 export const MAX_SPLIT_LOOKAHEAD = 3;
 
 /**
+ * Summarizes PDF.js text-font references without retaining or logging document text.
+ * This detects unresolved PDF.js style references; it cannot detect every missing
+ * glyph in a font that PDF.js reports as resolved.
+ */
+export function summarizeFontUsage(textContent = {}) {
+  const items = (textContent.items || []).filter((item) => item && typeof item.str === "string");
+  const styles = textContent.styles || {};
+  const fontIds = [...new Set(items.map((item) => item.fontName).filter(Boolean))].sort();
+  const fontFamilies = [...new Set(fontIds
+    .map((fontId) => styles[fontId]?.fontFamily)
+    .filter((family) => typeof family === "string" && family.length > 0))].sort();
+
+  return {
+    textItemCount: items.length,
+    fontReferenceCount: fontIds.length,
+    fontIds,
+    unresolvedFontIds: fontIds.filter((fontId) => !styles[fontId]),
+    fontFamilies,
+  };
+}
+
+/** Converts a PDF.js text item into an axis-aligned PDF-user-space box. */
+function getTextItemGeometry(item, style = {}) {
+  const transform = item?.transform;
+  if (!Array.isArray(transform) || transform.length < 6 || !Number.isFinite(item.width)) return null;
+
+  const [a, b, c, d, x, y] = transform;
+  const xLength = Math.hypot(a, b);
+  const yLength = Math.hypot(c, d);
+  const fontSize = yLength || xLength || Math.abs(d) || 9;
+  const width = Math.max(0, item.width);
+  if (!xLength || !yLength || !Number.isFinite(width)) return null;
+
+  const ux = a / xLength;
+  const uy = b / xLength;
+  const vx = c / yLength;
+  const vy = d / yLength;
+  const ascent = Number.isFinite(style.ascent) ? style.ascent : 0.8;
+  const descent = Number.isFinite(style.descent) ? style.descent : -0.2;
+  const heightScale = yLength || fontSize;
+  const corners = [
+    [x + vx * descent * heightScale, y + vy * descent * heightScale],
+    [x + ux * width + vx * descent * heightScale, y + uy * width + vy * descent * heightScale],
+    [x + vx * ascent * heightScale, y + vy * ascent * heightScale],
+    [x + ux * width + vx * ascent * heightScale, y + uy * width + vy * ascent * heightScale],
+  ];
+  const xs = corners.map((point) => point[0]);
+  const ys = corners.map((point) => point[1]);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+
+  return {
+    text: item.str,
+    fontName: item.fontName || null,
+    fontSize,
+    transform,
+    bounds: { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY },
+  };
+}
+
+/**
  * Attempts to reconstruct a split caption starter across adjacent PDF.js text items
  * on the same visual baseline.
  *
@@ -192,6 +255,11 @@ function accumulateCaptionLines(items, startIndex, fontHeight) {
 
     // If on the same horizontal baseline (deltaY < 2.5 pt)
     if (deltaY <= 2.5) {
+      const horizontalGap = nextX - maxX;
+      const maxLineGap = Math.max(MAX_SPLIT_HORIZONTAL_GAP, 2.5 * fontHeight);
+      if (horizontalGap > maxLineGap || FIGURE_CAPTION_STARTER.test(strTrim) || TABLE_CAPTION_STARTER.test(strTrim)) {
+        break;
+      }
       accumulatedText += " " + next.str;
       minX = Math.min(minX, nextX);
       maxX = Math.max(maxX, nextX + (next.width || 0));
@@ -269,6 +337,8 @@ export async function detectCaptions(page) {
     captions: [],
     hasExtractableText: items.length > 0,
     itemCount: items.length,
+    fontDiagnostics: summarizeFontUsage(textContent),
+    textItems: items.map((item) => getTextItemGeometry(item, textContent.styles?.[item.fontName])).filter(Boolean),
   };
 
   if (items.length === 0) {

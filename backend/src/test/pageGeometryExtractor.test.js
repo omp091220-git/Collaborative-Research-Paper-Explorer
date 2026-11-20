@@ -22,6 +22,7 @@ import {
   extractPageGeometry,
   COVER_PAGE_THRESHOLD,
 } from "../utils/pageGeometryExtractor.js";
+import { createFr09FixturePdf } from "./fr09PdfFixture.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -239,9 +240,45 @@ describe("pageGeometryExtractor — Mock Operator Stream Traversal", () => {
   });
 });
 
-describe("pageGeometryExtractor — Real Sample PDF Regression Tests", () => {
-  it("extracts vector paths and rules on Page 6 of arxiv sample", async () => {
+describe("pageGeometryExtractor — Self-contained fixture tests", () => {
+  it("extracts vectors, table rules, raster chart placement, and cover suppression from a generated PDF", async () => {
+    const fixture = createFr09FixturePdf();
+    let doc;
+    try {
+      const raw = new Uint8Array(fs.readFileSync(fixture.filePath));
+      doc = await pdfjs.getDocument({ data: raw }).promise;
+      const [vectorPage, tablePage, rasterPage, coverPage] = await Promise.all([
+        doc.getPage(1), doc.getPage(2), doc.getPage(3), doc.getPage(4),
+      ]);
+      const [vectors, table, raster, cover] = await Promise.all([
+        extractPageGeometry(vectorPage), extractPageGeometry(tablePage),
+        extractPageGeometry(rasterPage), extractPageGeometry(coverPage),
+      ]);
+
+      assert.equal(vectors.pageNumber, 1);
+      assert.ok(vectors.vectorClusters.length >= 5, "Expected grouped vector paths from both columns");
+      assert.equal(vectors.images.length, 0);
+      assert.equal(table.horizontalRules.length, 3);
+      assert.equal(raster.images.length, 1);
+      assert.ok(Math.abs(raster.images[0].bounds.width - 220) < 0.01);
+      assert.ok(Math.abs(raster.images[0].bounds.height - 140) < 0.01);
+      assert.equal(cover.images.length, 0);
+      assert.equal(cover.suppressedCoverImages.length, 1);
+      assert.ok(cover.suppressedCoverImages[0].coverageRatio >= COVER_PAGE_THRESHOLD);
+    } finally {
+      if (doc) await doc.destroy();
+      fixture.cleanup();
+    }
+  });
+});
+
+describe("pageGeometryExtractor — Optional local-paper regressions", () => {
+  it("optionally extracts vector paths and rules on Page 6 of the local arxiv sample", async (t) => {
     const pdfPath = path.resolve(PROJECT_ROOT, "uploads/arxiv-2610.30421-1793047803831.pdf");
+    if (!fs.existsSync(pdfPath)) {
+      t.skip("Optional local arXiv PDF is not checked into the repository; generated geometry regression runs above.");
+      return;
+    }
     const raw = new Uint8Array(fs.readFileSync(pdfPath));
     const doc = await pdfjs.getDocument({ data: raw }).promise;
     const page = await doc.getPage(6);
@@ -253,8 +290,12 @@ describe("pageGeometryExtractor — Real Sample PDF Regression Tests", () => {
     page.cleanup();
   });
 
-  it("suppresses full-page cover image on Page 1 of narbi sample", async () => {
+  it("optionally suppresses full-page cover image on Page 1 of narbi sample", async (t) => {
     const pdfPath = path.resolve(PROJECT_ROOT, "uploads/1792858120105-narbi61ofg8.pdf");
+    if (!fs.existsSync(pdfPath)) {
+      t.skip("Optional local Narbi PDF is not checked into the repository; generated cover regression runs above.");
+      return;
+    }
     const raw = new Uint8Array(fs.readFileSync(pdfPath));
     const doc = await pdfjs.getDocument({ data: raw }).promise;
     const page = await doc.getPage(1);
@@ -266,8 +307,12 @@ describe("pageGeometryExtractor — Real Sample PDF Regression Tests", () => {
     page.cleanup();
   });
 
-  it("extracts standalone raster chart on Page 11 of narbi sample", async () => {
+  it("optionally extracts standalone raster chart on Page 11 of narbi sample", async (t) => {
     const pdfPath = path.resolve(PROJECT_ROOT, "uploads/1792858120105-narbi61ofg8.pdf");
+    if (!fs.existsSync(pdfPath)) {
+      t.skip("Optional local Narbi PDF is not checked into the repository; generated raster regression runs above.");
+      return;
+    }
     const raw = new Uint8Array(fs.readFileSync(pdfPath));
     const doc = await pdfjs.getDocument({ data: raw }).promise;
     const page = await doc.getPage(11);

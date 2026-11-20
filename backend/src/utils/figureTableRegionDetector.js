@@ -11,6 +11,7 @@
 
 import { extractPageGeometry } from "./pageGeometryExtractor.js";
 import { detectCaptions } from "./captionDetector.js";
+import { BASELINE_PADDING_POINTS } from "./regionCropper.js";
 
 /**
  * Calculates 2D Intersection-over-Union (IoU) of two bounding boxes.
@@ -66,47 +67,7 @@ export function unionBoxes(boxes) {
   };
 }
 
-/**
- * Maximum vertical search distance in points for associating figures with captions.
- */
-export const MAX_FIGURE_SEARCH_DISTANCE = 450.0;
-
-/**
- * Checks whether an intervening caption exists vertically between a caption and a visual candidate
- * in the same column.
- *
- * @param {object} capBounds - Bounding box of the current caption
- * @param {object} candidateBox - Bounding box of the candidate element
- * @param {'above'|'below'} direction - Direction of the candidate relative to caption
- * @param {Array<object>} allCaptions - All detected captions on the page
- * @param {string} capCol - Column placement of current caption ('col1' | 'col2' | 'span' | 'center')
- * @param {function} getColumnPlacement - Column helper function
- * @returns {boolean} True if an intervening caption separates them
- */
-function hasInterveningCaption(capBounds, candidateBox, direction, allCaptions, capCol, getColumnPlacement) {
-  for (const other of allCaptions) {
-    const ob = other.bounds;
-    // Don't compare with self
-    if (ob === capBounds) continue;
-
-    const otherCol = getColumnPlacement(ob);
-    const colMatch = (capCol === "span" || otherCol === "span" || capCol === otherCol);
-    if (!colMatch) continue;
-
-    if (direction === "above") {
-      // Intervening caption sits strictly between caption top and candidate bottom
-      if (ob.minY > capBounds.maxY && ob.maxY < candidateBox.minY) {
-        return true;
-      }
-    } else {
-      // Intervening caption sits strictly between candidate top and caption bottom
-      if (ob.maxY < capBounds.minY && ob.minY > candidateBox.maxY) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
+const MAX_REGION_PAGE_AREA_RATIO = 0.85;
 
 /**
  * Clamps bounding box within page boundaries.
@@ -132,6 +93,172 @@ export function clampToPageView(box, pageView) {
   };
 }
 
+function boxGaps(a, b) {
+  return {
+    x: Math.max(0, a.minX - b.maxX, b.minX - a.maxX),
+    y: Math.max(0, a.minY - b.maxY, b.minY - a.maxY),
+  };
+}
+
+function adaptiveSpatialGap(a, b, referenceFontSize, pageWidth, pageHeight, maximumGapRatio = 0.075) {
+  const largestPrimitiveSpan = Math.max(a.width, a.height, b.width, b.height);
+  const pageScaleLimit = Math.min(pageWidth, pageHeight) * maximumGapRatio;
+  return Math.min(pageScaleLimit, Math.max(referenceFontSize * 2.5, largestPrimitiveSpan * 0.055));
+}
+
+/** Groups visual primitives using a page- and content-scale-aware neighborhood. */
+function groupSpatialCandidates(candidates, referenceFontSize = 9, pageWidth = 612, pageHeight = 792, maximumGapRatio = 0.075) {
+  const groups = [];
+  const visited = new Set();
+
+  for (let start = 0; start < candidates.length; start++) {
+    if (visited.has(start)) continue;
+    const stack = [start];
+    const members = [];
+    visited.add(start);
+
+    while (stack.length) {
+      const current = stack.pop();
+      members.push(candidates[current]);
+      for (let next = 0; next < candidates.length; next++) {
+        if (visited.has(next)) continue;
+        const gaps = boxGaps(candidates[current].box, candidates[next].box);
+        const gap = adaptiveSpatialGap(
+          candidates[current].box,
+          candidates[next].box,
+          referenceFontSize,
+          pageWidth,
+          pageHeight,
+          maximumGapRatio
+        );
+        if (Math.hypot(gaps.x, gaps.y) <= gap) {
+          visited.add(next);
+          stack.push(next);
+        }
+      }
+    }
+
+    groups.push({
+      members,
+      bounds: unionBoxes(members.map((member) => member.box)),
+    });
+  }
+
+  return groups;
+}
+
+function horizontalAssociationMatch(a, b, pageWidth) {
+  if (a.width >= pageWidth * 0.55 || b.width >= pageWidth * 0.55) return true;
+  const overlap = Math.max(0, Math.min(a.maxX, b.maxX) - Math.max(a.minX, b.minX));
+  const overlapRatio = overlap / Math.max(1, Math.min(a.width, b.width));
+  const centerDelta = Math.abs((a.minX + a.maxX - b.minX - b.maxX) / 2);
+  return overlapRatio >= 0.25 || centerDelta <= pageWidth * 0.12;
+}
+
+function getAdaptiveCaptionSearchDistance(caption, pageWidth, pageHeight) {
+  const fontSize = Math.max(6, caption.fontSize || 9);
+  const pageScale = Math.min(pageWidth, pageHeight);
+  return Math.min(pageScale * 0.34, Math.max(fontSize * 10, pageScale * 0.18));
+}
+
+function textInsideCaption(itemBounds, caption) {
+  const captionBounds = caption.bounds;
+  const padding = Math.max(2, caption.fontSize || 9);
+  const overlapWidth = Math.max(0, Math.min(itemBounds.maxX, captionBounds.maxX + padding) - Math.max(itemBounds.minX, captionBounds.minX - padding));
+  const overlapHeight = Math.max(0, Math.min(itemBounds.maxY, captionBounds.maxY + padding) - Math.max(itemBounds.minY, captionBounds.minY - padding));
+  const itemArea = Math.max(1, itemBounds.width * itemBounds.height);
+  if (itemBounds.width === 0) {
+    const centerX = (itemBounds.minX + itemBounds.maxX) / 2;
+    return centerX >= captionBounds.minX - padding && centerX <= captionBounds.maxX + padding && overlapHeight > 0;
+  }
+  return (overlapWidth * overlapHeight) / itemArea >= 0.5;
+}
+
+function isLikelyFigureLabel(text) {
+  const value = (text || "").trim();
+  if (!value || /^(?:figure|fig\.?|table)\s/i.test(value)) return false;
+  const words = value.match(/[\p{L}\p{N}]+/gu) || [];
+  if (words.length === 0) return false;
+  if (words.length > 6 || value.length > 72) return false;
+  if (words.length >= 5 && /[.!?;:]\s*$/.test(value)) return false;
+  return words.length <= 3 || /[\p{N}\p{S}]/u.test(value);
+}
+
+function isInlineSingleLetter(textItem, textItems) {
+  const value = (textItem?.text || "").trim();
+  if (!/^\p{L}$/u.test(value)) return false;
+  const bounds = textItem.bounds;
+  const fontSize = Math.max(6, textItem.fontSize || 9);
+  const baselineTolerance = Math.max(2, fontSize * 0.3);
+  const inlineGap = Math.max(2, fontSize * 0.6);
+  const centerY = (bounds.minY + bounds.maxY) / 2;
+
+  return (textItems || []).some((other) => {
+    if (other === textItem || !other.bounds) return false;
+    const otherText = (other.text || "").trim();
+    if (!otherText) return false;
+    const otherCenterY = (other.bounds.minY + other.bounds.maxY) / 2;
+    if (Math.abs(centerY - otherCenterY) > baselineTolerance) return false;
+    const gap = Math.max(0, bounds.minX - other.bounds.maxX, other.bounds.minX - bounds.maxX);
+    return gap <= inlineGap;
+  });
+}
+
+function includeFigureLabelBounds(bounds, textItems, captions, pageView) {
+  const labels = [];
+  const pageMinY = Math.min(pageView[1], pageView[3]);
+  const pageMaxY = Math.max(pageView[1], pageView[3]);
+  const pageHeight = pageMaxY - pageMinY;
+  for (const textItem of textItems || []) {
+    const itemBounds = textItem.bounds;
+    if (!itemBounds || !isLikelyFigureLabel(textItem.text)) continue;
+    // PDF text extraction often splits a prose line into words, spaces, and a
+    // separate one-letter math glyph (for example, an inline variable). Treat
+    // that glyph as body text when it continues a same-baseline text run.
+    if (isInlineSingleLetter(textItem, textItems)) continue;
+    if (captions.some((caption) => textInsideCaption(itemBounds, caption))) continue;
+    const fontSize = Math.max(6, textItem.fontSize || 9);
+    const isPageFolio = /^\d{1,3}$/.test(textItem.text.trim()) &&
+      (itemBounds.maxY >= pageMaxY - pageHeight * 0.07 || itemBounds.minY <= pageMinY + pageHeight * 0.07);
+    const intersectsVisual = itemBounds.minX < bounds.maxX && itemBounds.maxX > bounds.minX &&
+      itemBounds.minY < bounds.maxY && itemBounds.maxY > bounds.minY;
+    if (isPageFolio && !intersectsVisual) continue;
+    const horizontalMargin = Math.max(fontSize * 3, bounds.width * 0.13);
+    const verticalMargin = Math.max(fontSize * 3, bounds.height * 0.18);
+    if (itemBounds.minX < bounds.minX - horizontalMargin || itemBounds.maxX > bounds.maxX + horizontalMargin ||
+        itemBounds.minY < bounds.minY - verticalMargin || itemBounds.maxY > bounds.maxY + verticalMargin) continue;
+    labels.push(itemBounds);
+  }
+  return labels.length ? unionBoxes([bounds, ...labels]) : bounds;
+}
+
+function hasAdjacentBodyText(bounds, textItems, captions) {
+  for (const item of textItems || []) {
+    const box = item.bounds;
+    const text = (item.text || "").trim();
+    const wordCount = text.match(/[\p{L}\p{N}]+/gu)?.length || 0;
+    if (!box || isLikelyFigureLabel(text) || captions.some((caption) => textInsideCaption(box, caption))) continue;
+    if (wordCount < 7 && text.length <= 56) continue;
+
+    const gapX = Math.max(0, bounds.minX - box.maxX, box.minX - bounds.maxX);
+    const gapY = Math.max(0, bounds.minY - box.maxY, box.minY - bounds.maxY);
+    if (Math.hypot(gapX, gapY) <= BASELINE_PADDING_POINTS) return true;
+  }
+  return false;
+}
+
+function isPlausibleRegion(box, pageWidth, pageHeight, { minWidth = 50, minHeight = 30 } = {}) {
+  if (box.width < minWidth || box.height < minHeight) return false;
+  if (box.width >= pageWidth * 0.98 || box.height >= pageHeight * 0.95) return false;
+  return (box.width * box.height) / (pageWidth * pageHeight) <= MAX_REGION_PAGE_AREA_RATIO;
+}
+
+function distanceToCaption(box, captionBounds, direction) {
+  return direction === "above"
+    ? Math.max(0, box.minY - captionBounds.maxY)
+    : Math.max(0, captionBounds.minY - box.maxY);
+}
+
 /**
  * Detects candidate figure, chart, and table regions on a PDF page.
  *
@@ -145,93 +272,100 @@ export async function detectRegions(page, options = {}) {
   const {
     enableUnanchoredVector = false,
     minRasterDimension = 72,
+    onFontDiagnostics,
   } = options;
 
   const pageView = page.view || [0, 0, 612, 792];
   const pageWidth = Math.abs(pageView[2] - pageView[0]);
   const pageHeight = Math.abs(pageView[3] - pageView[1]);
-  const pageMidX = (pageView[0] + pageView[2]) / 2.0;
 
   // Extract both geometry and captions
   const [geometry, captionResult] = await Promise.all([
     extractPageGeometry(page),
     detectCaptions(page),
   ]);
+  if (typeof onFontDiagnostics === "function") {
+    onFontDiagnostics(captionResult.fontDiagnostics);
+  }
 
   const detectedRegions = [];
   const claimedImageIndices = new Set();
-  const claimedRuleIndices = new Set();
   const claimedClusterIndices = new Set();
 
-  // Helper to determine whether a box is in column 1, column 2, or spans both
-  function getColumnPlacement(box) {
-    const isSpan = box.width >= 0.60 * pageWidth;
-    if (isSpan) return "span";
-    return (box.maxX <= pageMidX + 25) ? "col1" : (box.minX >= pageMidX - 25) ? "col2" : "center";
-  }
+  const captionFontSize = Math.max(6, ...captionResult.captions.map((item) => item.fontSize || 9));
 
   // 1. Anchor-Driven Association (Figures and Tables with Captions)
   for (const caption of captionResult.captions) {
     const capBounds = caption.bounds;
     const isTable = caption.targetType === "table";
-    const capCol = getColumnPlacement(capBounds);
 
-    const associatedBoxes = [capBounds];
+    // Caption text is retained as metadata, but never contributes to visual bounds.
+    const associatedBoxes = [];
     let captionPosition = "below"; // Default for figures
     let matchedRules = 0;
     let matchedImages = 0;
     let matchedClusters = 0;
 
     if (isTable) {
-      // Tables: Look for horizontal rules both ABOVE and BELOW the caption
-      // (within vertical reach of 300 pt and matching column bounds)
+      // Tables are bounded by a nearby spatial group of horizontal rules.
+      // The caption remains metadata and is excluded from the rendered crop.
+      const ruleCandidates = [];
       for (let r = 0; r < geometry.horizontalRules.length; r++) {
         const rule = geometry.horizontalRules[r];
         const ruleBox = { minX: rule.x1, maxX: rule.x2, minY: rule.y - rule.thickness / 2, maxY: rule.y + rule.thickness / 2, width: rule.length, height: rule.thickness };
-        const ruleCol = getColumnPlacement(ruleBox);
+        const colMatch = horizontalAssociationMatch(capBounds, ruleBox, pageWidth);
+        const tableDistance = getAdaptiveCaptionSearchDistance(caption, pageWidth, pageHeight) * 1.5;
+        if (!colMatch || Math.abs(rule.y - capBounds.minY) > tableDistance) continue;
+        ruleCandidates.push({ type: "rule", index: r, box: ruleBox });
+      }
 
-        // Column match: either spans both, or both in same column
-        const colMatch = (capCol === "span" || ruleCol === "span" || capCol === ruleCol);
-        const distY = Math.abs(rule.y - capBounds.minY);
+      const tableGroupingFontScale = Math.max(captionFontSize, Math.min(pageHeight * 0.12, pageWidth * 0.15) / 3);
+      const ruleGroups = groupSpatialCandidates(ruleCandidates, tableGroupingFontScale, pageWidth, pageHeight, 0.14)
+        .filter((group) => group.members.length >= 2)
+        .map((group) => ({
+          ...group,
+          distance: distanceToCaption(group.bounds, capBounds, group.bounds.minY >= capBounds.maxY ? "above" : "below"),
+        }))
+        .sort((a, b) => a.distance - b.distance);
 
-        if (colMatch && distY <= 300) {
-          associatedBoxes.push(ruleBox);
-          claimedRuleIndices.add(r);
-          matchedRules++;
-          if (rule.y > capBounds.maxY) {
-            captionPosition = "below";
-          } else if (rule.y < capBounds.minY) {
-            captionPosition = "above";
-          }
-        }
+      if (ruleGroups.length) {
+        const selected = ruleGroups[0];
+        associatedBoxes.push(selected.bounds);
+        matchedRules = selected.members.length;
+        captionPosition = selected.bounds.minY >= capBounds.maxY ? "below" : "above";
       }
     } else {
-      // Figures: Look for visual candidates bidirectionally (both ABOVE and BELOW caption)
+      // Collect nearby raster and vector primitives, then associate one coherent
+      // spatial component rather than unioning every candidate in a wide column.
       const candidatesAbove = [];
       const candidatesBelow = [];
+
+      const addCandidate = (candidate) => {
+        const { box } = candidate;
+        if (!horizontalAssociationMatch(capBounds, box, pageWidth)) return;
+
+        const directions = [
+          { name: "above", qualifies: box.minY >= capBounds.maxY - 15, distance: Math.max(0, box.minY - capBounds.maxY) },
+          { name: "below", qualifies: box.maxY <= capBounds.minY + 15, distance: Math.max(0, capBounds.minY - box.maxY) },
+        ];
+        for (const direction of directions) {
+          const maxDistance = getAdaptiveCaptionSearchDistance(caption, pageWidth, pageHeight);
+          if (!direction.qualifies || direction.distance > maxDistance) continue;
+          if (captionResult.captions.some((other) => {
+            if (other === caption || !horizontalAssociationMatch(capBounds, other.bounds, pageWidth)) return false;
+            return direction.name === "above"
+              ? other.bounds.minY > capBounds.maxY && other.bounds.minY < box.minY
+              : other.bounds.maxY < capBounds.minY && other.bounds.maxY > box.maxY;
+          })) continue;
+          (direction.name === "above" ? candidatesAbove : candidatesBelow).push(candidate);
+          break;
+        }
+      };
 
       // Check unclaimed raster images
       for (let m = 0; m < geometry.images.length; m++) {
         if (claimedImageIndices.has(m) || geometry.images[m].isCoverPage) continue;
-        const img = geometry.images[m];
-        const imgBox = img.bounds;
-        const imgCol = getColumnPlacement(imgBox);
-        const colMatch = (capCol === "span" || imgCol === "span" || capCol === imgCol);
-        if (!colMatch) continue;
-
-        // Is candidate above caption? (y_elem > y_cap)
-        const isAbove = imgBox.minY >= capBounds.maxY - 15 && imgBox.minY <= capBounds.maxY + MAX_FIGURE_SEARCH_DISTANCE;
-        if (isAbove && !hasInterveningCaption(capBounds, imgBox, "above", captionResult.captions, capCol, getColumnPlacement)) {
-          const dist = Math.max(0, imgBox.minY - capBounds.maxY);
-          candidatesAbove.push({ type: "image", index: m, box: imgBox, dist });
-        }
-
-        // Is candidate below caption? (y_elem < y_cap)
-        const isBelow = imgBox.maxY <= capBounds.minY + 15 && imgBox.maxY >= capBounds.minY - MAX_FIGURE_SEARCH_DISTANCE;
-        if (isBelow && !hasInterveningCaption(capBounds, imgBox, "below", captionResult.captions, capCol, getColumnPlacement)) {
-          const dist = Math.max(0, capBounds.minY - imgBox.maxY);
-          candidatesBelow.push({ type: "image", index: m, box: imgBox, dist });
-        }
+        addCandidate({ type: "image", index: m, box: geometry.images[m].bounds });
       }
 
       // Check unclaimed vector clusters
@@ -241,91 +375,93 @@ export async function detectRegions(page, options = {}) {
         const cBox = cluster.bounds;
         if (cBox.width < 40 && cBox.height < 40) continue;
 
-        const cCol = getColumnPlacement(cBox);
-        const colMatch = (capCol === "span" || cCol === "span" || capCol === cCol);
-        if (!colMatch) continue;
-
-        // Is candidate above caption?
-        const isAbove = cBox.minY >= capBounds.maxY - 15 && cBox.minY <= capBounds.maxY + MAX_FIGURE_SEARCH_DISTANCE;
-        if (isAbove && !hasInterveningCaption(capBounds, cBox, "above", captionResult.captions, capCol, getColumnPlacement)) {
-          const dist = Math.max(0, cBox.minY - capBounds.maxY);
-          candidatesAbove.push({ type: "cluster", index: c, box: cBox, dist });
-        }
-
-        // Is candidate below caption?
-        const isBelow = cBox.maxY <= capBounds.minY + 15 && cBox.maxY >= capBounds.minY - MAX_FIGURE_SEARCH_DISTANCE;
-        if (isBelow && !hasInterveningCaption(capBounds, cBox, "below", captionResult.captions, capCol, getColumnPlacement)) {
-          const dist = Math.max(0, capBounds.minY - cBox.maxY);
-          candidatesBelow.push({ type: "cluster", index: c, box: cBox, dist });
-        }
+        addCandidate({ type: "cluster", index: c, box: cBox });
       }
 
-      // Direction Selection:
-      // In academic typography, figures overwhelmingly sit above their caption (captionPosition = "below").
-      // Prefer "above" if candidates exist above; if only below, or if below is strictly closer, choose "below".
-      let chosenCandidates = [];
-      if (candidatesAbove.length > 0 && candidatesBelow.length === 0) {
-        chosenCandidates = candidatesAbove;
-        captionPosition = "below";
-      } else if (candidatesAbove.length === 0 && candidatesBelow.length > 0) {
-        chosenCandidates = candidatesBelow;
-        captionPosition = "above";
-      } else if (candidatesAbove.length > 0 && candidatesBelow.length > 0) {
-        const minDistAbove = Math.min(...candidatesAbove.map(c => c.dist));
-        const minDistBelow = Math.min(...candidatesBelow.map(c => c.dist));
-        if (minDistBelow < minDistAbove) {
-          chosenCandidates = candidatesBelow;
-          captionPosition = "above";
-        } else {
-          chosenCandidates = candidatesAbove;
-          captionPosition = "below";
-        }
-      }
+      const groupsAbove = groupSpatialCandidates(candidatesAbove, caption.fontSize, pageWidth, pageHeight).filter((group) =>
+        isPlausibleRegion(group.bounds, pageWidth, pageHeight)
+      );
+      const groupsBelow = groupSpatialCandidates(candidatesBelow, caption.fontSize, pageWidth, pageHeight).filter((group) =>
+        isPlausibleRegion(group.bounds, pageWidth, pageHeight)
+      );
+      // Prefer the conventional figure-above-caption arrangement. This keeps
+      // immediately following body text from winning solely because it is close.
+      // Captions above figures remain supported when no plausible group is above.
+      const directionGroups = groupsAbove.length ? groupsAbove : groupsBelow;
+      const direction = groupsAbove.length ? "above" : "below";
+      const rankedGroups = directionGroups.map((group) => ({
+        ...group,
+        direction,
+        distance: distanceToCaption(group.bounds, capBounds, direction),
+      })).sort((a, b) => a.distance - b.distance);
 
-      // Associate selected elements and mark them claimed
-      for (const cand of chosenCandidates) {
-        associatedBoxes.push(cand.box);
-        if (cand.type === "image") {
-          claimedImageIndices.add(cand.index);
-          matchedImages++;
-        } else {
-          claimedClusterIndices.add(cand.index);
-          matchedClusters++;
+      const selected = rankedGroups[0];
+      const panelGapLimit = Math.max(caption.fontSize * 4, pageWidth * 0.08);
+      const panelBandLimit = Math.max(caption.fontSize * 4, pageHeight * 0.05);
+      const selectedPanelPeers = selected && capBounds.width >= pageWidth * 0.55
+        ? rankedGroups.slice(1).filter((candidateGroup) => {
+          const gaps = boxGaps(selected.bounds, candidateGroup.bounds);
+          return gaps.x <= panelGapLimit && gaps.y <= panelBandLimit &&
+            Math.abs(candidateGroup.distance - selected.distance) <= panelBandLimit;
+        })
+        : [];
+      const ambiguous = selected && rankedGroups[1] &&
+        Math.abs(rankedGroups[1].distance - selected.distance) < 12 && selectedPanelPeers.length === 0;
+      if (selected && !ambiguous) {
+        const selectedGroups = [selected, ...selectedPanelPeers];
+        associatedBoxes.push(...selectedGroups.map((group) => group.bounds));
+        captionPosition = selected.direction === "above" ? "below" : "above";
+        for (const group of selectedGroups) {
+          for (const member of group.members) {
+            if (member.type === "image") {
+              claimedImageIndices.add(member.index);
+              matchedImages++;
+            } else {
+              claimedClusterIndices.add(member.index);
+              matchedClusters++;
+            }
+          }
         }
       }
     }
 
-    // Build composite bounding box
-    const unionRaw = unionBoxes(associatedBoxes);
-    const clampedBounds = clampToPageView(unionRaw, pageView);
-
-    // Filter out degenerate zero or whole-page regions
-    if (clampedBounds.width >= 50 && clampedBounds.height >= 30) {
-      const isFullPage = (clampedBounds.width >= 0.95 * pageWidth && clampedBounds.height >= 0.95 * pageHeight);
-      if (!isFullPage) {
-        let confidence = caption.confidence;
-        if (isTable && matchedRules >= 2) confidence = Math.min(1.0, confidence + 0.05);
-        if (!isTable && (matchedImages > 0 || matchedClusters > 0)) confidence = Math.min(1.0, confidence + 0.05);
-
-        detectedRegions.push({
-          assetType: isTable ? "table" : "figure",
-          pageNumber: geometry.pageNumber,
-          bounds: clampedBounds,
-          caption: {
-            identifier: caption.identifier,
-            fullText: caption.captionText,
-            position: captionPosition,
-          },
-          detectionMethod: isTable ? "caption_table_rules" : (matchedImages > 0 ? "caption_raster_association" : "caption_vector_association"),
-          heuristicConfidence: confidence,
-          metadata: {
-            matchedRules,
-            matchedImages,
-            matchedClusters,
-            columnPlacement: capCol,
-          },
-        });
+    if (associatedBoxes.length === 0) continue;
+    let clampedBounds = clampToPageView(unionBoxes(associatedBoxes), pageView);
+    let cropPaddingPoints;
+    if (!isTable) {
+      clampedBounds = clampToPageView(
+        includeFigureLabelBounds(clampedBounds, captionResult.textItems, captionResult.captions, pageView),
+        pageView
+      );
+      if (hasAdjacentBodyText(clampedBounds, captionResult.textItems, captionResult.captions)) {
+        cropPaddingPoints = 0;
       }
+    }
+
+    if (isPlausibleRegion(clampedBounds, pageWidth, pageHeight)) {
+      let confidence = caption.confidence;
+      if (isTable && matchedRules >= 2) confidence = Math.min(1.0, confidence + 0.05);
+      if (!isTable && (matchedImages > 0 || matchedClusters > 0)) confidence = Math.min(1.0, confidence + 0.05);
+
+      detectedRegions.push({
+        assetType: isTable ? "table" : "figure",
+        pageNumber: geometry.pageNumber,
+        bounds: clampedBounds,
+        caption: {
+          identifier: caption.identifier,
+          fullText: caption.captionText,
+          position: captionPosition,
+        },
+        detectionMethod: isTable ? "caption_table_rules" : (matchedImages > 0 ? "caption_raster_association" : "caption_vector_association"),
+        heuristicConfidence: confidence,
+        cropPaddingPoints,
+        metadata: {
+          matchedRules,
+          matchedImages,
+          matchedClusters,
+          columnPlacement: caption.bounds.width >= pageWidth * 0.55 ? "span" : "local",
+        },
+      });
     }
   }
 

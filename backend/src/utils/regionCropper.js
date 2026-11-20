@@ -171,7 +171,10 @@ export async function renderPageToCanvas(page, viewport) {
  * @returns {{ appliedPadding: number, miterPaddingCapped: boolean, requiredPadding: number, warning?: string }}
  */
 export function resolveCropPadding(requiredMiterPadding = 0, baselinePadding = BASELINE_PADDING_POINTS, maxPadding = MAX_CROP_PADDING_POINTS) {
-  const computedPadding = Math.max(baselinePadding, Math.ceil(requiredMiterPadding));
+  const requestedBaseline = Number.isFinite(baselinePadding)
+    ? Math.max(0, baselinePadding)
+    : BASELINE_PADDING_POINTS;
+  const computedPadding = Math.max(requestedBaseline, Math.ceil(requiredMiterPadding));
   const isCapped = computedPadding > maxPadding;
   const appliedPadding = isCapped ? maxPadding : computedPadding;
 
@@ -217,6 +220,7 @@ export async function cropRegionFromPage(page, pdfBounds, options = {}) {
   const {
     scale = DEFAULT_RENDER_SCALE,
     requiredMiterPadding = 0,
+    paddingPoints: requestedPaddingPoints = BASELINE_PADDING_POINTS,
     renderedPageCanvas = null,
     staging = null,
     stagingDir = null,
@@ -227,7 +231,7 @@ export async function cropRegionFromPage(page, pdfBounds, options = {}) {
   } = options;
 
   // Resolve padding in PDF points
-  const paddingInfo = resolveCropPadding(requiredMiterPadding);
+  const paddingInfo = resolveCropPadding(requiredMiterPadding, requestedPaddingPoints);
   const paddingPoints = paddingInfo.appliedPadding;
 
   // Create viewport with native rotation handling

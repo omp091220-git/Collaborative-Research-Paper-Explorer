@@ -6,6 +6,7 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
@@ -17,7 +18,9 @@ import {
   normalizeCaptionWhitespace,
   tryReconstructSplitStarter,
   detectCaptions,
+  summarizeFontUsage,
 } from "../utils/captionDetector.js";
+import { createFr09FixturePdf } from "./fr09PdfFixture.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -128,6 +131,29 @@ describe("captionDetector — Text Normalization & Whitespace", () => {
   });
 });
 
+describe("captionDetector — Privacy-safe font diagnostics", () => {
+  it("reports unresolved font references without retaining document text", () => {
+    const textContent = {
+      items: [
+        { str: "PRIVATE PAPER TEXT", fontName: "font-present" },
+        { str: "∑ α β", fontName: "font-missing" },
+      ],
+      styles: { "font-present": { fontFamily: "serif" } },
+    };
+
+    const diagnostics = summarizeFontUsage(textContent);
+    assert.deepEqual(diagnostics, {
+      textItemCount: 2,
+      fontReferenceCount: 2,
+      fontIds: ["font-missing", "font-present"],
+      unresolvedFontIds: ["font-missing"],
+      fontFamilies: ["serif"],
+    });
+    assert.equal(JSON.stringify(diagnostics).includes("PRIVATE PAPER TEXT"), false);
+    assert.equal(JSON.stringify(diagnostics).includes("∑ α β"), false);
+  });
+});
+
 describe("captionDetector — Synthetic Page & Multi-line Accumulation", () => {
   it("throws on invalid page object", async () => {
     await assert.rejects(async () => {
@@ -224,8 +250,53 @@ describe("captionDetector — Synthetic Page & Multi-line Accumulation", () => {
   });
 });
 
-describe("captionDetector — Real Sample PDF Regression Tests", () => {
-  it("detects Figure 1 caption on Page 6 of arxiv sample", async () => {
+describe("captionDetector — Self-contained PDF fixture tests", () => {
+  it("detects two figure captions and math symbols in the self-contained two-column PDF", async () => {
+    const fixture = createFr09FixturePdf();
+    let doc;
+    try {
+      doc = await pdfjs.getDocument(fixture.filePath).promise;
+      const [page, sciencePage] = await Promise.all([doc.getPage(1), doc.getPage(3)]);
+      const [result, scienceResult] = await Promise.all([detectCaptions(page), detectCaptions(sciencePage)]);
+      assert.deepEqual(result.captions.map((caption) => caption.identifier), ["1", "2"]);
+      assert.ok(result.captions[0].captionText.includes("Left column vector diagram"));
+      assert.ok(result.captions[1].captionText.includes("Right column chart"));
+      assert.ok(result.textItems.some((item) => item.text.includes("α")), "Expected extracted Greek alpha");
+      assert.ok(result.textItems.some((item) => item.text.includes("Σ")), "Expected extracted mathematical Sigma");
+      assert.ok(scienceResult.textItems.some((item) => item.text.includes("1.25E-4")), "Expected scientific notation text");
+    } finally {
+      if (doc) await doc.destroy();
+      fixture.cleanup();
+    }
+  });
+
+  it("detects a table caption and handles the raster-only cover page in the self-contained PDF", async () => {
+    const fixture = createFr09FixturePdf();
+    let doc;
+    try {
+      doc = await pdfjs.getDocument(fixture.filePath).promise;
+      const [tablePage, coverPage] = await Promise.all([doc.getPage(2), doc.getPage(4)]);
+      const table = await detectCaptions(tablePage);
+      const cover = await detectCaptions(coverPage);
+      assert.equal(table.captions.length, 1);
+      assert.equal(table.captions[0].targetType, "table");
+      assert.match(table.captions[0].captionText, /Synthetic measurements/);
+      assert.equal(cover.hasExtractableText, false);
+      assert.equal(cover.captions.length, 0);
+    } finally {
+      if (doc) await doc.destroy();
+      fixture.cleanup();
+    }
+  });
+
+});
+
+describe("captionDetector — Optional local-paper regressions", () => {
+  it("optionally detects Figure 1 caption on Page 6 of the local arxiv sample", async (t) => {
+    if (!fs.existsSync(ARXIV_SAMPLE_PATH)) {
+      t.skip("Optional local arXiv PDF is not checked into the repository; self-contained caption cases run above.");
+      return;
+    }
     const doc = await pdfjs.getDocument(ARXIV_SAMPLE_PATH).promise;
     const page6 = await doc.getPage(6);
     const result = await detectCaptions(page6);
@@ -241,7 +312,11 @@ describe("captionDetector — Real Sample PDF Regression Tests", () => {
     assert.ok(fig1.bounds.width > 400);
   });
 
-  it("detects Table 1, Table 2, and Figure 6 captions on Page 11 of arxiv sample", async () => {
+  it("optionally detects Table 1, Table 2, and Figure 6 captions on Page 11 of arxiv sample", async (t) => {
+    if (!fs.existsSync(ARXIV_SAMPLE_PATH)) {
+      t.skip("Optional local arXiv PDF is not checked into the repository; self-contained caption cases run above.");
+      return;
+    }
     const doc = await pdfjs.getDocument(ARXIV_SAMPLE_PATH).promise;
     const page11 = await doc.getPage(11);
     const result = await detectCaptions(page11);
@@ -262,7 +337,11 @@ describe("captionDetector — Real Sample PDF Regression Tests", () => {
     assert.ok(fig6.captionText.startsWith("Figure 6: Parametric rank-dataweights"));
   });
 
-  it("handles non-text or cover pages gracefully on narbi sample", async () => {
+  it("optionally handles a cover page from the local narbi sample", async (t) => {
+    if (!fs.existsSync(NARBI_SAMPLE_PATH)) {
+      t.skip("Optional local Narbi PDF is not checked into the repository; a generated raster-only cover runs above.");
+      return;
+    }
     const doc = await pdfjs.getDocument(NARBI_SAMPLE_PATH).promise;
     const page1 = await doc.getPage(1);
     const result = await detectCaptions(page1);

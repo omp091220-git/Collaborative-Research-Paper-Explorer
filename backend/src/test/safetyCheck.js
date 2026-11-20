@@ -15,44 +15,125 @@ export class TestDatabaseSafetyError extends Error {
  * Validates that the active database connection is authorized for test execution.
  * Throws TestDatabaseSafetyError if the environment is unsafe.
  *
- * @param {string} [connectionString=process.env.DATABASE_URL]
+ * @param {string} [testConnectionString=process.env.TEST_DATABASE_URL]
+ * @param {string} [mainConnectionString=process.env.DATABASE_URL]
+ * @param {string} [nodeEnv=process.env.NODE_ENV]
+ * @param {string} [allowedTargetsJson=process.env.TEST_DATABASE_ALLOWED_TARGETS]
+ *
+ * TEST_DATABASE_ALLOWED_TARGETS is an operational safeguard. Because it is
+ * environment-provided alongside the connection URL, it is not independent
+ * proof that the target is isolated from production or shared data.
  */
-export const assertSafeTestDatabase = (connectionString = process.env.DATABASE_URL) => {
-  if (process.env.NODE_ENV === 'production') {
+export const assertSafeTestDatabase = (
+  testConnectionString = process.env.TEST_DATABASE_URL,
+  mainConnectionString = process.env.DATABASE_URL,
+  nodeEnv = process.env.NODE_ENV,
+  allowedTargetsJson = process.env.TEST_DATABASE_ALLOWED_TARGETS
+) => {
+  if (typeof nodeEnv === 'string' && nodeEnv.toLowerCase() === 'production') {
     throw new TestDatabaseSafetyError(
       'Execution aborted: NODE_ENV is set to "production". Tests must never run in production.'
     );
   }
 
-  if (!connectionString) {
+  if (!testConnectionString) {
     throw new TestDatabaseSafetyError(
-      'Execution aborted: No DATABASE_URL or TEST_DATABASE_URL is configured.'
+      'Execution aborted: TEST_DATABASE_URL is required. Tests will not use DATABASE_URL.'
     );
   }
 
-  let parsedUrl;
+  const parsePostgresUrl = (connectionString, label) => {
+    let parsed;
+    try {
+      parsed = new URL(connectionString);
+    } catch {
+      throw new TestDatabaseSafetyError(
+        `Execution aborted: ${label} is malformed.`
+      );
+    }
+
+    if (
+      !['postgres:', 'postgresql:'].includes(parsed.protocol) ||
+      !parsed.hostname ||
+      !parsed.pathname ||
+      parsed.pathname === '/'
+    ) {
+      throw new TestDatabaseSafetyError(
+        `Execution aborted: ${label} must be a PostgreSQL URL with a host and database name.`
+      );
+    }
+
+    return parsed;
+  };
+
+  const testUrl = parsePostgresUrl(testConnectionString, 'TEST_DATABASE_URL');
+  const portOf = (url) => url.port || '5432';
+  const databaseOf = (url) => decodeURIComponent(url.pathname.slice(1));
+
+  if (mainConnectionString) {
+    const mainUrl = parsePostgresUrl(mainConnectionString, 'DATABASE_URL');
+    if (
+      testUrl.hostname.toLowerCase() === mainUrl.hostname.toLowerCase() &&
+      portOf(testUrl) === portOf(mainUrl) &&
+      databaseOf(testUrl) === databaseOf(mainUrl)
+    ) {
+      throw new TestDatabaseSafetyError(
+        'Execution aborted: TEST_DATABASE_URL points to the same host, port, and database as DATABASE_URL.'
+      );
+    }
+  }
+
+  if (!allowedTargetsJson) {
+    throw new TestDatabaseSafetyError(
+      'Execution aborted: TEST_DATABASE_ALLOWED_TARGETS is required.'
+    );
+  }
+
+  let configuredTargets;
   try {
-    parsedUrl = new URL(connectionString);
+    configuredTargets = JSON.parse(allowedTargetsJson);
   } catch {
     throw new TestDatabaseSafetyError(
-      'Execution aborted: Database connection string is malformed.'
+      'Execution aborted: TEST_DATABASE_ALLOWED_TARGETS must be valid JSON.'
     );
   }
 
-  const isExplicitTestDb =
-    Boolean(process.env.TEST_DATABASE_URL) ||
-    parsedUrl.pathname.includes('test') ||
-    parsedUrl.hostname === 'localhost' ||
-    parsedUrl.hostname === '127.0.0.1';
-
-  const isExplicitlyAuthorized = process.env.ALLOW_TEST_DB_OPERATIONS === 'true';
-
-  if (!isExplicitTestDb && !isExplicitlyAuthorized) {
+  if (!Array.isArray(configuredTargets)) {
     throw new TestDatabaseSafetyError(
-      `Execution aborted: Refusing to run tests against database host "${parsedUrl.hostname}" ` +
-      `without explicit test isolation authorization (set TEST_DATABASE_URL or ALLOW_TEST_DB_OPERATIONS=true).`
+      'Execution aborted: TEST_DATABASE_ALLOWED_TARGETS must be a JSON array.'
     );
   }
+
+  const validTargets = configuredTargets.filter((target) =>
+    target &&
+    typeof target.host === 'string' && target.host.trim() &&
+    Number.isInteger(target.port) && target.port >= 1 && target.port <= 65535 &&
+    typeof target.database === 'string' && target.database.trim()
+  ).map((target) => ({
+    host: target.host.trim().toLowerCase(),
+    port: String(target.port),
+    database: target.database.trim(),
+  }));
+
+  if (validTargets.length === 0) {
+    throw new TestDatabaseSafetyError(
+      'Execution aborted: TEST_DATABASE_ALLOWED_TARGETS contains no valid targets.'
+    );
+  }
+
+  const isAllowlisted = validTargets.some((target) =>
+    target.host === testUrl.hostname.toLowerCase() &&
+    target.port === portOf(testUrl) &&
+    target.database === databaseOf(testUrl)
+  );
+
+  if (!isAllowlisted) {
+    throw new TestDatabaseSafetyError(
+      'Execution aborted: TEST_DATABASE_URL does not match an approved test database target.'
+    );
+  }
+
+  return true;
 };
 
 /**

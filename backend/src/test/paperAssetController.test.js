@@ -8,14 +8,11 @@ import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import os from 'node:os';
 import { Readable, Writable } from 'node:stream';
 
 import { createPaperAssetController } from '../controllers/paperAsset.controller.js';
 import { PaperAssetError } from '../services/paperAsset.service.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Helper to create mock request/response objects
 function createMockReqRes({ params = {}, query = {}, body = {}, user = null } = {}) {
@@ -64,25 +61,7 @@ function createMockReqRes({ params = {}, query = {}, body = {}, user = null } = 
   return { req, res };
 }
 
-// Compute fixture directory dedicated strictly to this test suite
-const BACKEND_ROOT = path.resolve(__dirname, '..', '..');
-const REAL_ASSETS_DIR = path.join(BACKEND_ROOT, 'uploads', 'assets');
 const TEST_DIR_NAME = 'test-controller-paper-uuid';
-const TEST_FIXTURE_DIR = path.join(REAL_ASSETS_DIR, TEST_DIR_NAME);
-const LEGACY_LEFTOVER_DIR = path.join(REAL_ASSETS_DIR, 'paper-uuid-asset');
-
-function safeCleanupFixtureDirs() {
-  try {
-    if (fs.existsSync(TEST_FIXTURE_DIR)) {
-      fs.rmSync(TEST_FIXTURE_DIR, { recursive: true, force: true });
-    }
-    if (fs.existsSync(LEGACY_LEFTOVER_DIR)) {
-      fs.rmSync(LEGACY_LEFTOVER_DIR, { recursive: true, force: true });
-    }
-  } catch {
-    // Ignore cleanup errors during teardown
-  }
-}
 
 describe('paperAssetController – listAssets', () => {
   let mockService;
@@ -263,28 +242,40 @@ describe('paperAssetController – getExtractionStatus', () => {
 describe('paperAssetController – getAsset', () => {
   let mockService;
   let controller;
+  let fixtureRoot;
   const testPaperId = TEST_DIR_NAME;
   const testAssetId = 'asset-sub-uuid';
   const fileName = 'test-image.png';
-  const testDir = path.join(TEST_FIXTURE_DIR, testAssetId);
-  const filePath = path.join(testDir, fileName);
+  let filePath;
 
   beforeEach(() => {
-    safeCleanupFixtureDirs();
-    mockService = {
-      requestExtraction: async () => ({}),
-      getActiveAssets: async () => ({ assets: [], count: 0 }),
-      getExtractionStatus: async () => ({ status: 'not_extracted', job: null }),
-      getAssetBinary: async () => ({ asset: {}, filePath: '' }),
-    };
-    controller = createPaperAssetController(mockService);
+    fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'fr09-controller-assets-'));
+    try {
+      const testDir = path.join(fixtureRoot, testAssetId);
+      filePath = path.join(testDir, fileName);
+      mockService = {
+        requestExtraction: async () => ({}),
+        getActiveAssets: async () => ({ assets: [], count: 0 }),
+        getExtractionStatus: async () => ({ status: 'not_extracted', job: null }),
+        getAssetBinary: async () => ({ asset: {}, filePath: '' }),
+      };
+      controller = createPaperAssetController(mockService);
 
-    fs.mkdirSync(testDir, { recursive: true });
-    fs.writeFileSync(filePath, 'dummypngdata');
+      fs.mkdirSync(testDir, { recursive: true });
+      fs.writeFileSync(filePath, 'dummypngdata');
+    } catch (error) {
+      if (fixtureRoot && fs.existsSync(fixtureRoot)) {
+        fs.rmSync(fixtureRoot, { recursive: true, force: true });
+      }
+      fixtureRoot = null;
+      throw error;
+    }
   });
 
   afterEach(() => {
-    safeCleanupFixtureDirs();
+    if (fixtureRoot && fs.existsSync(fixtureRoot)) {
+      fs.rmSync(fixtureRoot, { recursive: true, force: true });
+    }
   });
 
   it('streams a valid PNG with correct headers and body', async () => {
