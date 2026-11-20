@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function runMigrations() {
-  const migrationsDir = path.resolve(__dirname, '../../../database');
+  const migrationsDir = path.resolve(__dirname, '../../migrations');
   const migrationFiles = [
     'schema.sql',
     '20261017_email_verification.sql',

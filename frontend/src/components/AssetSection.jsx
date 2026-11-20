@@ -55,7 +55,6 @@ export default function AssetSection({ paperId }) {
     };
     load();
 
-    // Setup polling for queued/processing
     const startPolling = () => {
       if (pollRef.current) return;
       pollRef.current = setInterval(async () => {
@@ -102,7 +101,9 @@ export default function AssetSection({ paperId }) {
 
   return (
     <div className="asset-section border-t border-theme-subtle pt-4 mt-4">
-      <h3 className="text-sm font-bold text-theme-main mb-2">Extraction Status: <span className="text-violet-400">{status?.toUpperCase()}</span></h3>
+      <h3 className="text-sm font-bold text-theme-main mb-2">
+        Extraction Status: <span className="text-violet-400">{status?.toUpperCase()}</span>
+      </h3>
       {status === 'completed' && (
         <>
           {loadingAssets ? (

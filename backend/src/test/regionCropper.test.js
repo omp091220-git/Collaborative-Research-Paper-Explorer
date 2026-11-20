@@ -10,6 +10,9 @@ import path from "node:path";
 import fs from "node:fs";
 import os from "node:os";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
+import { createCanvas } from "@napi-rs/canvas";
+import { detectRegions } from "../utils/figureTableRegionDetector.js";
+import { createFr09FixturePdf } from "./fr09PdfFixture.js";
 
 import {
   clampCropBounds,
@@ -28,6 +31,27 @@ const ARXIV_SAMPLE_PATH = path.resolve("..", "uploads", "arxiv-2610.30421-179304
 const NARBI_SAMPLE_PATH = path.resolve("..", "uploads", "1792858120105-narbi61ofg8.pdf");
 
 describe("regionCropper — Viewport Bounding Box Clamping", () => {
+  it("supports reducing baseline padding for a region adjacent to body text", async () => {
+    const canvas = createCanvas(100, 100);
+    const page = {
+      view: [0, 0, 100, 100],
+      getViewport: ({ scale = 1 } = {}) => ({
+        width: 100 * scale,
+        height: 100 * scale,
+        convertToViewportPoint: (x, y) => [x * scale, (100 - y) * scale],
+      }),
+    };
+
+    const cropped = await cropRegionFromPage(page, { minX: 10, minY: 10, maxX: 30, maxY: 30 }, {
+      renderedPageCanvas: canvas,
+      paddingPoints: 0,
+    });
+
+    assert.equal(cropped.paddingApplied, 0);
+    assert.equal(cropped.width, 40, "20 PDF points render at the default 2x scale");
+    assert.equal(cropped.height, 40, "20 PDF points render at the default 2x scale");
+  });
+
   it("clamps rectangles that lie completely inside viewport", () => {
     const rect = { x: 50.2, y: 100.8, width: 200.4, height: 150.1 };
     const clamped = clampCropBounds(rect, 800, 1000);
@@ -97,8 +121,41 @@ describe("regionCropper — Dynamic Miter Padding Resolution", () => {
   });
 });
 
-describe("regionCropper — Multi-Rotation & Rendering Tests", () => {
-  it("crops regions cleanly across 0, 90, 180, and 270 degree rotations", async () => {
+describe("regionCropper — Self-contained generated PDF rotation regression", () => {
+  it("crops a generated vector figure cleanly across 0, 90, 180, and 270 degree rotations", async () => {
+    const fixture = createFr09FixturePdf();
+    let doc;
+    try {
+      doc = await pdfjs.getDocument(fixture.filePath).promise;
+      const page = await doc.getPage(1);
+      const bounds = { minX: 70, minY: 575, maxX: 190, maxY: 640 };
+
+      const crop0 = await cropRegionFromPage(page, bounds, { scale: 1.0, rotation: 0 });
+      const crop90 = await cropRegionFromPage(page, bounds, { scale: 1.0, rotation: 90 });
+      const crop180 = await cropRegionFromPage(page, bounds, { scale: 1.0, rotation: 180 });
+      const crop270 = await cropRegionFromPage(page, bounds, { scale: 1.0, rotation: 270 });
+
+      assert.ok(crop0.pngBuffer.length > 500);
+      assert.equal(crop0.width, crop180.width);
+      assert.equal(crop0.height, crop180.height);
+      assert.equal(crop0.width, crop90.height);
+      assert.equal(crop0.height, crop90.width);
+      assert.equal(crop90.width, crop270.width);
+      assert.equal(crop90.height, crop270.height);
+      assert.ok(crop90.pngBuffer.length > 500);
+    } finally {
+      if (doc) await doc.destroy();
+      fixture.cleanup();
+    }
+  });
+});
+
+describe("regionCropper — Optional real-paper rotation regression", () => {
+  it("optionally crops a real-paper region across 0, 90, 180, and 270 degree rotations", async (t) => {
+    if (!fs.existsSync(ARXIV_SAMPLE_PATH)) {
+      t.skip("Optional local arXiv PDF is not checked into the repository; generated rotation regression runs above.");
+      return;
+    }
     const doc = await pdfjs.getDocument(ARXIV_SAMPLE_PATH).promise;
     const page6 = await doc.getPage(6);
     const bounds = { minX: 72, minY: 103, maxX: 541, maxY: 306 };
@@ -129,8 +186,33 @@ describe("regionCropper — Multi-Rotation & Rendering Tests", () => {
     assert.equal(crop270.width, 219);
     assert.equal(crop270.height, 485);
   });
+});
 
-  it("scales output dimensions linearly with scale option", async () => {
+describe("regionCropper — Self-contained generated PDF scale regression", () => {
+  it("scales output dimensions linearly with a generated PDF region", async () => {
+    const fixture = createFr09FixturePdf();
+    let doc;
+    try {
+      doc = await pdfjs.getDocument(fixture.filePath).promise;
+      const page = await doc.getPage(1);
+      const bounds = { minX: 100, minY: 580, maxX: 200, maxY: 630 };
+      const crop1x = await cropRegionFromPage(page, bounds, { scale: 1.0 });
+      const crop2x = await cropRegionFromPage(page, bounds, { scale: 2.0 });
+      assert.ok(Math.abs(crop2x.width - 2 * crop1x.width) <= 2);
+      assert.ok(Math.abs(crop2x.height - 2 * crop1x.height) <= 2);
+    } finally {
+      if (doc) await doc.destroy();
+      fixture.cleanup();
+    }
+  });
+});
+
+describe("regionCropper — Optional real-paper scale regression", () => {
+  it("optionally verifies linear scale behavior on the local arxiv sample", async (t) => {
+    if (!fs.existsSync(ARXIV_SAMPLE_PATH)) {
+      t.skip("Optional local arXiv PDF is not checked into the repository; generated scale regression runs above.");
+      return;
+    }
     const doc = await pdfjs.getDocument(ARXIV_SAMPLE_PATH).promise;
     const page6 = await doc.getPage(6);
     const bounds = { minX: 100, minY: 100, maxX: 200, maxY: 200 };
@@ -147,15 +229,20 @@ describe("regionCropper — Multi-Rotation & Rendering Tests", () => {
 });
 
 describe("regionCropper — Asset Staging Integration", () => {
-  it("writes cropped asset buffer to staging directory via writeStagedAsset", async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "staging-test-"));
+  it("writes a cropped generated PDF asset to an isolated staging directory", async () => {
+    const fixture = createFr09FixturePdf();
+    let tempDir;
+    let doc;
     try {
-      const doc = await pdfjs.getDocument(ARXIV_SAMPLE_PATH).promise;
-      const page6 = await doc.getPage(6);
-      const bounds = { minX: 100, minY: 200, maxX: 250, maxY: 300 };
+      tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "staging-test-"));
+      doc = await pdfjs.getDocument(fixture.filePath).promise;
+      const page = await doc.getPage(3);
+      const regions = await detectRegions(page);
+      const bounds = regions[0]?.bounds;
+      assert.ok(bounds, "Expected a caption-associated raster chart region");
 
-      const filename = "crop_p6_test.png";
-      const result = await cropRegionFromPage(page6, bounds, {
+      const filename = "fr09-raster-chart.png";
+      const result = await cropRegionFromPage(page, bounds, {
         scale: 1.0,
         stagingDir: tempDir,
         filename,
@@ -169,8 +256,11 @@ describe("regionCropper — Asset Staging Integration", () => {
 
       const fileData = fs.readFileSync(result.stagedAsset.filePath);
       assert.deepEqual(fileData, result.pngBuffer);
+      assert.ok(fileData.length > 0);
     } finally {
-      fs.rmSync(tempDir, { recursive: true, force: true });
+      if (doc) await doc.destroy();
+      if (tempDir) fs.rmSync(tempDir, { recursive: true, force: true });
+      fixture.cleanup();
     }
   });
 
@@ -186,7 +276,11 @@ describe("regionCropper — Asset Staging Integration", () => {
 });
 
 describe("regionCropper — Real Sample PDF Regression Tests", () => {
-  it("crops Table 2 from Page 11 of arxiv sample with high visual fidelity", async () => {
+  it("optionally crops Table 2 from Page 11 of the local arxiv sample", async (t) => {
+    if (!fs.existsSync(ARXIV_SAMPLE_PATH)) {
+      t.skip("Optional local arXiv PDF is not checked into the repository; generated table PDF tests run above.");
+      return;
+    }
     const doc = await pdfjs.getDocument(ARXIV_SAMPLE_PATH).promise;
     const page11 = await doc.getPage(11);
     // Table 2 bounds on page 11
@@ -199,7 +293,11 @@ describe("regionCropper — Real Sample PDF Regression Tests", () => {
     assert.ok(result.pngBuffer.length > 5000);
   });
 
-  it("crops Standalone Raster Chart from Page 11 of narbi sample", async () => {
+  it("optionally crops a standalone raster chart from Page 11 of the local narbi sample", async (t) => {
+    if (!fs.existsSync(NARBI_SAMPLE_PATH)) {
+      t.skip("Optional local Narbi PDF is not checked into the repository; generated raster PDF tests run above.");
+      return;
+    }
     const doc = await pdfjs.getDocument(NARBI_SAMPLE_PATH).promise;
     const page11 = await doc.getPage(11);
     // Chart bounds on page 11

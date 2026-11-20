@@ -33,11 +33,43 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(__dirname, "../../..");
 const ASSETS_BASE_DIR = path.resolve(PROJECT_ROOT, "uploads/assets");
+let testAssetRoot = null;
+let createdAssetsBase = false;
+let createdUploadsBase = false;
 
-// Ensure uploads/assets exists for filesystem tests
-if (!fs.existsSync(ASSETS_BASE_DIR)) {
-  fs.mkdirSync(ASSETS_BASE_DIR, { recursive: true });
-}
+before(() => {
+  const uploadsBaseDir = path.resolve(PROJECT_ROOT, "uploads");
+  if (!fs.existsSync(uploadsBaseDir)) {
+    fs.mkdirSync(uploadsBaseDir, { recursive: true });
+    createdUploadsBase = true;
+  }
+  if (!fs.existsSync(ASSETS_BASE_DIR)) {
+    fs.mkdirSync(ASSETS_BASE_DIR, { recursive: true });
+    createdAssetsBase = true;
+  }
+  testAssetRoot = fs.mkdtempSync(path.join(ASSETS_BASE_DIR, ".fr09-integration-"));
+});
+
+after(() => {
+  if (testAssetRoot && fs.existsSync(testAssetRoot)) {
+    fs.rmSync(testAssetRoot, { recursive: true, force: true });
+  }
+  if (
+    createdAssetsBase &&
+    fs.existsSync(ASSETS_BASE_DIR) &&
+    fs.readdirSync(ASSETS_BASE_DIR).length === 0
+  ) {
+    fs.rmdirSync(ASSETS_BASE_DIR);
+  }
+  const uploadsBaseDir = path.resolve(PROJECT_ROOT, "uploads");
+  if (
+    createdUploadsBase &&
+    fs.existsSync(uploadsBaseDir) &&
+    fs.readdirSync(uploadsBaseDir).length === 0
+  ) {
+    fs.rmdirSync(uploadsBaseDir);
+  }
+});
 
 /**
  * In-memory Mock Req/Res helper for clean, zero-network controller testing.
@@ -83,23 +115,14 @@ function createMockReqRes({
 describe("FR-09 Stage 1: Asset Path Resolution & Security Boundary", () => {
   const testPaperId = "a0000000-0000-4000-8000-000000000001";
   const testJobId = "b0000000-0000-4000-8000-000000000001";
-  const validAssetDir = path.join(ASSETS_BASE_DIR, testPaperId, testJobId);
-  const validAssetFile = path.join(validAssetDir, "figure_1.png");
+  let validAssetDir;
+  let validAssetFile;
 
   before(() => {
+    validAssetDir = path.join(testAssetRoot, testPaperId, testJobId);
+    validAssetFile = path.join(validAssetDir, "figure_1.png");
     fs.mkdirSync(validAssetDir, { recursive: true });
     fs.writeFileSync(validAssetFile, "dummy-png-data");
-  });
-
-  after(() => {
-    try {
-      if (fs.existsSync(validAssetFile)) fs.unlinkSync(validAssetFile);
-      if (fs.existsSync(validAssetDir)) fs.rmdirSync(validAssetDir);
-      const paperDir = path.join(ASSETS_BASE_DIR, testPaperId);
-      if (fs.existsSync(paperDir)) fs.rmdirSync(paperDir);
-    } catch {
-      // Best-effort cleanup
-    }
   });
 
   it("should resolve valid asset path within uploads/assets", () => {
@@ -112,10 +135,11 @@ describe("FR-09 Stage 1: Asset Path Resolution & Security Boundary", () => {
   });
 
   it("should reject asset path pointing outside uploads/assets (403)", () => {
-    const outsideFile = path.join(PROJECT_ROOT, "uploads", "test-outside.pdf");
-    fs.writeFileSync(outsideFile, "pdf-data");
+    const outsideRoot = fs.mkdtempSync(path.join(PROJECT_ROOT, "uploads", ".fr09-outside-"));
+    const outsideFile = path.join(outsideRoot, "test-outside.pdf");
 
     try {
+      fs.writeFileSync(outsideFile, "pdf-data");
       const relativePath = path
         .relative(PROJECT_ROOT, outsideFile)
         .replace(/\\/g, "/");
@@ -130,7 +154,7 @@ describe("FR-09 Stage 1: Asset Path Resolution & Security Boundary", () => {
         }
       );
     } finally {
-      if (fs.existsSync(outsideFile)) fs.unlinkSync(outsideFile);
+      fs.rmSync(outsideRoot, { recursive: true, force: true });
     }
   });
 
@@ -453,10 +477,11 @@ describe("FR-09 Stage 1: Controller Orchestration & HTTP Response Layer", () => 
   it("getAsset: should set Cache-Control: private, no-store and stream asset binary", async () => {
     const validPaperId = "a0000000-0000-4000-8000-000000000001";
     const validAssetId = "c0000000-0000-4000-8000-000000000001";
-    const assetFilePath = `uploads/assets/${validPaperId}/b0000000-0000-4000-8000-000000000001/figure_1.png`;
+    const assetDir = path.join(testAssetRoot, validPaperId, "b0000000-0000-4000-8000-000000000001");
+    const diskPath = path.join(assetDir, "figure_1.png");
+    const assetFilePath = path.relative(PROJECT_ROOT, diskPath).replace(/\\/g, "/");
 
     // Ensure the asset file exists on disk
-    const diskPath = path.resolve(PROJECT_ROOT, assetFilePath);
     fs.mkdirSync(path.dirname(diskPath), { recursive: true });
     fs.writeFileSync(diskPath, "png-binary-content");
 

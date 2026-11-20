@@ -17,6 +17,7 @@ import {
 import { Link } from 'react-router-dom';
 import Badge from '../common/Badge';
 import { formatDate } from '../../utils/formatters';
+import AssetSection from '../AssetSection';
 
 export default function LeftSidebar({
   paper = {},
@@ -484,6 +485,7 @@ export default function LeftSidebar({
                   </div>
                 )}
               </div>
+              {paper?.id && <AssetSection key={paper.id} paperId={paper.id} />}
             </div>
           )}
         </div>

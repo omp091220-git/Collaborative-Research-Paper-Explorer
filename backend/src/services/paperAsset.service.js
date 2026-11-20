@@ -84,9 +84,12 @@ export async function getActiveAssets(paperId, { assetType } = {}) {
   validateAssetType(assetType);
 
   const assets = await paperAssetRepoInternal.findActiveAssetsByPaperId(paperId, { assetType });
+  // The canonical storage path is needed by the binary endpoint only. Keep it
+  // out of list responses so clients never learn server filesystem locations.
+  const publicAssets = assets.map(({ file_path, ...asset }) => asset);
   return {
-    assets,
-    count: assets.length,
+    assets: publicAssets,
+    count: publicAssets.length,
   };
 }
 
