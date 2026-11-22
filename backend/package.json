@@ -12,6 +12,7 @@
     "test:fr08": "node --import ./src/test/setup.js --test --test-concurrency=1 src/test/summary*.test.js",
     "test:fr20": "node --import ./src/test/setup.js --test --test-concurrency=1 src/test/researchExport*.test.js",
     "test:fr26": "node --import ./src/test/setup.js --test --test-concurrency=1 src/test/fr26*.test.js src/test/fr25_post_visibility.test.js",
+    "test:fr29": "node --import ./src/test/setup.js --test --test-concurrency=1 src/test/fr29*.test.js",
     "test:fr30": "node --import ./src/test/setup.js --test --test-concurrency=1 src/test/fr30*.test.js src/test/fr26*.test.js src/test/fr25_post_visibility.test.js"
   },
   "keywords": [],

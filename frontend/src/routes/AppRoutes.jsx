@@ -18,6 +18,7 @@ const VerifyEmailPage = lazy(() => import('../pages/VerifyEmailPage/VerifyEmailP
 const PublicFeedLayout = lazy(() => import('../pages/PublicFeedPage/PublicFeedLayout'));
 const PublicFeedPage = lazy(() => import('../pages/PublicFeedPage/PublicFeedPage'));
 const PublicPostPage = lazy(() => import('../pages/PublicFeedPage/PublicPostPage'));
+const SharedPostPage = lazy(() => import('../pages/SharedPostPage/SharedPostPage'));
 
 const MyPostsPage = lazy(() => import('../pages/PrivatePostsPage/MyPostsPage'));
 const PrivatePostPage = lazy(() => import('../pages/PrivatePostsPage/PrivatePostPage'));
@@ -71,6 +72,10 @@ export default function AppRoutes() {
               <Route path="/feed" element={<PublicFeedPage />} />
               <Route path="/feed/:postId" element={<PublicPostPage />} />
             </Route>
+
+            {/* FR-29: Shared Post Link Resolution */}
+            <Route path="/share/posts/:token" element={<SharedPostPage />} />
+            <Route path="/posts/share/:token" element={<SharedPostPage />} />
 
             {/* Authenticated Workspace Routes */}
             <Route

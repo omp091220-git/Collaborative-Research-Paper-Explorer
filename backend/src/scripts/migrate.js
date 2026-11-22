@@ -36,6 +36,7 @@ async function runMigrations() {
     '20261117_legacy_annotation_and_tag_audit.sql',
     '20261118_paper_ownership_visibility_access.sql',
     '20261118_account_type_and_posts.sql',
+    '20261123_post_sharing.sql',
   ];
   // Optionally run only one explicitly selected migration.
   const onlyIndex = process.argv.indexOf('--only');

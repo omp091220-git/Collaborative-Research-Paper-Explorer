@@ -20,6 +20,12 @@ import {
   grantPostPermission,
   revokePostPermission,
 } from "../controllers/privatePost.controller.js";
+import {
+  getShareLink,
+  resolveShareLink,
+  shareToPlatform,
+  getPostPreview,
+} from "../controllers/postShare.controller.js";
 import { validateSessionSync } from "../services/session.service.js";
 
 const router = Router();
@@ -70,6 +76,15 @@ export const optionalAuthenticate = (req, res, next) => {
 
   return next();
 };
+
+// --------------------------------------------------------------------------
+// FR-29: Share Posts & References (must precede /:id to prevent route collision)
+// --------------------------------------------------------------------------
+router.get("/share/:token", optionalAuthenticate, resolveShareLink);
+router.get("/:id/preview", optionalAuthenticate, getPostPreview);
+router.get("/:id/share", optionalAuthenticate, getShareLink);
+router.post("/:id/share", optionalAuthenticate, getShareLink);
+router.post("/:id/repost", authenticateToken, shareToPlatform);
 
 // 1. Create Post (Protected - FR-25 enforcement)
 router.post("/", authenticateToken, createPost);

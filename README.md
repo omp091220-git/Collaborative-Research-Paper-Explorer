@@ -170,7 +170,7 @@ Encourages interaction between members of the research community.
 
 Private accounts can create only private posts; public accounts may choose public or private posts (FR-25). The backend enforces these rules and rechecks permissions on protected requests, including after access is revoked. Sharing a post does not grant access to its linked paper.
 
-Researcher publication results/counts depend on stored data, author-name matching, and external source availability; they are not a verified worldwide total. Post likes/comments/sharing (FR-27–FR-29) should not be inferred from the public feed or paper discussion/bookmark features.
+Researcher publication results/counts depend on stored data, author-name matching, and external source availability; they are not a verified worldwide total. Share posts (FR-29) allows sharing public posts via shareable links or in-platform references while strictly preventing unauthorized disclosure of private posts; post likes/comments (FR-27–FR-28) remain separate interactions.
 
 ### 8. 💬 Collaborative Messaging and Groups
 
@@ -862,6 +862,7 @@ Refer to `backend/package.json` for the available test scripts. Focused suites r
 | `npm run test:fr08` | Structured summaries, worker/database behavior, and source validation |
 | `npm run test:fr20` | Research exports, PDF content, and saved-data snapshots |
 | `npm run test:fr26` | Public-feed/API checks and FR-25 visibility regressions |
+| `npm run test:fr29` | Post sharing, shareable links, platform references, and anti-disclosure regressions |
 | `npm run test:fr30` | Private-post permissions plus FR-25/FR-26 backend/API regressions |
 
 For frontend browser checks, use a terminal with the same local `TEST_DATABASE_URL`, then run from `frontend`:
