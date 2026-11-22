@@ -3,12 +3,14 @@ import { Link, useParams } from "react-router-dom";
 import service from "../../services/privatePosts.service";
 import { getApiErrorMessage } from "../../services/api";
 import "./PrivatePosts.css";
+import SharePostModal from "../../components/posts/SharePostModal";
 
 function PostContent({ post, onReload, onAccessLost }) {
   const [editing, setEditing] = useState(false),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
     [error, setError] = useState("");
+  const [shareOpen, setShareOpen] = useState(false);
   const [grants, setGrants] = useState(null),
     [sharing, setSharing] = useState(false),
     [grantReload, setGrantReload] = useState(0);
@@ -160,16 +162,20 @@ function PostContent({ post, onReload, onAccessLost }) {
             (paper permissions are checked separately)
           </p>
         )}
-        {post.can_manage && privatePost && (
-          <button
-            onClick={() => {
-              setSharing((v) => !v);
-              setGrants(null);
-            }}
-          >
-            {sharing ? "Hide sharing" : "Manage access"}
-          </button>
-        )}
+        <div className="flex flex-wrap gap-2 pt-2">
+          <button type="button" onClick={() => setShareOpen(true)}>Share post</button>
+          {post.can_manage && privatePost && (
+            <button
+              type="button"
+              onClick={() => {
+                setSharing((v) => !v);
+                setGrants(null);
+              }}
+            >
+              {sharing ? "Hide sharing" : "Manage access"}
+            </button>
+          )}
+        </div>
       </article>
       {error && (
         <p role="alert" className="text-red-600 dark:text-red-300">
@@ -181,6 +187,12 @@ function PostContent({ post, onReload, onAccessLost }) {
           {message}
         </p>
       )}
+      <SharePostModal
+        post={post}
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        onShareSuccess={onReload}
+      />
       {sharing && (
         <section
           className="p-5 rounded-2xl border border-theme-strong bg-theme-card space-y-4"
