@@ -12,8 +12,10 @@ import {
 } from 'lucide-react';
 import postSharingService from '../../services/postSharing.service';
 import { getApiErrorMessage } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 export default function SharePostModal({ post, isOpen, onClose, onShareSuccess }) {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('link'); // 'link' | 'platform'
   const [loadingLink, setLoadingLink] = useState(false);
   const [shareData, setShareData] = useState(null);
@@ -28,6 +30,8 @@ export default function SharePostModal({ post, isOpen, onClose, onShareSuccess }
 
   const isPrivate =
     post?.visibility === 'PRIVATE' || post?.author_account_type === 'PRIVATE';
+  const requiresPrivateVisibility =
+    isPrivate || user?.account_type === 'PRIVATE';
 
   useEffect(() => {
     if (!isOpen || !post?.id) return;
@@ -36,8 +40,8 @@ export default function SharePostModal({ post, isOpen, onClose, onShareSuccess }
     setCopied(false);
     setPlatformSuccess('');
     setCommentary('');
-    // If the original post is private, platform share must default to PRIVATE
-    setVisibility(isPrivate ? 'PRIVATE' : 'PUBLIC');
+    // Private sources and private accounts can only create private references.
+    setVisibility(requiresPrivateVisibility ? 'PRIVATE' : 'PUBLIC');
 
     // Fetch or generate share link
     let active = true;
@@ -58,7 +62,7 @@ export default function SharePostModal({ post, isOpen, onClose, onShareSuccess }
     return () => {
       active = false;
     };
-  }, [isOpen, post?.id, isPrivate]);
+  }, [isOpen, post?.id, requiresPrivateVisibility]);
 
   if (!isOpen || !post) return null;
 
@@ -88,7 +92,7 @@ export default function SharePostModal({ post, isOpen, onClose, onShareSuccess }
     try {
       const result = await postSharingService.shareToPlatform(post.id, {
         commentary: commentary.trim(),
-        visibility: isPrivate ? 'PRIVATE' : visibility,
+        visibility: requiresPrivateVisibility ? 'PRIVATE' : visibility,
       });
       setPlatformSuccess('Post shared successfully on ScholarSphere!');
       if (onShareSuccess) {
@@ -289,11 +293,15 @@ export default function SharePostModal({ post, isOpen, onClose, onShareSuccess }
               <label className="block mb-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Post Visibility
               </label>
-              {isPrivate ? (
+              {requiresPrivateVisibility ? (
                 <div className="p-2.5 rounded-xl border border-amber-200 bg-amber-50 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200 flex items-center gap-2">
                   <Lock className="w-4 h-4 text-amber-600 shrink-0" />
                   <span>
-                    Locked to <strong>PRIVATE</strong>: In-platform shares referencing private research cannot be published publicly.
+                    {isPrivate ? (
+                      <>Locked to <strong>PRIVATE</strong>: References to private research cannot be published publicly.</>
+                    ) : (
+                      <>Locked to <strong>PRIVATE</strong>: Private accounts can only create private posts.</>
+                    )}
                   </span>
                 </div>
               ) : (

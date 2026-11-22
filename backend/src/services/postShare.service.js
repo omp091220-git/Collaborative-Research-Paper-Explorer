@@ -98,10 +98,7 @@ export const createPostShareService = (repo = defaultRepository) => {
       }
 
       const token = await repo.ensureShareToken(postId);
-      const shareCount = await repo.incrementShareCount(postId);
-
-      // Record share event audit
-      await repo.recordShare({
+      const shareCount = await repo.recordShareAndIncrement({
         postId,
         userId: viewerUser?.id || null,
         shareType: "LINK",
@@ -268,9 +265,8 @@ export const createPostShareService = (repo = defaultRepository) => {
         paperId: origPost.paper_id || null,
       });
 
-      // Increment share count and record audit event
-      await repo.incrementShareCount(postId);
-      await repo.recordShare({
+      // Keep the counter and audit trail consistent in one database statement.
+      await repo.recordShareAndIncrement({
         postId,
         userId,
         shareType: "PLATFORM",

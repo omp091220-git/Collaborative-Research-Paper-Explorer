@@ -82,7 +82,7 @@ export default function SharedPostCard({ post }) {
         )}
 
         <Link
-          to={post.share_token ? `/share/posts/${post.share_token}` : `/posts/${post.id}`}
+          to={`/share/posts/${post.share_token || post.id}`}
           className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
         >
           <span>View original</span>

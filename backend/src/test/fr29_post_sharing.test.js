@@ -159,6 +159,22 @@ describe("FR-29: Share Posts & References Test Suite", () => {
         return { rows: [] };
       }
 
+      // Atomic share counter + audit event statement
+      if (text.includes("WITH updated AS") && text.includes("INSERT INTO post_shares")) {
+        const post = postsStore[params[0]];
+        if (!post) return { rows: [] };
+        post.share_count = (post.share_count || 0) + 1;
+        sharesStore.push({
+          id: `share_${sharesStore.length + 1}`,
+          post_id: params[0],
+          user_id: params[1],
+          share_type: params[2],
+          commentary: params[3],
+          created_at: new Date().toISOString(),
+        });
+        return { rows: [{ share_count: post.share_count }] };
+      }
+
       // Increment share_count
       if (text.includes("UPDATE posts") && text.includes("SET share_count = COALESCE(share_count, 0) + 1")) {
         const post = postsStore[params[0]];
@@ -255,6 +271,21 @@ describe("FR-29: Share Posts & References Test Suite", () => {
     assert.ok(res.body.share_count >= 4);
     assert.equal(sharesStore.length, 1);
     assert.equal(sharesStore[0].share_type, "LINK");
+  });
+
+  it("keeps concurrent share counters aligned with recorded share events", async () => {
+    const token = createToken(IDS.outsider, "STUDENT");
+    const initialCount = postsStore[IDS.publicPost].share_count;
+    const requests = Array.from({ length: 8 }, () =>
+      request(app)
+        .post(`/api/posts/${IDS.publicPost}/share`)
+        .set("Authorization", `Bearer ${token}`)
+    );
+
+    const responses = await Promise.all(requests);
+    responses.forEach((response) => assert.equal(response.status, 200));
+    assert.equal(postsStore[IDS.publicPost].share_count, initialCount + requests.length);
+    assert.equal(sharesStore.length, requests.length);
   });
 
   // --------------------------------------------------------------------------

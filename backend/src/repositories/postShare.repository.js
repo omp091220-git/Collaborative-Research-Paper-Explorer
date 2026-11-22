@@ -138,6 +138,34 @@ export const createPostShareRepository = (db = pool) => {
       return rows[0];
     },
 
+    /** Atomically updates the counter and writes its matching audit event. */
+    async recordShareAndIncrement(
+      { postId, userId = null, shareType = "LINK", commentary = null },
+      client = db
+    ) {
+      const query = `
+        WITH updated AS (
+          UPDATE posts
+          SET share_count = COALESCE(share_count, 0) + 1
+          WHERE id = $1
+          RETURNING share_count
+        ), recorded AS (
+          INSERT INTO post_shares (post_id, user_id, share_type, commentary)
+          SELECT $1, $2, $3, $4
+          FROM updated
+          RETURNING id
+        )
+        SELECT updated.share_count
+        FROM updated
+        CROSS JOIN recorded;
+      `;
+      const { rows } = await client.query(query, [postId, userId, shareType, commentary]);
+      if (!rows[0]) {
+        throw new Error("Could not record share for a post that no longer exists.");
+      }
+      return rows[0].share_count;
+    },
+
     /**
      * Creates an in-platform share post by reference.
      * The new post stores the sharer's commentary in content and sets shared_post_id.
