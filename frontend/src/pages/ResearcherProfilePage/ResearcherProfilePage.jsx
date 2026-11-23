@@ -71,6 +71,9 @@ function PublicationItem({ pub }) {
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-1">
             <SourceBadge source={source} />
+            <span className={`text-[10px] font-semibold ${is_verified ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-300'}`}>
+              {is_verified ? 'Researcher confirmed' : 'Possible match'}
+            </span>
             {publication_year && (
               <span className="text-[10px] text-slate-400 font-medium">{publication_year}</span>
             )}
@@ -188,7 +191,15 @@ export default function ResearcherProfilePage() {
     try {
       const result = await researcherService.discoverPublications(id);
       const count = result?.discovered ?? result?.saved ?? 0;
-      setDiscoverMsg(`Discovery complete — ${count} publication(s) found or updated.`);
+      const unavailable = Object.entries(result?.discovery?.sources || {})
+        .filter(([, status]) => status === 'unavailable')
+        .map(([source]) => source);
+      const limited = Object.entries(result?.discovery?.sources || {})
+        .filter(([, status]) => status === 'limited')
+        .map(([source]) => source);
+      setDiscoverMsg(unavailable.length || limited.length
+        ? `Discovery is provisional.${unavailable.length ? ` ${unavailable.join(' and ')} could not be reached.` : ''}${limited.length ? ` ${limited.join(' and ')} reached the per-source result limit.` : ''}`
+        : `Discovery complete — ${count} publication(s) found or updated. Confirm matches to include them in your verified count.`);
       // Refresh profile to show new pubs
       const updated = await researcherService.getResearcherProfile(id);
       setProfile(updated);
@@ -196,6 +207,20 @@ export default function ResearcherProfilePage() {
       setDiscoverMsg(err?.response?.data?.error || 'Discovery failed. Please try again.');
     } finally {
       setDiscovering(false);
+    }
+  };
+
+  const handleReview = async (publication, status) => {
+    try {
+      await researcherService.reviewPublication(id, {
+        source: publication.source,
+        publicationId: publication.publication_id || publication.external_id || publication.id,
+        status,
+      });
+      const updated = await researcherService.getResearcherProfile(id);
+      setProfile(updated);
+    } catch (err) {
+      setDiscoverMsg(err?.response?.data?.error || 'Unable to update publication review.');
     }
   };
 
@@ -226,14 +251,16 @@ export default function ResearcherProfilePage() {
     research_interests = [],
     publication_counts = {},
     publications = [],
+    publication_discovery = {},
+    can_review_publications = false,
   } = profile;
 
   const initials = full_name
     ? full_name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
     : '?';
 
-  const { platform_count = 0, external_count = 0, verified_external_count = 0 } = publication_counts;
-  const totalCount = platform_count + external_count;
+  const { platform_count = 0, external_count = 0, verified_count = 0, uncertain_count = 0, total_count = 0 } = publication_counts;
+  const totalCount = total_count || platform_count + external_count;
 
   // Filter publications by tab
   const filteredPubs = publications.filter((p) => {
@@ -303,21 +330,26 @@ export default function ResearcherProfilePage() {
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-4">
         <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-center">
-          <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{totalCount}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Total Publications</p>
+          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{verified_count}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Verified Publications</p>
         </div>
         <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-center">
-          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{platform_count}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Platform Papers</p>
+          <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{uncertain_count}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Possible Matches</p>
         </div>
         <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-center">
-          <div className="flex items-center justify-center gap-1.5">
-            <p className="text-2xl font-bold text-orange-500 dark:text-orange-400">{external_count}</p>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
-            External ({verified_external_count} verified)
-          </p>
+          <p className="text-2xl font-bold text-slate-700 dark:text-slate-300">{totalCount}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Listed Candidates</p>
         </div>
+      </div>
+
+      <div className={`p-3 rounded-xl text-xs ${publication_discovery.complete ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300' : 'bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300'}`}>
+        Publication counts use platform records, arXiv, and Crossref; they are not a worldwide total.
+        {publication_discovery.complete
+          ? ` Both source queries returned below their result limits on ${publication_discovery.checked_at ? new Date(publication_discovery.checked_at).toLocaleDateString() : 'the latest discovery run'}; matching can still miss publications.`
+          : publication_discovery.checked_at
+            ? ' Results may be incomplete or provisional because a source was unavailable or reached its result limit.'
+            : ' No successful external-source check is recorded yet; results may be incomplete or provisional.'}
       </div>
 
       {/* Publications section */}
@@ -328,7 +360,7 @@ export default function ResearcherProfilePage() {
             <BookOpen className="w-5 h-5 text-indigo-500" />
             <h2 className="text-base font-bold text-slate-900 dark:text-white">Publications</h2>
           </div>
-          <button
+          {can_review_publications && <button
             onClick={handleDiscover}
             disabled={discovering}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-xl transition-colors"
@@ -339,7 +371,7 @@ export default function ResearcherProfilePage() {
               <RefreshCw className="w-3.5 h-3.5" />
             )}
             {discovering ? 'Discovering…' : 'Discover Publications'}
-          </button>
+          </button>}
         </div>
 
         {/* Discovery message */}
@@ -383,7 +415,15 @@ export default function ResearcherProfilePage() {
         ) : (
           <div className="space-y-3">
             {filteredPubs.map((pub, i) => (
-              <PublicationItem key={pub.id || i} pub={pub} />
+              <div key={`${pub.source}-${pub.publication_id || pub.id || i}`}>
+                <PublicationItem pub={pub} />
+                {can_review_publications && pub.review_status === 'uncertain' && (
+                  <div className="flex gap-2 justify-end mt-2">
+                    <button onClick={() => handleReview(pub, 'rejected')} className="px-3 py-1 text-xs rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300">Not mine</button>
+                    <button onClick={() => handleReview(pub, 'confirmed')} className="px-3 py-1 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white">Confirm authorship</button>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         )}

@@ -39,6 +39,16 @@ export const researcherService = {
     const res = await api.post(`/researchers/${id}/publications/discover`);
     return res.data;
   },
+
+  /** FR-41 — Confirm or reject a publication match for the profile owner. */
+  async reviewPublication(id, { source, publicationId, status }) {
+    const res = await api.patch(`/researchers/${id}/publications/review`, {
+      source,
+      publicationId,
+      status,
+    });
+    return res.data;
+  },
 };
 
 export default researcherService;

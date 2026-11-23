@@ -46,4 +46,10 @@ router.get(
   controller.getPublications
 );
 
+router.patch(
+  '/:id/publications/review',
+  authorizeRoles(...ALL_ROLES),
+  controller.reviewPublication
+);
+
 export default router;
