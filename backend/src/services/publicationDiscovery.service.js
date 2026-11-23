@@ -13,6 +13,10 @@ export const discoverResearcherPublications = async ({
   authorQuery = null,
   limit = 20,
   client,
+  fetchers = {
+    arxiv: fetchArxivPublicationsByAuthor,
+    crossref: fetchCrossrefPublicationsByAuthor,
+  },
 }) => {
   // 1. Fetch user profile
   const user = await repo.findUserProfileForDiscovery(userId, client);
@@ -31,10 +35,10 @@ export const discoverResearcherPublications = async ({
   // 3. Fetch from external open sources in parallel with safe error handlers
   const sourceStatuses = { arxiv: 'unavailable', crossref: 'unavailable' };
   const [arxivPubs, crossrefPubs] = await Promise.all([
-    fetchArxivPublicationsByAuthor(queryName, sourceLimit, {
+    fetchers.arxiv(queryName, sourceLimit, {
       onStatus: (ok) => { sourceStatuses.arxiv = ok ? 'available' : 'unavailable'; },
     }).catch(() => []),
-    fetchCrossrefPublicationsByAuthor(queryName, sourceLimit, {
+    fetchers.crossref(queryName, sourceLimit, {
       onStatus: (ok) => { sourceStatuses.crossref = ok ? 'available' : 'unavailable'; },
     }).catch(() => []),
   ]);

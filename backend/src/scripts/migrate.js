@@ -37,6 +37,7 @@ async function runMigrations() {
     '20261118_paper_ownership_visibility_access.sql',
     '20261118_account_type_and_posts.sql',
     '20261123_post_sharing.sql',
+    '20261123_fr41_publication_verification.sql',
   ];
   // Optionally run only one explicitly selected migration.
   const onlyIndex = process.argv.indexOf('--only');
