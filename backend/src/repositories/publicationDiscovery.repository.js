@@ -72,11 +72,14 @@ export const upsertExternalPublications = async (userId, publications = [], clie
 export const findExternalPublicationsByUserId = async (userId, client = pool) => {
   const query = `
     SELECT 
-      id, user_id, title, authors, publication_year, source, external_id,
-      doi, venue, abstract, source_url, is_verified, discovered_at, updated_at
-    FROM external_publications
-    WHERE user_id = $1
-    ORDER BY publication_year DESC NULLS LAST, discovered_at DESC;
+      e.id, e.user_id, e.title, e.authors, e.publication_year, e.source, e.external_id,
+      e.doi, e.venue, e.abstract, e.source_url, (r.status = 'confirmed') AS is_verified,
+      COALESCE(r.status, 'uncertain') AS review_status, e.discovered_at, e.updated_at
+    FROM external_publications e
+    LEFT JOIN researcher_publication_reviews r
+      ON r.user_id = e.user_id AND r.source = e.source AND r.publication_id = e.external_id
+    WHERE e.user_id = $1 AND COALESCE(r.status, 'uncertain') <> 'rejected'
+    ORDER BY e.publication_year DESC NULLS LAST, e.discovered_at DESC;
   `;
   const result = await client.query(query, [userId]);
   return result.rows;
@@ -88,19 +91,22 @@ export const findExternalPublicationsByUserId = async (userId, client = pool) =>
 export const findPlatformPapersByUserId = async (userId, client = pool) => {
   const query = `
     SELECT 
-      id, title, authors, 
-      EXTRACT(YEAR FROM uploaded_at)::int AS publication_year,
+      p.id, p.title, p.authors,
+      EXTRACT(YEAR FROM p.uploaded_at)::int AS publication_year,
       'platform' AS source,
-      id::text AS external_id,
+      p.id::text AS external_id,
       NULL AS doi,
       'Collaborative Research Platform' AS venue,
-      abstract,
-      file_path AS source_url,
-      TRUE AS is_verified,
-      uploaded_at AS discovered_at
-    FROM papers
-    WHERE uploader_id = $1
-    ORDER BY uploaded_at DESC;
+      p.abstract,
+      p.file_path AS source_url,
+      (r.status = 'confirmed') AS is_verified,
+      COALESCE(r.status, 'uncertain') AS review_status,
+      p.uploaded_at AS discovered_at
+    FROM papers p
+    LEFT JOIN researcher_publication_reviews r
+      ON r.user_id = p.uploader_id AND r.source = 'platform' AND r.publication_id = p.id::text
+    WHERE p.uploader_id = $1 AND COALESCE(r.status, 'uncertain') <> 'rejected'
+    ORDER BY p.uploaded_at DESC;
   `;
   const result = await client.query(query, [userId]);
   return result.rows;
@@ -115,4 +121,42 @@ export const findUserProfileForDiscovery = async (userId, client = pool) => {
     [userId]
   );
   return result.rows[0] || null;
+};
+
+export const saveDiscoveryRun = async (userId, statuses, client = pool) => {
+  const result = await client.query(
+    `INSERT INTO researcher_publication_discovery_runs (user_id, arxiv_status, crossref_status)
+     VALUES ($1, $2, $3) RETURNING checked_at`,
+    [userId, statuses.arxiv, statuses.crossref]
+  );
+  return result.rows[0];
+};
+
+export const findLatestDiscoveryRun = async (userId, client = pool) => {
+  const result = await client.query(
+    `SELECT arxiv_status, crossref_status, checked_at
+     FROM researcher_publication_discovery_runs
+     WHERE user_id = $1
+     ORDER BY checked_at DESC, id DESC
+     LIMIT 1`,
+    [userId]
+  );
+  return result.rows[0] || null;
+};
+
+export const setPublicationReview = async ({ userId, source, publicationId, status }, client = pool) => {
+  const result = await client.query(
+    `INSERT INTO researcher_publication_reviews (user_id, source, publication_id, status, updated_at)
+     SELECT $1, $2, $3, $4, CURRENT_TIMESTAMP
+     WHERE ($2 = 'platform' AND EXISTS (
+       SELECT 1 FROM papers WHERE id::text = $3 AND uploader_id = $1
+     )) OR ($2 <> 'platform' AND EXISTS (
+       SELECT 1 FROM external_publications WHERE user_id = $1 AND source = $2 AND external_id = $3
+     ))
+     ON CONFLICT (user_id, source, publication_id)
+     DO UPDATE SET status = EXCLUDED.status, updated_at = CURRENT_TIMESTAMP
+     RETURNING user_id, source, publication_id, status, updated_at`,
+    [userId, source, publicationId, status]
+  );
+  return result.rows[0];
 };

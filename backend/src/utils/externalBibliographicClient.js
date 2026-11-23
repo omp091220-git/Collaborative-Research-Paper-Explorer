@@ -16,7 +16,7 @@ export const normalizeTitle = (title) => {
  * Fetches author publications from arXiv API using open search query.
  * DR-05 rate limit compliant.
  */
-export const fetchArxivPublicationsByAuthor = async (authorName, maxResults = 10) => {
+export const fetchArxivPublicationsByAuthor = async (authorName, maxResults = 10, { onStatus } = {}) => {
   if (!authorName || typeof authorName !== 'string' || !authorName.trim()) {
     return [];
   }
@@ -25,10 +25,25 @@ export const fetchArxivPublicationsByAuthor = async (authorName, maxResults = 10
   const url = `https://export.arxiv.org/api/query?search_query=${query}&start=0&max_results=${maxResults}&sortBy=submittedDate&sortOrder=descending`;
 
   return new Promise((resolve) => {
-    const req = https.get(url, { headers: { 'User-Agent': 'Academic-Explorer-Agent/1.0' } }, (res) => {
+    let req;
+    const totalTimeout = setTimeout(() => {
+      req?.destroy();
+      onStatus?.(false);
+      resolve([]);
+    }, 5000);
+
+    req = https.get(url, { headers: { 'User-Agent': 'Academic-Explorer-Agent/1.0' } }, (res) => {
       let data = '';
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        clearTimeout(totalTimeout);
+        res.resume();
+        onStatus?.(false);
+        resolve([]);
+        return;
+      }
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
+        clearTimeout(totalTimeout);
         try {
           const entries = [];
           const entryRegex = /<entry>([\s\S]*?)<\/entry>/gi;
@@ -68,8 +83,10 @@ export const fetchArxivPublicationsByAuthor = async (authorName, maxResults = 10
             });
           }
 
+          onStatus?.(true);
           resolve(entries);
         } catch {
+          onStatus?.(false);
           resolve([]);
         }
       });
@@ -77,11 +94,15 @@ export const fetchArxivPublicationsByAuthor = async (authorName, maxResults = 10
 
     req.on('error', () => {
       // Graceful fallback on external network timeout or failure
+      clearTimeout(totalTimeout);
+      onStatus?.(false);
       resolve([]);
     });
 
     req.setTimeout(5000, () => {
+      clearTimeout(totalTimeout);
       req.destroy();
+      onStatus?.(false);
       resolve([]);
     });
   });
@@ -90,7 +111,7 @@ export const fetchArxivPublicationsByAuthor = async (authorName, maxResults = 10
 /**
  * Fetches author publications from CrossRef REST API.
  */
-export const fetchCrossrefPublicationsByAuthor = async (authorName, maxResults = 10) => {
+export const fetchCrossrefPublicationsByAuthor = async (authorName, maxResults = 10, { onStatus } = {}) => {
   if (!authorName || typeof authorName !== 'string' || !authorName.trim()) {
     return [];
   }
@@ -99,10 +120,25 @@ export const fetchCrossrefPublicationsByAuthor = async (authorName, maxResults =
   const url = `https://api.crossref.org/works?query.author=${query}&rows=${maxResults}&sort=relevance`;
 
   return new Promise((resolve) => {
-    const req = https.get(url, { headers: { 'User-Agent': 'CollaborativeResearchPaperExplorer/1.0 (mailto:team19@university.edu)' } }, (res) => {
+    let req;
+    const totalTimeout = setTimeout(() => {
+      req?.destroy();
+      onStatus?.(false);
+      resolve([]);
+    }, 5000);
+
+    req = https.get(url, { headers: { 'User-Agent': 'CollaborativeResearchPaperExplorer/1.0 (mailto:team19@university.edu)' } }, (res) => {
       let data = '';
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        clearTimeout(totalTimeout);
+        res.resume();
+        onStatus?.(false);
+        resolve([]);
+        return;
+      }
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
+        clearTimeout(totalTimeout);
         try {
           const json = JSON.parse(data);
           const items = json.message?.items || [];
@@ -133,8 +169,10 @@ export const fetchCrossrefPublicationsByAuthor = async (authorName, maxResults =
             };
           });
 
+          onStatus?.(true);
           resolve(publications);
         } catch {
+          onStatus?.(false);
           resolve([]);
         }
       });
@@ -142,11 +180,15 @@ export const fetchCrossrefPublicationsByAuthor = async (authorName, maxResults =
 
     req.on('error', () => {
       // Graceful fallback on external failure
+      clearTimeout(totalTimeout);
+      onStatus?.(false);
       resolve([]);
     });
 
     req.setTimeout(5000, () => {
+      clearTimeout(totalTimeout);
       req.destroy();
+      onStatus?.(false);
       resolve([]);
     });
   });

@@ -43,7 +43,7 @@ export const getResearcherProfile = async (req, res, next) => {
       return res.status(400).json({ error: 'Invalid researcher ID format.' });
     }
 
-    const profile = await getResearcherPublicProfile({ userId: id });
+    const profile = await getResearcherPublicProfile({ userId: id, viewerId: req.user.id });
 
     if (!profile) {
       return res.status(404).json({ error: 'Researcher not found.' });

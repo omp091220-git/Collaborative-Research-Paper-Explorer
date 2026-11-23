@@ -13,6 +13,9 @@ export const discoverPublications = async (req, res, next) => {
     if (!id || !UUID_RE.test(id)) {
       return res.status(400).json({ error: 'Valid researcher UUID is required.' });
     }
+    if (req.user.id !== id) {
+      return res.status(403).json({ error: 'Only the researcher can discover publications for this profile.' });
+    }
 
     const { authorQuery, limit } = req.body || {};
     const parsedLimit = limit ? Math.min(Math.max(parseInt(limit, 10) || 20, 1), 50) : 20;
@@ -45,6 +48,32 @@ export const getPublications = async (req, res, next) => {
 
     const result = await service.getResearcherPublications({ userId: id });
     return res.status(200).json(result);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/** PATCH /api/researchers/:id/publications/review — owner-only authorship review. */
+export const reviewPublication = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!id || !UUID_RE.test(id)) {
+      return res.status(400).json({ error: 'Valid researcher UUID is required.' });
+    }
+    if (req.user.id !== id) {
+      return res.status(403).json({ error: 'Only the researcher can review their publications.' });
+    }
+    const { source, publicationId, status } = req.body || {};
+    if (typeof publicationId !== 'string' || !publicationId.trim()) {
+      return res.status(400).json({ error: 'Publication ID is required.' });
+    }
+    const review = await service.reviewResearcherPublication({
+      userId: id,
+      source,
+      publicationId: publicationId.trim(),
+      status,
+    });
+    return res.status(200).json({ review });
   } catch (error) {
     return next(error);
   }
