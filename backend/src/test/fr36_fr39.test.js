@@ -120,8 +120,16 @@ describe('FR-36 & FR-39: External Publications Discovery & Summary PDF Export Su
         return { rows: mockExternalPubs };
       }
 
-      if (text.includes('FROM papers') && text.includes('WHERE uploader_id = $1')) {
-        return { rows: [{ ...testPaper, external_id: testPaper.id, source: 'platform' }] };
+      if (text.includes('FROM papers p') && text.includes('WHERE p.uploader_id = $1')) {
+        return {
+          rows: [{
+            ...testPaper,
+            external_id: testPaper.id,
+            source: 'platform',
+            is_verified: false,
+            review_status: 'uncertain',
+          }],
+        };
       }
 
       // Single paper lookup
